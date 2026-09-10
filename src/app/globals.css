@@ -1,0 +1,219 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   STOCKFLOW DESIGN TOKENS — nguồn sự thật: FRONTEND-AI-RULES.md §3
+   Port y hệt từ components-preview.html <style> §token.
+   4 scope: A-light / A-dark / B-light / B-dark.
+   ==========================================================================*/
+
+/* Mode A · Light (mặc định) */
+:root {
+  color-scheme: light;
+  --bg-base: #FAFAF8;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F2F2EF;
+  --bg-muted: #E8E8E3;
+  --border-default: #E2E2DC;
+  --border-strong: #C9C9C0;
+  --ink-primary: #1A1B18;
+  --ink-secondary: #5C5E58;
+  --ink-tertiary: #8A8C85;
+  --ink-inverse: #FFFFFF;
+  --brand: #1A1B18;
+  --brand-hover: #000000;
+  --accent: #0E9BB0;
+  --positive: #1F9D55;
+  --info: #2B7FC4;
+  --warning: #D98207;
+  --danger: #D23B3B;
+  --neutral: #6B6E68;
+  --muted: #9A9C95;
+  --special: #7C5CBF;
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-full: 9999px;
+  --sh-sm: 0 1px 2px rgba(26, 27, 24, 0.06), 0 1px 3px rgba(26, 27, 24, 0.08);
+  --sh-md: 0 4px 12px rgba(26, 27, 24, 0.08);
+  --sh-lg: 0 12px 32px rgba(26, 27, 24, 0.14);
+  --card-pad: 16px;
+  --card-radius: var(--r-sm);
+  --el-gap: 8px;
+  --card-shadow: none;
+  --card-border: 1px solid var(--border-default);
+}
+
+/* Mode A · Dark */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #0E0F11;
+  --bg-surface: #17181B;
+  --bg-subtle: #1F2124;
+  --bg-muted: #2A2C30;
+  --border-default: #2E3034;
+  --border-strong: #3D4045;
+  --ink-primary: #F4F4F1;
+  --ink-secondary: #A8AAA3;
+  --ink-tertiary: #76786F;
+  --ink-inverse: #1A1B18;
+  --brand: #F4F4F1;
+  --brand-hover: #FFFFFF;
+  --accent: #22B4CA;
+}
+
+/* Mode B · Light */
+:root[data-mode="B"] {
+  --bg-base: #F7F2EB;
+  --bg-surface: #FFFDFB;
+  --bg-subtle: #F2E9DC;
+  --bg-muted: #EADFCF;
+  --border-default: #E6DCCC;
+  --border-strong: #D6C6AE;
+  --ink-primary: #2A211A;
+  --ink-secondary: #6E6055;
+  --ink-tertiary: #9C8C7C;
+  --ink-inverse: #FFFFFF;
+  --brand: #A9682F;
+  --brand-hover: #8C5526;
+  --accent: #A9682F;
+  --card-pad: 24px;
+  --card-radius: var(--r-lg);
+  --el-gap: 12px;
+  --card-shadow: var(--sh-md);
+  --card-border: 1px solid var(--border-default);
+}
+
+/* Mode B · Dark */
+:root[data-mode="B"][data-theme="dark"] {
+  --bg-base: #17130F;
+  --bg-surface: #211A14;
+  --bg-subtle: #2A211A;
+  --bg-muted: #322820;
+  --border-default: #322820;
+  --border-strong: #443727;
+  --ink-primary: #F3EBE1;
+  --ink-secondary: #BBA996;
+  --ink-tertiary: #8A7866;
+  --ink-inverse: #1A1B18;
+  --brand: #C98D4E;
+  --brand-hover: #D89E60;
+  --accent: #C98D4E;
+}
+
+/* ============================================================================
+   TAILWIND v4 @theme — map StockFlow tokens → utility classes + shadcn semantic vars
+   ==========================================================================*/
+@theme inline {
+  /* Fonts (set bởi next/font trong layout.tsx) */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+
+  /* Radius (§3.3) */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-full: var(--r-full);
+
+  /* Colors — backgrounds & surfaces */
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-muted: var(--bg-muted);
+
+  /* Colors — borders */
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  /* Colors — ink */
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary: var(--ink-tertiary);
+  --color-ink-inverse: var(--ink-inverse);
+
+  /* Colors — brand & accent */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-accent: var(--accent);
+
+  /* Colors — 7 semantic status tones */
+  --color-positive: var(--positive);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-neutral: var(--neutral);
+  --color-muted-tone: var(--muted);
+  --color-special: var(--special);
+
+  /* Shadcn semantic vars → StockFlow tokens (để ui/ primitives tự đổi màu theo mode) */
+  --background: var(--bg-base);
+  --foreground: var(--ink-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--ink-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--ink-primary);
+  --primary: var(--brand);
+  --primary-foreground: var(--ink-inverse);
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--ink-primary);
+  --muted: var(--bg-muted);
+  --muted-foreground: var(--ink-tertiary);
+  --accent: var(--bg-subtle);
+  --accent-foreground: var(--ink-primary);
+  --destructive: var(--danger);
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--accent);
+  --sidebar: var(--bg-subtle);
+  --sidebar-foreground: var(--ink-secondary);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--ink-inverse);
+  --sidebar-accent: var(--bg-muted);
+  --sidebar-accent-foreground: var(--ink-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--accent);
+  --chart-1: var(--positive);
+  --chart-2: var(--info);
+  --chart-3: var(--warning);
+  --chart-4: var(--special);
+  --chart-5: var(--danger);
+}
+
+@layer base {
+  * {
+    @apply border-border-default outline-accent/50;
+  }
+  body {
+    @apply bg-bg-base text-ink-primary antialiased;
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  /* Tắt mọi transition khi chuyển theme — tránh lag hàng trăm element animate cùng lúc */
+  .no-transitions, .no-transitions *, .no-transitions *::before, .no-transitions *::after {
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+}

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light" data-mode="A">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StockFlowCommerce — Components Preview (Mode A / Mode B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650;700&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ============ DESIGN TOKENS — nguồn sự thật: FRONTEND-AI-RULES.md §3 ============ */
+:root{
+  color-scheme: light;
+  --bg-base:#FAFAF8; --bg-surface:#FFFFFF; --bg-subtle:#F2F2EF; --bg-muted:#E8E8E3;
+  --border-default:#E2E2DC; --border-strong:#C9C9C0;
+  --ink-primary:#1A1B18; --ink-secondary:#5C5E58; --ink-tertiary:#8A8C85; --ink-inverse:#FFFFFF;
+  --brand:#1A1B18; --brand-hover:#000000; --accent:#0E9BB0;
+  --positive:#1F9D55; --info:#2B7FC4; --warning:#D98207; --danger:#D23B3B;
+  --neutral:#6B6E68; --muted:#9A9C95; --special:#7C5CBF;
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:9999px;
+  --sh-sm:0 1px 2px rgba(26,27,24,.06),0 1px 3px rgba(26,27,24,.08);
+  --sh-md:0 4px 12px rgba(26,27,24,.08);
+  --sh-lg:0 12px 32px rgba(26,27,24,.14);
+  --card-pad:16px; --card-radius:var(--r-sm); --el-gap:8px; --card-shadow:none; --card-border:1px solid var(--border-default);
+  --font-sans:"Inter",system-ui,sans-serif;
+  --font-display:"Inter Tight","Inter",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --page-bg:var(--bg-base); --surface:var(--bg-surface);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg-base:#0E0F11; --bg-surface:#17181B; --bg-subtle:#1F2124; --bg-muted:#2A2C30;
+  --border-default:#2E3034; --border-strong:#3D4045;
+  --ink-primary:#F4F4F1; --ink-secondary:#A8AAA3; --ink-tertiary:#76786F; --ink-inverse:#1A1B18;
+  --brand:#F4F4F1; --brand-hover:#FFFFFF; --accent:#22B4CA;
+}
+:root[data-mode="B"]{
+  --page-bg:#F7F2EB; --surface:#FFFDFB;
+  --bg-base:#F7F2EB; --bg-surface:#FFFDFB; --bg-subtle:#F2E9DC; --bg-muted:#EADFCF;
+  --border-default:#E6DCCC; --border-strong:#D6C6AE;
+  --ink-primary:#2A211A; --ink-secondary:#6E6055; --ink-tertiary:#9C8C7C; --ink-inverse:#FFFFFF;
+  --brand:#A9682F; --brand-hover:#8C5526; --accent:#A9682F;
+  --card-pad:24px; --card-radius:var(--r-lg); --el-gap:12px; --card-shadow:var(--sh-md); --card-border:1px solid var(--border-default);
+}
+:root[data-mode="B"][data-theme="dark"]{
+  --page-bg:#17130F; --surface:#211A14;
+  --bg-base:#17130F; --bg-surface:#211A14; --bg-subtle:#2A211A; --bg-muted:#322820;
+  --border-default:#322820; --border-strong:#443727;
+  --ink-primary:#F3EBE1; --ink-secondary:#BBA996; --ink-tertiary:#8A7866; --ink-inverse:#1A1B18;
+  --brand:#C98D4E; --brand-hover:#D89E60; --accent:#C98D4E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-sans);background:var(--page-bg);color:var(--ink-primary);font-size:.9375rem;line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+
+.pv-topbar{position:sticky;top:0;z-index:100;background:var(--bg-surface);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:16px;padding:10px 24px;flex-wrap:wrap}
+.pv-topbar .pv-brand{font-family:var(--font-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
+.pv-topbar .pv-brand span{color:var(--accent)}
+.pv-seg{display:flex;border:1px solid var(--border-default);border-radius:var(--r-md);overflow:hidden;background:var(--bg-subtle)}
+.pv-seg button{border:0;background:transparent;padding:6px 14px;font:inherit;font-size:.8125rem;font-weight:500;color:var(--ink-secondary);cursor:pointer;transition:.15s}
+.pv-seg button[aria-pressed="true"]{background:var(--brand);color:var(--ink-inverse)}
+.pv-spacer{flex:1}
+.pv-toggle{border:1px solid var(--border-default);background:var(--bg-surface);color:var(--ink-primary);border-radius:var(--r-md);padding:6px 12px;font:inherit;font-size:.8125rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.pv-hint{font-size:.75rem;color:var(--ink-tertiary)}
+
+.wrap{max-width:1280px;margin:0 auto;padding:24px}
+.sec{margin-bottom:44px;scroll-margin-top:70px}
+.sec-h{font-family:var(--font-display);font-size:1.5rem;font-weight:650;line-height:1.25;margin-bottom:4px;letter-spacing:-.015em}
+.sec-d{font-size:.875rem;color:var(--ink-secondary);margin-bottom:20px;max-width:70ch}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.pv-nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px}
+.pv-nav a{font-size:.8125rem;padding:4px 12px;border:1px solid var(--border-default);border-radius:var(--r-full);color:var(--ink-secondary);background:var(--bg-surface);transition:.15s}
+.pv-nav a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+.lbl{font-size:.6875rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-tertiary);margin:20px 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.box{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--card-radius);padding:16px}
+
+/* StatusBadge */
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-full);font-weight:500;border:1px solid;white-space:nowrap;line-height:1.4}
+.badge.sm{font-size:.75rem;padding:2px 9px}
+.badge.md{font-size:.875rem;padding:4px 12px}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:0 0 auto}
+.tone-positive{color:var(--positive);background:color-mix(in srgb,var(--positive) 12%,transparent);border-color:color-mix(in srgb,var(--positive) 26%,transparent)}
+.tone-info{color:var(--info);background:color-mix(in srgb,var(--info) 12%,transparent);border-color:color-mix(in srgb,var(--info) 26%,transparent)}
+.tone-warning{color:var(--warning);background:color-mix(in srgb,var(--warning) 14%,transparent);border-color:color-mix(in srgb,var(--warning) 28%,transparent)}
+.tone-danger{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);border-color:color-mix(in srgb,var(--danger) 26%,transparent)}
+.tone-neutral{color:var(--neutral);background:color-mix(in srgb,var(--neutral) 12%,transparent);border-color:color-mix(in srgb,var(--neutral) 24%,transparent)}
+.tone-muted{color:var(--muted);background:color-mix(in srgb,var(--muted) 14%,transparent);border-color:color-mix(in srgb,var(--muted) 26%,transparent)}
+.tone-special{color:var(--special);background:color-mix(in srgb,var(--special) 12%,transparent);border-color:color-mix(in srgb,var(--special) 26%,transparent)}
+
+/* Button */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-weight:500;cursor:pointer;border-radius:var(--r-sm);border:1px solid transparent;padding:8px 16px;font-size:.875rem;transition:.15s;white-space:nowrap}
+:root[data-mode="B"] .btn{border-radius:var(--r-md);padding:10px 20px}
+.btn-primary{background:var(--brand);color:var(--ink-inverse);border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn-secondary{background:var(--bg-surface);color:var(--ink-primary);border-color:var(--border-strong)}
+.btn-secondary:hover{background:var(--bg-subtle);border-color:var(--accent)}
+.btn-ghost{background:transparent;color:var(--ink-secondary);border-color:transparent}
+.btn-ghost:hover{background:var(--bg-subtle);color:var(--ink-primary)}
+.btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-danger:hover{filter:brightness(.93)}
+.btn-sm{padding:5px 11px;font-size:.8125rem}
+.btn-icon{padding:0;width:34px;height:34px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+/* Field */
+.field{display:flex;flex-direction:column;gap:5px}
+.field>label{font-size:.8125rem;font-weight:500;color:var(--ink-secondary)}
+.input,.select,.textarea{font:inherit;font-size:.875rem;padding:8px 12px;border:1px solid var(--border-default);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--ink-primary);transition:.15s;width:100%}
+:root[data-mode="B"] .input,:root[data-mode="B"] .select{border-radius:var(--r-md);padding:11px 14px}
+.input::placeholder{color:var(--ink-tertiary)}
+.input:hover,.select:hover{border-color:var(--border-strong)}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.input[aria-invalid="true"]{border-color:var(--danger)}
+.hint{font-size:.75rem;color:var(--ink-tertiary)}
+.err{font-size:.75rem;color:var(--danger);display:flex;gap:4px;align-items:center}
+
+/* Switch / Checkbox */
+.switch{position:relative;display:inline-block;width:40px;height:22px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--bg-muted);border-radius:var(--r-full);transition:.18s;cursor:pointer}
+.slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s;box-shadow:var(--sh-sm)}
+.switch input:checked+.slider{background:var(--brand)}
+.switch input:checked+.slider:before{transform:translateX(18px)}
+.chk{display:flex;align-items:center;gap:8px;font-size:.875rem;cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer}
+
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;padding:3px 10px;border-radius:var(--r-sm);background:var(--bg-subtle);color:var(--ink-secondary);border:1px solid var(--border-default)}
+:root[data-mode="B"] .tag{border-radius:var(--r-full)}
+
+.card{background:var(--bg-surface);border:var(--card-border);border-radius:var(--card-radius);padding:var(--card-pad);box-shadow:var(--card-shadow);transition:.18s}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.card-t{font-family:var(--font-display);font-size:1.05rem;font-weight:600;line-height:1.3;letter-spacing:-.01em}
+.card-sub{font-size:.8125rem;color:var(--ink-secondary);margin-top:2px}
+
+/* DataTable */
+.tbl-wrap{border:1px solid var(--border-default);border-radius:var(--r-sm);overflow:hidden;background:var(--bg-surface)}
+table.dt{width:100%;border-collapse:collapse;font-size:.8125rem}
+table.dt caption{text-align:left;padding:9px 14px;font-size:.75rem;color:var(--ink-tertiary);background:var(--bg-subtle);border-bottom:1px solid var(--border-default)}
+table.dt th{text-align:left;font-weight:600;color:var(--ink-secondary);font-size:.75rem;letter-spacing:.02em;padding:8px 14px;background:var(--bg-subtle);border-bottom:1px solid var(--border-default);white-space:nowrap}
+table.dt th.sortable{cursor:pointer;user-select:none}
+table.dt th.sortable:hover{color:var(--ink-primary)}
+table.dt td{padding:7px 14px;border-bottom:1px solid var(--border-default);vertical-align:middle}
+table.dt tbody tr:last-child td{border-bottom:0}
+table.dt tbody tr:hover{background:var(--bg-subtle)}
+table.dt td.num,table.dt th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.flag td:first-child{box-shadow:inset 2px 0 0 var(--warning)}
+.dt-foot{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border-default);font-size:.75rem;color:var(--ink-secondary);background:var(--bg-subtle);gap:12px;flex-wrap:wrap}
+.pager{display:flex;gap:4px}
+.pager button{border:1px solid var(--border-default);background:var(--bg-surface);color:var(--ink-secondary);border-radius:var(--r-sm);min-width:28px;height:28px;font:inherit;font-size:.75rem;cursor:pointer}
+.pager button[aria-current="true"]{background:var(--brand);color:var(--ink-inverse);border-color:var(--brand)}
+
+.filterbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;background:var(--bg-subtle);border:1px solid var(--border-default);border-radius:var(--r-sm)}
+:root[data-mode="B"] .filterbar{border-radius:var(--r-md)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--r-full);border:1px solid var(--border-default);background:var(--bg-surface);font-size:.8125rem;color:var(--ink-secondary);cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--brand);color:var(--ink-inverse);border-color:var(--brand)}
+.chip .x{font-size:.9rem;opacity:.7}
+.search{position:relative;display:flex;align-items:center;flex:1;min-width:200px}
+.search input{padding-left:34px}
+.search .ico{position:absolute;left:11px;color:var(--ink-tertiary);pointer-events:none}
+
+.stat{background:var(--bg-surface);border:var(--card-border);border-radius:var(--card-radius);padding:var(--card-pad);box-shadow:var(--card-shadow)}
+.stat-k{font-size:.75rem;color:var(--ink-secondary);font-weight:500;display:flex;align-items:center;gap:6px}
+.stat-v{font-family:var(--font-display);font-size:1.875rem;font-weight:700;line-height:1.1;margin:6px 0 4px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat-d{font-size:.75rem;display:flex;align-items:center;gap:4px;font-weight:500}
+.up{color:var(--positive)}.down{color:var(--danger)}.flat{color:var(--ink-tertiary)}
+
+.empty{text-align:center;padding:48px 24px;border:1px dashed var(--border-strong);border-radius:var(--card-radius);background:var(--bg-surface)}
+.empty .ico{font-size:2rem;color:var(--ink-tertiary);margin-bottom:10px}
+.empty h4{font-family:var(--font-display);font-size:1.05rem;font-weight:600;margin-bottom:4px}
+.empty p{font-size:.8125rem;color:var(--ink-secondary);max-width:42ch;margin:0 auto 16px}
+
+.toast{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r-md);background:var(--bg-surface);box-shadow:var(--sh-lg);border:1px solid var(--border-default);border-left:3px solid var(--positive);min-width:280px}
+.toast.warn{border-left-color:var(--warning)}.toast.err{border-left-color:var(--danger)}.toast.info{border-left-color:var(--info)}
+.toast .tt{font-size:.8125rem;font-weight:600}.toast .tm{font-size:.75rem;color:var(--ink-secondary);margin-top:1px}
+.alert{display:flex;gap:10px;padding:11px 14px;border-radius:var(--r-sm);font-size:.8125rem;border:1px solid}
+.alert.warn{color:var(--warning);background:color-mix(in srgb,var(--warning) 10%,transparent);border-color:color-mix(in srgb,var(--warning) 26%,transparent)}
+.alert.info{color:var(--info);background:color-mix(in srgb,var(--info) 10%,transparent);border-color:color-mix(in srgb,var(--info) 26%,transparent)}
+.alert.danger{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);border-color:color-mix(in srgb,var(--danger) 26%,transparent)}
+.alert .ai{flex:0 0 auto}
+.alert strong{color:var(--ink-primary)}
+.sk{background:linear-gradient(90deg,var(--bg-muted) 25%,var(--bg-subtle) 37%,var(--bg-muted) 63%);background-size:400% 100%;animation:sh 1.4s ease infinite;border-radius:var(--r-sm)}
+@keyframes sh{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none;background:var(--bg-muted)}}
+.avatar{width:36px;height:36px;border-radius:var(--r-full);background:var(--bg-muted);color:var(--ink-secondary);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.8125rem;flex:0 0 auto;border:1px solid var(--border-default)}
+.avatar.lg{width:52px;height:52px;font-size:1rem}
+.crumb{display:flex;align-items:center;gap:6px;font-size:.8125rem;color:var(--ink-tertiary);flex-wrap:wrap}
+.crumb a{color:var(--ink-secondary)}.crumb a:hover{color:var(--accent)}
+.crumb .sep{opacity:.5}
+.crumb .cur{color:var(--ink-primary);font-weight:500}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border-default);margin-bottom:20px}
+.pagehead h1{font-family:var(--font-display);font-size:1.875rem;font-weight:700;line-height:1.2;letter-spacing:-.02em}
+.pagehead .acts{display:flex;gap:8px}
+
+.shell-a{display:grid;grid-template-columns:200px 1fr;border:1px solid var(--border-default);border-radius:var(--r-sm);overflow:hidden;background:var(--bg-surface);min-height:340px}
+.side{background:var(--bg-subtle);border-right:1px solid var(--border-default);padding:12px 8px}
+.side .grp{font-size:.625rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-tertiary);padding:10px 10px 4px}
+.side a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);font-size:.8125rem;color:var(--ink-secondary);margin-bottom:1px}
+.side a:hover{background:var(--bg-muted);color:var(--ink-primary);text-decoration:none}
+.side a.on{background:var(--brand);color:var(--ink-inverse);font-weight:500}
+.topbar-a{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--border-default);background:var(--bg-surface)}
+.content-a{padding:16px}
+@media(max-width:760px){.shell-a{grid-template-columns:1fr}.side{display:none}}
+
+.sf-head{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--border-default);background:var(--bg-surface)}
+.sf-logo{font-family:var(--font-display);font-weight:700;font-size:1.1rem;letter-spacing:-.02em}
+.sf-nav{display:flex;gap:18px;font-size:.875rem}
+.sf-nav a{color:var(--ink-secondary)}.sf-nav a:hover{color:var(--brand);text-decoration:none}
+.sf-icons{margin-left:auto;display:flex;gap:16px;align-items:center;color:var(--ink-secondary)}
+.fab{position:relative}
+.fab .cnt{position:absolute;top:-6px;right:-9px;background:var(--brand);color:var(--ink-inverse);font-size:.625rem;min-width:16px;height:16px;border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;font-weight:600;padding:0 3px}
+
+.pcard{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-sm);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
+.pcard:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
+.pcard .ph{aspect-ratio:1/1;background:linear-gradient(135deg,var(--bg-subtle),var(--bg-muted));position:relative;display:flex;align-items:center;justify-content:center;color:var(--ink-tertiary);font-size:2rem}
+.pcard .ph .fav{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:var(--r-full);background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;border:0;cursor:pointer;color:var(--ink-secondary);font-size:1rem}
+.pcard .ph .fav:hover{color:var(--danger)}
+.pcard .pb{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.pcard .pname{font-size:.9375rem;font-weight:600;line-height:1.3}
+.pcard .pvar{font-size:.75rem;color:var(--ink-tertiary)}
+.price{font-family:var(--font-display);font-weight:700;font-size:1.25rem;color:var(--ink-primary);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.price .old{font-family:var(--font-sans);font-size:.8125rem;font-weight:400;color:var(--ink-tertiary);text-decoration:line-through;margin-left:6px}
+.price .off{font-family:var(--font-sans);font-size:.75rem;font-weight:600;color:var(--danger);margin-left:6px}
+.swatches{display:flex;gap:6px;margin-top:2px}
+.sw{width:20px;height:20px;border-radius:var(--r-full);border:2px solid var(--bg-surface);box-shadow:0 0 0 1px var(--border-default);cursor:pointer}
+.sw[aria-disabled="true"]{opacity:.3;cursor:not-allowed}
+.stars{display:flex;align-items:center;gap:3px;font-size:.75rem;color:var(--warning)}
+.stars .n{color:var(--ink-tertiary);margin-left:3px}
+.avail{font-size:.75rem;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.avail.in{color:var(--positive)}.avail.low{color:var(--warning)}.avail.out{color:var(--danger)}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--border-default);border-radius:var(--r-md);overflow:hidden}
+.stepper button{width:34px;height:34px;border:0;background:var(--bg-subtle);color:var(--ink-primary);cursor:pointer;font-size:1rem}
+.stepper button:hover{background:var(--bg-muted)}
+.stepper .qv{width:40px;text-align:center;font-size:.875rem;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg-surface)}
+.cline{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-default);align-items:flex-start}
+.cline:last-child{border-bottom:0}
+.cline .th{width:64px;height:64px;border-radius:var(--r-md);background:linear-gradient(135deg,var(--bg-subtle),var(--bg-muted));flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--ink-tertiary);font-size:1.3rem}
+.cline .ci{flex:1;min-width:0}
+.cline .cn{font-weight:600;font-size:.9375rem}
+.cline .cv{font-size:.75rem;color:var(--ink-tertiary);margin:2px 0 8px}
+.orderTot{display:flex;flex-direction:column;gap:8px;font-size:.875rem}
+.orderTot .ln{display:flex;justify-content:space-between;color:var(--ink-secondary)}
+.orderTot .ln.tot{border-top:1px solid var(--border-default);padding-top:10px;margin-top:2px;color:var(--ink-primary);font-weight:700}
+.orderTot .ln.tot .v{font-family:var(--font-display);font-size:1.25rem}
+.tl{position:relative;padding-left:24px}
+.tl:before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--border-default)}
+.tl-i{position:relative;padding-bottom:16px}
+.tl-i:last-child{padding-bottom:0}
+.tl-i:before{content:"";position:absolute;left:-21px;top:4px;width:11px;height:11px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--border-strong)}
+.tl-i.done:before{background:var(--positive);border-color:var(--positive)}
+.tl-i.cur:before{background:var(--info);border-color:var(--info);box-shadow:0 0 0 4px color-mix(in srgb,var(--info) 18%,transparent)}
+.tl-i .tt{font-size:.875rem;font-weight:600}
+.tl-i .tm{font-size:.75rem;color:var(--ink-tertiary);font-variant-numeric:tabular-nums}
+.tl-i .td{font-size:.8125rem;color:var(--ink-secondary);margin-top:2px}
+.trk{display:flex;align-items:flex-start;margin:8px 0}
+.trk .st{flex:1;text-align:center;position:relative;font-size:.6875rem;color:var(--ink-tertiary);padding-top:18px}
+.trk .st:before{content:"";position:absolute;top:4px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:var(--bg-muted);border:2px solid var(--bg-surface);z-index:1}
+.trk .st:after{content:"";position:absolute;top:9px;left:-50%;width:100%;height:2px;background:var(--border-default)}
+.trk .st:first-child:after{display:none}
+.trk .st.done{color:var(--positive)}.trk .st.done:before{background:var(--positive)}
+.trk .st.done:after,.trk .st.cur:after{background:var(--positive)}
+.trk .st.cur{color:var(--info);font-weight:600}.trk .st.cur:before{background:var(--info);box-shadow:0 0 0 4px color-mix(in srgb,var(--info) 16%,transparent)}
+.chat{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--bg-subtle);border-radius:var(--r-md);border:1px solid var(--border-default)}
+.bub{max-width:76%;padding:9px 13px;border-radius:var(--r-lg);font-size:.875rem;line-height:1.45}
+.bub.cust{background:var(--bg-surface);border:1px solid var(--border-default);align-self:flex-start;border-bottom-left-radius:var(--r-sm)}
+.bub.sale{background:var(--brand);color:var(--ink-inverse);align-self:flex-end;border-bottom-right-radius:var(--r-sm)}
+.bub .meta{font-size:.625rem;opacity:.7;margin-top:3px;font-variant-numeric:tabular-nums}
+.note{align-self:center;background:color-mix(in srgb,var(--warning) 12%,transparent);border:1px dashed color-mix(in srgb,var(--warning) 40%,transparent);color:var(--warning);font-size:.75rem;padding:6px 12px;border-radius:var(--r-md);max-width:90%}
+.rich{display:flex;gap:10px;align-items:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--r-md);padding:8px;align-self:flex-start;max-width:80%}
+.rich .rt{width:44px;height:44px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--bg-subtle),var(--bg-muted));flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--ink-tertiary)}
+.composer{display:flex;gap:8px;align-items:center;margin-top:4px}
+.composer input{flex:1}
+.tier{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;padding:3px 10px;border-radius:var(--r-full);border:1px solid}
+.tier.bronze{color:#9A6B3F;background:#9A6B3F1a;border-color:#9A6B3F40}
+.tier.silver{color:#6B7280;background:#6B72801a;border-color:#6B728040}
+.tier.gold{color:#B8860B;background:#B8860B1a;border-color:#B8860B40}
+.tier.platinum{color:#5B6472;background:#5B64721a;border-color:#5B647240}
+.modal-demo{border:1px solid var(--border-default);border-radius:var(--r-xl);background:var(--bg-surface);box-shadow:var(--sh-lg);overflow:hidden;max-width:440px}
+.modal-demo .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border-default)}
+.modal-demo .mh h4{font-family:var(--font-display);font-size:1.05rem;font-weight:600}
+.modal-demo .mb{padding:18px}
+.modal-demo .mf{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;background:var(--bg-subtle);border-top:1px solid var(--border-default)}
+.tip{position:relative;display:inline-flex;cursor:help;border-bottom:1px dotted var(--ink-tertiary)}
+.tip .tiptext{visibility:hidden;opacity:0;position:absolute;bottom:125%;left:50%;transform:translateX(-50%);background:var(--ink-primary);color:var(--bg-surface);font-size:.75rem;padding:5px 9px;border-radius:var(--r-sm);white-space:nowrap;transition:.15s;z-index:1300}
+.tip:hover .tiptext{visibility:visible;opacity:1}
+.divider{height:1px;background:var(--border-default);margin:16px 0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.8125rem}
+.kv dt{color:var(--ink-secondary)}
+.kv dd{color:var(--ink-primary);font-weight:500}
+.onlyA,.onlyB{}
+:root[data-mode="A"] .onlyB{display:none!important}
+:root[data-mode="B"] .onlyA{display:none!important}
+.dom-group{border:1px solid var(--border-default);border-radius:var(--card-radius);background:var(--bg-surface);padding:14px}
+.dom-group h5{font-size:.75rem;font-weight:600;color:var(--ink-secondary);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.dom-group .cnt{font-family:var(--font-mono);font-size:.625rem;color:var(--ink-tertiary)}
+.dom-group .bs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="pv-topbar">
+  <div class="pv-brand">StockFlow<span>Commerce</span></div>
+  <div class="pv-seg" role="group" aria-label="Chọn design mode">
+    <button data-setmode="A" aria-pressed="true">Mode A · Kho vận</button>
+    <button data-setmode="B" aria-pressed="false">Mode B · Sàn TMĐT</button>
+  </div>
+  <div class="pv-spacer"></div>
+  <span class="pv-hint">Token nguồn sự thật: FRONTEND-AI-RULES.md §3</span>
+  <button class="pv-toggle" id="themeBtn" aria-pressed="false"><span class="ic">🌙</span> <span class="tx">Dark</span></button>
+</div>
+
+<div class="wrap">
+  <div class="pagehead" style="border:0;margin-bottom:8px;padding-bottom:0">
+    <div>
+      <h1>Components Preview</h1>
+      <p class="sec-d" style="margin:6px 0 0">Thư viện component dùng chung, render bằng <strong>mock-data.ts</strong> khớp docs. Chuyển <strong>Mode A / Mode B</strong> và <strong>Light / Dark</strong> ở thanh trên để soi tính nhất quán của token. Tên trạng thái lấy nguyên văn bảng vòng đời từng module — <code class="mono">&lt;StatusBadge&gt;</code> phủ đủ <strong>26 domain</strong>.</p>
+    </div>
+  </div>
+  <nav class="pv-nav" aria-label="Mục lục">
+    <a href="#status">StatusBadge</a>
+    <a href="#core">Core UI</a>
+    <a href="#data">Data &amp; Table</a>
+    <a href="#feedback">Feedback</a>
+    <a href="#shellA">Shell A</a>
+    <a href="#cards">Card nghiệp vụ</a>
+    <a href="#shellB">Shell B</a>
+    <a href="#commerce">Commerce</a>
+    <a href="#chat">Chat</a>
+    <a href="#customer">Customer</a>
+  </nav>
+
+  <!-- ============ 1. STATUSBADGE — 26 DOMAIN ============ -->
+  <section class="sec" id="status">
+    <h2 class="sec-h">&lt;StatusBadge&gt; — một component, mọi trạng thái</h2>
+    <p class="sec-d">Component quan trọng nhất (§6.1). Nhận <code class="mono">status</code> + <code class="mono">domain</code>, tra <code class="mono">status-map.ts</code> → 1 trong 7 semantic tone. Dưới đây liệt kê <strong>toàn bộ trạng thái của 26 domain</strong> trích thẳng từ mock-data (khớp bảng vòng đời docs). Không badge tự chế.</p>
+    <div class="row" style="margin-bottom:16px">
+      <span class="badge sm tone-positive"><span class="dot"></span>positive</span>
+      <span class="badge sm tone-info"><span class="dot"></span>info</span>
+      <span class="badge sm tone-warning"><span class="dot"></span>warning</span>
+      <span class="badge sm tone-danger"><span class="dot"></span>danger</span>
+      <span class="badge sm tone-neutral"><span class="dot"></span>neutral</span>
+      <span class="badge sm tone-muted"><span class="dot"></span>muted</span>
+      <span class="badge sm tone-special"><span class="dot"></span>special</span>
+      <span style="width:16px"></span>
+      <span class="hint">Size:</span>
+      <span class="badge sm tone-info">sm · mode A</span>
+      <span class="badge md tone-info">md · mode B</span>
+    </div>
+    <div class="grid g3" id="statusGrid"></div>
+  </section>
+
+  <!-- ============ 2. CORE UI ============ -->
+  <section class="sec" id="core">
+    <h2 class="sec-h">Core UI</h2>
+    <p class="sec-d">Button, Input/Field, Switch, Checkbox, Tag, Avatar. Bo góc &amp; padding tự đổi theo mode (A: <code class="mono">radius.sm</code> chặt · B: <code class="mono">radius.md</code> thoáng).</p>
+
+    <div class="grid g2">
+      <div class="box">
+        <div class="lbl" style="margin-top:0">Button</div>
+        <div class="row">
+          <button class="btn btn-primary">Hành động chính</button>
+          <button class="btn btn-secondary">Phụ</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-danger">Huỷ</button>
+          <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn-primary btn-sm">Nút nhỏ</button>
+          <button class="btn btn-secondary btn-sm">+ Thêm dòng</button>
+          <button class="btn btn-secondary btn-icon" aria-label="Quét barcode">⌖</button>
+          <button class="btn btn-ghost btn-icon" aria-label="Thêm">⋯</button>
+        </div>
+        <p class="note-mode">Mode A: CTA = ink đen. Mode B: CTA = caramel ấm.</p>
+      </div>
+
+      <div class="box">
+        <div class="lbl" style="margin-top:0">Input &amp; Field</div>
+        <div class="field" style="margin-bottom:12px">
+          <label for="i1">Tên đăng nhập</label>
+          <input class="input" id="i1" placeholder="nguyen.van.a" />
+          <span class="hint">3–32 ký tự, không dấu cách.</span>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label for="i2">Email <span style="color:var(--danger)">*</span></label>
+          <input class="input" id="i2" value="sai-dinh-dang" aria-invalid="true" />
+          <span class="err">⚠ Email không hợp lệ.</span>
+        </div>
+        <div class="field">
+          <label for="i3">Kho thực hiện</label>
+          <select class="select" id="i3"><option>Kho Hà Nội (WH-HN-01)</option><option>Kho TP.HCM (WH-HCM-01)</option><option>Kho Đà Nẵng (WH-DN-01)</option></select>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="lbl" style="margin-top:0">Switch · Checkbox · Radio</div>
+        <div class="row" style="margin-bottom:14px">
+          <label class="switch"><input type="checkbox" checked /><span class="slider"></span></label>
+          <span style="font-size:.875rem">Bật 2FA</span>
+          <label class="switch"><input type="checkbox" /><span class="slider"></span></label>
+          <span style="font-size:.875rem">Nhận tin khuyến mãi</span>
+        </div>
+        <label class="chk" style="margin-bottom:8px"><input type="checkbox" checked /> In nhãn vận đơn hàng loạt</label>
+        <label class="chk" style="margin-bottom:8px"><input type="checkbox" /> Gửi email xác nhận cho khách</label>
+        <div class="divider"></div>
+        <div class="row">
+          <label class="chk"><input type="radio" name="r1" checked /> Cá nhân</label>
+          <label class="chk"><input type="radio" name="r1" /> Doanh nghiệp</label>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="lbl" style="margin-top:0">Tag · Avatar · Tooltip</div>
+        <div class="row" style="margin-bottom:14px">
+          <span class="tag">DTG</span><span class="tag">Cotton 100%</span><span class="tag">Unisex</span><span class="tag">POD</span>
+        </div>
+        <div class="row">
+          <div class="avatar">NL</div><div class="avatar lg">TM</div>
+          <div class="avatar" style="background:var(--brand);color:var(--ink-inverse)">VD</div>
+          <span class="tip" style="font-size:.875rem">ATP <span class="tiptext">Available-to-Promise = Tồn khả dụng để hứa giao</span></span>
+        </div>
+        <p class="note-mode">Avatar dùng chữ viết tắt khi không có ảnh (§ accessibility: tương phản ≥ 4.5:1).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. DATA & TABLE (Mode A chủ lực) ============ -->
+  <section class="sec" id="data">
+    <h2 class="sec-h">Data &amp; Table</h2>
+    <p class="sec-d"><code class="mono">&lt;DataTable&gt;</code> (§4.2): phân trang, lọc, sort, bulk-select; cột mã chứng từ mono-link, số căn phải tabular-nums, <code class="mono">&lt;StatusBadge&gt;</code>, cột hành động. Row "cần chú ý" (Exception/Short/On Hold) tô viền trái warning. Kèm <code class="mono">&lt;FilterBar&gt;</code>, <code class="mono">&lt;SearchBar&gt;</code>, <code class="mono">&lt;StatTile&gt;</code>, <code class="mono">&lt;EmptyState&gt;</code>.</p>
+
+    <div class="grid g4" style="margin-bottom:20px">
+      <div class="stat"><div class="stat-k">Đơn hôm nay</div><div class="stat-v">128</div><div class="stat-d up">▲ 12,4% so hôm qua</div></div>
+      <div class="stat"><div class="stat-k">Tỷ lệ giao đúng hạn</div><div class="stat-v">96,2%</div><div class="stat-d up">▲ 1,1 điểm</div></div>
+      <div class="stat"><div class="stat-k">Pick còn tồn</div><div class="stat-v">17</div><div class="stat-d down">▼ quá SLA 3</div></div>
+      <div class="stat"><div class="stat-k">GMV tháng</div><div class="stat-v">486<span style="font-size:1rem"> tr</span></div><div class="stat-d flat">— đi ngang</div></div>
+    </div>
+
+    <div class="filterbar" style="margin-bottom:14px">
+      <div class="search"><span class="ico">⌕</span><input class="input" placeholder="Tìm mã đơn, AWB, khách hàng…" aria-label="Tìm kiếm" /></div>
+      <span class="chip" aria-pressed="true">Tất cả</span>
+      <span class="chip" aria-pressed="false">Đang xử lý</span>
+      <span class="chip" aria-pressed="false">Đã giao</span>
+      <span class="chip" aria-pressed="false">Hoàn tiền</span>
+      <span class="chip">Kho: HN <span class="x">×</span></span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto">Xoá lọc</button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="dt">
+        <caption>Danh sách đơn hàng — trích từ <code>orders[]</code> (mock-data.ts)</caption>
+        <thead>
+          <tr>
+            <th style="width:34px"><input type="checkbox" aria-label="Chọn tất cả" /></th>
+            <th class="sortable">Mã đơn ↕</th>
+            <th>Khách hàng</th>
+            <th class="sortable">Ngày đặt ↕</th>
+            <th class="num sortable">Tổng tiền ↕</th>
+            <th>Trạng thái</th>
+            <th style="width:60px"></th>
+          </tr>
+        </thead>
+        <tbody id="orderRows"></tbody>
+      </table>
+      <div class="dt-foot">
+        <span>Hiển thị 1–8 / 20 đơn</span>
+        <div class="pager">
+          <button aria-label="Trước">‹</button>
+          <button aria-current="true">1</button><button>2</button><button>3</button>
+          <button aria-label="Sau">›</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px">
+      <div class="empty">
+        <div class="ico">🗂</div>
+        <h4>Chưa có đơn nào</h4>
+        <p>Không tìm thấy đơn khớp bộ lọc. Thử bỏ lọc trạng thái hoặc tạo đơn đầu tiên.</p>
+        <button class="btn btn-primary">+ Tạo đơn mới</button>
+      </div>
+      <div class="box">
+        <div class="lbl" style="margin-top:0">Skeleton (loading)</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+          <div class="sk" style="width:40px;height:40px;border-radius:var(--r-full)"></div>
+          <div style="flex:1"><div class="sk" style="height:12px;width:60%;margin-bottom:6px"></div><div class="sk" style="height:10px;width:40%"></div></div>
+        </div>
+        <div class="sk" style="height:12px;width:100%;margin-bottom:8px"></div>
+        <div class="sk" style="height:12px;width:90%;margin-bottom:8px"></div>
+        <div class="sk" style="height:12px;width:75%"></div>
+        <p class="note-mode">Dùng <code>mockDelay()</code> giả lập loading (§8).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. FEEDBACK ============ -->
+  <section class="sec" id="feedback">
+    <h2 class="sec-h">Feedback</h2>
+    <p class="sec-d">Toast, AlertInline, ConfirmDialog (modal tĩnh), Tooltip. Semantic tone dùng chung cả 2 mode.</p>
+    <div class="grid g2">
+      <div>
+        <div class="lbl" style="margin-top:0">Toast</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="toast"><div>✓</div><div><div class="tt">Đã duyệt PO</div><div class="tm">PO-2026-0012 chuyển sang Confirmed.</div></div></div>
+          <div class="toast info"><div>ℹ</div><div><div class="tt">Đã lưu nháp</div><div class="tm">Thiết kế DSN-2026-0031 lưu bản v1.</div></div></div>
+          <div class="toast warn"><div>⚠</div><div><div class="tt">SLA sắp trễ</div><div class="tm">Hội thoại CONV-2026-0114 còn 4 phút.</div></div></div>
+          <div class="toast err"><div>✕</div><div><div class="tt">Thanh toán thất bại</div><div class="tm">PAY-2026-0037 (ORD-2026-0012) — thẻ bị từ chối.</div></div></div>
+        </div>
+        <div class="lbl">Alert inline (không chặn)</div>
+        <div class="alert warn" style="margin-bottom:8px"><span class="ai">⚠</span><div><strong>Ngày giao trong quá khứ.</strong> Kiểm tra lại ước tính vận chuyển.</div></div>
+        <div class="alert info" style="margin-bottom:8px"><span class="ai">ℹ</span><div><strong>Đơn tuỳ chỉnh.</strong> Chỉ đổi thiết kế được trước khi vào sản xuất (BR-B5).</div></div>
+        <div class="alert danger"><span class="ai">✕</span><div><strong>Không hoàn tiền đổi ý.</strong> Sản phẩm in theo yêu cầu (BR-B4).</div></div>
+      </div>
+      <div>
+        <div class="lbl" style="margin-top:0">ConfirmDialog (hành động phá huỷ)</div>
+        <div class="modal-demo">
+          <div class="mh"><h4>Huỷ đơn hàng?</h4><button class="btn btn-ghost btn-icon" aria-label="Đóng">✕</button></div>
+          <div class="mb">
+            <p style="font-size:.875rem;color:var(--ink-secondary);margin-bottom:12px">Đơn <span class="mono">ORD-2026-0018</span> đang <strong>In Transit</strong>. Huỷ lúc này sẽ tạo yêu cầu thu hồi vận đơn và có thể phát sinh phí.</p>
+            <div class="field"><label for="rsn">Lý do huỷ <span style="color:var(--danger)">*</span></label>
+              <select class="select" id="rsn"><option>Khách yêu cầu</option><option>Hết hàng sản xuất</option><option>Nghi ngờ gian lận</option></select>
+            </div>
+          </div>
+          <div class="mf"><button class="btn btn-secondary">Quay lại</button><button class="btn btn-danger">Xác nhận huỷ</button></div>
+        </div>
+        <div class="lbl">Tooltip &amp; focus-visible</div>
+        <div class="row">
+          <span class="tip" style="font-size:.875rem">scan-100 <span class="tiptext">Quét 100% từng item khi đóng gói</span></span>
+          <span class="tip" style="font-size:.875rem">COD <span class="tiptext">Cash on Delivery — thu hộ tiền mặt</span></span>
+          <button class="btn btn-secondary btn-sm">Tab để xem focus ring</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. SHELL A ============ -->
+  <section class="sec" id="shellA">
+    <h2 class="sec-h onlyA">&lt;BackofficeShell&gt; — Mode A</h2>
+    <h2 class="sec-h onlyB">&lt;BackofficeShell&gt; — xem ở Mode A</h2>
+    <p class="sec-d onlyA">Sidebar trái cố định + topbar (breadcrumb, tìm kiếm toàn cục, kho đang chọn, user) + vùng nội dung (§4.1). Data-dense, tách lớp bằng viền.</p>
+    <div class="onlyA">
+      <div class="shell-a">
+        <aside class="side">
+          <div class="grp">Kho vận</div>
+          <a href="#" class="on">⌂ Tổng quan</a>
+          <a href="#">▤ Sản phẩm &amp; SKU</a>
+          <a href="#">⇩ Nhập hàng (PO)</a>
+          <a href="#">▦ Tồn kho</a>
+          <div class="grp">Thực hiện đơn</div>
+          <a href="#">⚒ Picking</a>
+          <a href="#">▣ Đóng gói</a>
+          <a href="#">✈ Vận đơn</a>
+          <div class="grp">Vận hành</div>
+          <a href="#">⇄ Chuyển kho</a>
+          <a href="#">↔ Di chuyển</a>
+        </aside>
+        <div>
+          <div class="topbar-a">
+            <div class="crumb"><a href="#">Kho vận</a><span class="sep">/</span><span class="cur">Picking</span></div>
+            <div class="pv-spacer"></div>
+            <div class="search" style="max-width:240px"><span class="ico">⌕</span><input class="input" placeholder="Tìm nhanh (⌘K)" aria-label="Tìm toàn cục" /></div>
+            <span class="tag">WH-HN-01</span>
+            <div class="avatar">NĐ</div>
+          </div>
+          <div class="content-a">
+            <div class="pagehead" style="margin-bottom:14px;padding-bottom:10px">
+              <div><h1 style="font-size:1.5rem">Phiếu lấy hàng</h1><div class="crumb" style="margin-top:2px"><span>8 task · 2 cần chú ý</span></div></div>
+              <div class="acts"><button class="btn btn-secondary btn-sm">Release loạt</button><button class="btn btn-primary btn-sm">+ Tạo pick</button></div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="dt">
+                <thead><tr><th style="width:34px"><input type="checkbox" aria-label="Chọn tất cả" /></th><th>Mã pick</th><th>Đơn</th><th class="num">Dòng</th><th>Lộ trình</th><th>Trạng thái</th></tr></thead>
+                <tbody id="pickRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. CARD NGHIỆP VỤ ============ -->
+  <section class="sec" id="cards">
+    <h2 class="sec-h">Card nghiệp vụ (Mode A)</h2>
+    <p class="sec-d"><code class="mono">&lt;AppCard&gt;</code> biến thể <code class="mono">flush</code> (border, không bóng) cho back-office: PO, Receipt, Invoice, Pick task, Timeline sự kiện.</p>
+    <div class="grid g3" id="bizCards"></div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Timeline đơn ORD-2026-0007</div><div class="card-sub">Trích <code class="mono">orderEvents[]</code></div></div><span class="badge sm tone-info"><span class="dot"></span>Shipped</span></div>
+        <div class="tl" id="evTimeline"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Đối soát 3 bên (three-way match)</div><div class="card-sub">VT/2026/0301 · PO-2026-0011 ↔ RC-2026-0013 · <code class="mono">invoices[]</code></div></div><span class="badge sm tone-warning"><span class="dot"></span>Exception</span></div>
+        <div class="kv">
+          <dt>PO-2026-0011</dt><dd class="mono">SL đặt 900 · @21.000đ</dd>
+          <dt>Receipt RC-2026-0013</dt><dd class="mono">SL nhận 900 · khớp</dd>
+          <dt>Invoice VT/2026/0301</dt><dd class="mono">SL hoá đơn 920 · lệch +20</dd>
+        </div>
+        <div class="alert danger" style="margin-top:12px"><span class="ai">✕</span><div><strong>Chênh lệch 20 đơn vị, ngoài dung sai.</strong> Invoice &gt; Receipt (giá khớp 21.000đ). Cần NCC điều chỉnh trước khi duyệt thanh toán.</div></div>
+        <div class="row" style="margin-top:12px"><button class="btn btn-secondary btn-sm">Xem chi tiết</button><button class="btn btn-primary btn-sm">Đánh dấu Disputed</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7. SHELL B ============ -->
+  <section class="sec" id="shellB">
+    <h2 class="sec-h">&lt;StorefrontShell&gt; — Mode B</h2>
+    <p class="sec-d">Header mỏng + content + floating cart/chat (§5.1). Airy, bo góc <code class="mono">lg/xl</code>, bóng nhẹ, mobile-first. <strong>Chỉ hiển thị ở Mode B</strong> — chuyển mode ở thanh trên.</p>
+    <div class="onlyB">
+      <div style="border:1px solid var(--border-default);border-radius:var(--r-lg);overflow:hidden;background:var(--bg-surface);box-shadow:var(--sh-md)">
+        <div class="sf-head">
+          <div class="sf-logo">StockFlow<span style="color:var(--brand)">.</span></div>
+          <nav class="sf-nav"><a href="#">Sản phẩm</a><a href="#">Thiết kế của tôi</a><a href="#">Đơn hàng</a><a href="#">Ưu đãi</a></nav>
+          <div class="sf-icons">
+            <span>⌕</span><span>♡</span>
+            <span class="fab">🛒<span class="cnt">3</span></span>
+            <div class="avatar">NL</div>
+          </div>
+        </div>
+        <div style="padding:24px">
+          <div style="font-family:var(--font-display);font-size:2.5rem;font-weight:700;line-height:1.1;letter-spacing:-.03em;max-width:18ch">Thiết kế riêng, in theo yêu cầu.</div>
+          <p style="color:var(--ink-secondary);margin:12px 0 20px;max-width:46ch">Tải thiết kế của bạn lên, xem trước 3D trực tiếp, chúng tôi in &amp; giao tận nơi. Không giới hạn số lượng tối thiểu.</p>
+          <div class="row"><button class="btn btn-primary">Bắt đầu thiết kế</button><button class="btn btn-secondary">Xem catalog</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8. COMMERCE (Mode B) ============ -->
+  <section class="sec" id="commerce">
+    <h2 class="sec-h">Commerce (Mode B)</h2>
+    <p class="sec-d"><code class="mono">&lt;ProductCard&gt;</code>, <code class="mono">&lt;PriceDisplay&gt;</code>, <code class="mono">&lt;AvailabilityBadge&gt;</code> (theo ATP), <code class="mono">&lt;VariantSelector&gt;</code>, <code class="mono">&lt;RatingStars&gt;</code>, <code class="mono">&lt;QuantityStepper&gt;</code>, <code class="mono">&lt;CartLineItem&gt;</code>, <code class="mono">&lt;OrderTotals&gt;</code>, <code class="mono">&lt;TrackingProgress&gt;</code>. Dữ liệu từ <code class="mono">products[]</code>/<code class="mono">skus[]</code>/<code class="mono">carts[]</code>.</p>
+    <div class="grid g4" id="productGrid"></div>
+
+    <div class="grid g2" style="margin-top:20px">
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Giỏ hàng · CART-0037</div><div class="card-sub">3 dòng · voucher <span class="mono">HE2026</span></div></div><span class="badge md tone-info"><span class="dot"></span>Active</span></div>
+        <div id="cartLines"></div>
+        <div class="divider"></div>
+        <div class="orderTot">
+          <div class="ln"><span>Tạm tính</span><span class="mono tnum">447.000đ</span></div>
+          <div class="ln"><span>Giảm giá voucher HE2026</span><span class="mono tnum" style="color:var(--positive)">−44.700đ</span></div>
+          <div class="ln"><span>Phí vận chuyển (GHN Tiêu chuẩn)</span><span class="mono tnum">32.000đ</span></div>
+          <div class="ln"><span>Thuế VAT (8%)</span><span class="mono tnum">34.584đ</span></div>
+          <div class="ln tot"><span>Tổng thanh toán</span><span class="v mono tnum">468.884đ</span></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:14px">Tiến hành thanh toán →</button>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Theo dõi vận đơn SHP-2026-0090</div><div class="card-sub">GHN · AWB <span class="mono">GHN-1011121314</span></div></div><span class="badge md tone-positive"><span class="dot"></span>Delivered</span></div>
+        <div class="trk">
+          <div class="st done">Tạo nhãn</div><div class="st done">Bàn giao</div><div class="st done">Vận chuyển</div><div class="st cur">Đang giao</div><div class="st">Giao xong</div>
+        </div>
+        <div class="divider"></div>
+        <div class="tl" id="trkTimeline"></div>
+        <div class="row" style="margin-top:14px"><button class="btn btn-secondary btn-sm">Xem tất cả kiện</button><span class="tag">1 kiện · PKG-0160-1</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 9. CHAT (Module 16) ============ -->
+  <section class="sec" id="chat">
+    <h2 class="sec-h">Sales Chat (Module 16)</h2>
+    <p class="sec-d"><code class="mono">&lt;ChatBubble&gt;</code>, <code class="mono">&lt;RichLinkCard&gt;</code>, <code class="mono">&lt;InternalNote&gt;</code>, <code class="mono">&lt;SLABadge&gt;</code>, <code class="mono">&lt;ChatComposer&gt;</code>. Trích <code class="mono">conversations[]</code>/<code class="mono">messages[]</code>.</p>
+    <div class="grid g2">
+      <div class="card" id="chatHeader">
+        <div class="card-h">
+          <div style="display:flex;gap:10px;align-items:center"><div class="avatar">TB</div><div><div class="card-t">Trần Thị Bích</div><div class="card-sub">CONV-2026-0120 · kênh product-page</div></div></div>
+          <div style="display:flex;gap:6px;align-items:center"><span class="badge sm tone-positive"><span class="dot"></span>Trong SLA</span><span class="chat-status"><span class="badge sm tone-info"><span class="dot"></span>Active</span></span></div>
+        </div>
+        <div class="chat" id="chatThread"></div>
+        <div class="composer"><input class="input" placeholder="Nhập tin nhắn… (Enter để gửi)" aria-label="Soạn tin nhắn" /><button class="btn btn-primary btn-icon" aria-label="Gửi">➤</button></div>
+      </div>
+      <div>
+        <div class="lbl" style="margin-top:0">Danh sách hội thoại · trạng thái phủ đủ</div>
+        <div id="convList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="lbl">SLA &amp; CSAT</div>
+        <div class="row">
+          <span class="badge sm tone-positive"><span class="dot"></span>Trong SLA</span>
+          <span class="badge sm tone-danger"><span class="dot"></span>Trễ SLA</span>
+          <span class="stars">★★★★★<span class="n">5,0 · CSAT</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10. CUSTOMER (Module 18) ============ -->
+  <section class="sec" id="customer">
+    <h2 class="sec-h">Customer &amp; Loyalty (Module 18)</h2>
+    <p class="sec-d"><code class="mono">&lt;CustomerProfileCard&gt;</code>, <code class="mono">&lt;SegmentBadge&gt;</code>, <code class="mono">&lt;LoyaltyTierBadge&gt;</code>, <code class="mono">&lt;AddressBook&gt;</code>. Trích <code class="mono">customers[]</code> (7 trạng thái, 4 hạng thành viên).</p>
+    <div class="grid g3" id="customerGrid"></div>
+    <div class="box" style="margin-top:16px">
+      <div class="lbl" style="margin-top:0">Loyalty tier &amp; segment</div>
+      <div class="row" style="margin-bottom:10px">
+        <span class="tier bronze">● Bronze</span><span class="tier silver">● Silver</span><span class="tier gold">● Gold</span><span class="tier platinum">● Platinum</span>
+      </div>
+      <div class="row">
+        <span class="tag">new</span><span class="tag">returning</span><span class="tag">vip</span><span class="tag">wholesale</span><span class="tag">at-risk</span><span class="tag">dormant</span>
+      </div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--border-default);padding:24px 0;color:var(--ink-tertiary);font-size:.8125rem;margin-top:20px">
+    StockFlowCommerce · UI/UX preview · Component render bằng mock-data.ts (3.366 dòng, 18 module). Token = FRONTEND-AI-RULES.md §3. Hai theme tách biệt: Mode A Ink+Cyan · Mode B Caramel. Cả 2 hỗ trợ Light/Dark.
+  </footer>
+</div>
+
+<script>
+/* ============ STATUS MAP — (status) → tone, phủ 7 semantic (§6.1) ============
+ * Sinh tự động từ mock-data.ts. 101 giá trị trạng thái distinct, đủ 26 union. */
+const TONE = {"positive":["Confirmed","Approved","Completed","Delivered","Packed","Received","Active","Paid","Matched","Accepted","Pass","In stock","Reviewed","Converted","Authorized","Captured","Available","Occupied","Resolved","Refund Issued","Exchange Shipped","Item Received","Partially Received","Handed to Shipping","Ready to Dispatch","Staged","Picked","Allocated"],"info":["In Progress","In Transit","Picking","Shipped","Assigned","Released","Published","In Putaway","Partially Fulfilled","Partially Completed","Out for Delivery","Pending (COD)","Reserved","Ready","Locked","Handed Over","Queued","Approved for Payment","Initiated","In Production"],"warning":["Pending Approval","On Hold","Exception","Short","Discrepancy","Quarantine","Blocked","Low stock","Awaiting Confirmation","Verification Failed","Escalated","Inbound","Reopened","Waiting on Customer","Waiting on Internal","Partially Paid","Warning","Pending Payment","Ready to Fulfill","Return Requested","Pending Verification","Draft Proposal"],"danger":["Cancelled","Rejected","Failed","Disputed","Delivery Failed","Returned","Returning","Suspended","Out of stock","Fail","Obsolete","Payment Failed","Unpaid","Timeout"],"neutral":["Draft","Created","Pending","Label Created","Suggested","Guest","New","Requested"],"muted":["Closed","Inactive","Hidden","Unpublished","Anonymized","Merged","Voided","Superseded","Empty","Full","Disabled","Archived","Discontinued","Abandoned"],"special":["Refunded","Partially Refunded","In Production"]};
+const PRIORITY = ["special","danger","positive","warning","info","muted","neutral"];
+function toneOf(status){ for(const t of PRIORITY){ if(TONE[t].includes(status)) return t; } return "neutral"; }
+function badge(status,size){ return '<span class="badge '+(size||'sm')+' tone-'+toneOf(status)+'" title="'+status+'"><span class="dot"></span>'+status+'</span>'; }
+const VND = n => (n==null?'—':Number(n).toLocaleString('vi-VN')+'đ');
+
+/* ============ 26 DOMAIN — trích nguyên văn từ mock-data.ts ============ */
+const DOMAINS = [
+  ["ProductStatus (01)","product",["Draft","Pending Approval","Approved","Active","Published","Inactive","Discontinued"]],
+  ["SkuStatus (02)","sku",["Active","Blocked","Obsolete"]],
+  ["PoStatus (03)","po",["Draft","Pending Approval","Approved","Confirmed","Partially Received","Received","Closed","Cancelled"]],
+  ["ProposalStatus (04)","proposal",["Draft Proposal","Reviewed","Converted"]],
+  ["ReceiptStatus (05)","receipt",["Draft","Confirmed","In Putaway","Closed","Cancelled"]],
+  ["QcStatus (05)","qc",["Accepted","Quarantine","Rejected"]],
+  ["InvoiceStatus (06)","invoice",["Draft","Matched","Exception","Disputed","Approved for Payment","Paid","Cancelled"]],
+  ["PutawayStatus (07)","putaway",["Pending","Assigned","In Progress","Partially Completed","On Hold","Completed","Cancelled"]],
+  ["StockStatus (08)","stock",["Inbound","In Putaway","Available","Blocked"]],
+  ["LocationStatus (09)","location",["Empty","Occupied","Reserved","Blocked","Full","Disabled"]],
+  ["PickStatus (07)","pick",["Created","Released","Assigned","In Progress","Short","On Hold","Completed","Cancelled"]],
+  ["AllocationStatus (07)","allocation",["Available","Allocated","Reserved","Picked","Staged"]],
+  ["PackStatus (07)","pack",["Pending","In Progress","Verification Failed","On Hold","Packed","Handed to Shipping","Cancelled"]],
+  ["ShipmentStatus (17)","shipment",["Label Created","Ready to Dispatch","Handed Over","In Transit","Out for Delivery","Delivery Failed","Returning","Delivered","Returned","Exception","Cancelled"]],
+  ["TransferOrderStatus (10)","transfer",["Draft","Pending Approval","Approved","Picking","In Transit","Partially Received","Received","Completed","Cancelled"]],
+  ["MoveTaskStatus (11)","move",["Suggested","Pending","Assigned","In Progress","On Hold","Discrepancy","Completed","Cancelled","Rejected"]],
+  ["DesignStatus (12)","design",["Draft","Ready","Confirmed","Locked","Superseded","Cancelled"]],
+  ["PreflightStatus (12)","preflight",["Pass","Warning","Fail"]],
+  ["CartStatus (14)","cart",["Active","Abandoned","Converted","Merged"]],
+  ["OrderStatus (14)","order",["Pending Payment","Payment Failed","Confirmed","In Production","Ready to Fulfill","Picking","Packed","Shipped","In Transit","Delivered","Completed","Cancelled","Returned","Refunded","Partially Refunded","On Hold","Partially Fulfilled","Delivery Failed","Return Requested","Closed"]],
+  ["PaymentTransactionStatus (15)","payment",["Initiated","Awaiting Confirmation","Authorized","Captured","Failed","Cancelled","Voided","Refunded","Partially Refunded"]],
+  ["PaymentObligationStatus (15)","obligation",["Unpaid","Pending (COD)","Partially Paid","Paid","Refunded","Partially Refunded","Failed"]],
+  ["ConversationStatus (16)","conversation",["New","Queued","Assigned","Active","Waiting on Customer","Waiting on Internal","Escalated","Resolved","Reopened","Closed"]],
+  ["OrderManagementStatus (17)","ordermgmt",["Pending Payment","Payment Failed","Confirmed","In Production","On Hold","Ready to Fulfill","Picking","Partially Fulfilled","Packed","Shipped","In Transit","Delivery Failed","Delivered","Return Requested","Returned","Refunded","Partially Refunded","Completed","Cancelled","Closed"]],
+  ["RmaStatus (17)","rma",["Requested","Approved","Rejected","Item Received","Refund Issued","Exchange Shipped","Closed","Cancelled"]],
+  ["CustomerStatus (18)","customer",["Guest","Pending Verification","Active","Suspended","Closed","Anonymized","Merged"]]
+];
+document.getElementById('statusGrid').innerHTML = DOMAINS.map(([title,dom,list])=>
+  '<div class="dom-group"><h5>'+title+' <span class="cnt">'+list.length+'</span></h5><div class="bs">'+
+  list.map(s=>badge(s,'sm')).join('')+'</div></div>'
+).join('');
+
+/* ============ DATA — AUTO-GENERATED from mock-data.ts ============ */
+const ORDERS=[["ORD-2026-0014","Trần Thị Bích","12/06/2026",351840,"Pending Payment",false],["ORD-2026-0013","Nguyễn Văn Đạt","12/06/2026",804600,"Confirmed",false],["ORD-2026-0012","Lê Thị Mai","11/06/2026",121120,"Payment Failed",true],["ORD-2026-0011","Phạm Thu Trang","11/06/2026",320360,"In Production",false],["ORD-2026-0017","Nguyễn Văn Đạt","11/06/2026",713880,"Picking",false],["ORD-2026-0010","Phạm Thu Trang","11/06/2026",415710,"Ready to Fulfill",false],["ORD-2026-0009","Ngô Thị Mai","10/06/2026",995520,"Partially Fulfilled",true],["ORD-2026-0008","Hoàng Văn Sỹ","10/06/2026",220240,"Delivery Failed",true]];
+const PICKS=[["PICK-2026-0200","ORD-2026-0007",1,"62 m","Completed",false],["PICK-2026-0209","ORD-2026-0013",1,"84 m","Released",false],["PICK-2026-0208","ORD-2026-0011",1,"56 m","Assigned",false],["PICK-2026-0207","ORD-2026-0010",2,"120 m","In Progress",false],["PICK-2026-0205","ORD-2026-0009",1,"70 m","Short",true],["PICK-2026-0204","—",1,"95 m","On Hold",true]];
+const BIZ=[["PO-2026-0012","NCC: Công ty TNHH Dệt may Thành Công · WH-HCM-01","Tổng 36.288.000đ · đặt 05/06/2026","Confirmed"],["RC-2026-0013","Nhập từ PO-2026-0011 · WH-HN-01","Nhận 900/900 · QC 07/06/2026","In Putaway"],["VT/2026/0301","Hoá đơn NCC Công ty TNHH May mặc Việt Thắng","Đối soát RC-2026-0013 · 20.865.600đ","Exception"],["PACK-2026-0150","Đóng gói ORD-2026-0007 · WH-HN-01","1 kiện · scan-100 · đã verify","Handed to Shipping"],["TO-2026-0005","Chuyển kho WH-HCM-01 → WH-HN-01","Đã duyệt · đang vận chuyển","In Transit"],["PT-2026-0030","Cất hàng từ RC-2026-0012","Khu vực kho · hoàn tất","Completed"]];
+const EVENTS=[["Cập nhật trạng thái","08/06/2026 07:05","Thanh toán thành công (PAY-2026-0029) → đơn xác nhận","done"],["Thực hiện đơn","08/06/2026 08:00","Release phiếu lấy hàng PICK-2026-0200 cho kho HN-01","done"],["Thực hiện đơn","08/06/2026 09:45","Đóng gói PACK-2026-0140, kiểm 100% đạt","done"],["Cập nhật trạng thái","08/06/2026 10:00","Bàn giao vận đơn SHP-2026-0070 (GHN)","cur"]];
+const PRODUCTS=[["Áo Thun Cotton Cao Cấp","PRD-001",149000,"in","Còn 351",["#1A1B18","#FFFFFF","#9A9C95","#1F2A44"],false],["Cốc Sứ In Ảnh 350ml","PRD-002",89000,"in","Còn 302",["#FFFFFF","#2A211A"],false],["Túi Tote Canvas","PRD-005",79000,"out","Hết hàng",["#E6DCCC","#1A1B18"],true],["Áo Hoodie Nỉ Cao Cấp","PRD-004",289000,"out","Hết hàng",["#1A1B18","#9A9C95","#E6DCCC"],true]];
+const CART=[["👕","Áo Thun Cotton Cao Cấp","Áo Thun Cotton — Đen / L · thiết kế DSN-2026-0028",2,149000,true],["☕","Cốc Sứ In Ảnh 350ml","Cốc Sứ 350ml — Trắng",1,89000,true],["👕","Áo Thun Cotton Cao Cấp","Áo Thun Cotton — Navy / XL",1,60000,false]];
+const CART_SUB=447000, CART_VOUCHER="HE2026";
+const TRK=[["Label Created","27/05/2026 09:00","Kho Hà Nội","done"],["Handed Over","27/05/2026 10:00","Bưu cục GHN Đông Anh","done"],["Out for Delivery","29/05/2026 08:00","GHN Hà Đông","done"],["Delivered","29/05/2026 14:00","Hà Đông — ký tên: V.Đ.Long","cur"]];
+const SHP_AWB="GHN-1011121314", SHP_PKG="PKG-0160-1";
+const CONV=[["CONV-2026-0120","Tư vấn in áo thun nhóm","Active","Trần Thị Bích","5′","Phan Thị Ngọc"],["CONV-2026-0115","Xin duyệt ưu đãi vượt hạn mức","Waiting on Internal","Phạm Thu Trang","5′","Trần Bảo Khánh"],["CONV-2026-0114","Khiếu nại áo lỗi — ORD-2026-0002","Escalated","Trịnh Công Sơn","5′","Đỗ Quốc Huy"],["CONV-2026-0117","Tư vấn hoodie thêu","New","Hoàng Văn Sỹ","5′","chưa gán"],["CONV-2026-0110","Tư vấn cốc in ảnh","Resolved","Nguyễn Hoài Nam","5′","Phan Thị Ngọc"],["CONV-2026-0108","Hỏi lại vận đơn ORD-2026-0000","Reopened","Đặng Thuỳ Linh","5′","Trần Bảo Khánh"]];
+const CHAT_META=["CONV-2026-0120","Tư vấn in áo thun nhóm","Trần Thị Bích","product-page","Phan Thị Ngọc"];
+const CHAT_MSGS=[["customer","Chào shop, mình muốn in áo cho team 20 người thì giá thế nào ạ?",false,"text"],["sales","Chào chị Bích! Với số lượng 20 áo, bên em áp giá sỉ và miễn phí thiết kế ạ. Chị xem mẫu áo thun cotton nhé:",false,"text"],["sales","",false,"product-link"],["sales","Khách doanh nghiệp tiềm năng — đề xuất giảm 10% nếu chốt ≥20 áo (cần duyệt vì vượt hạn mức F4).",true,"internal-note"],["customer","Đẹp ạ. Chị gửi mẫu thiết kế giúp em nhé.",false,"text"]];
+const CUSTOMERS=[["Phạm Thu Trang","CUS-0008","Active","platinum","vip",25,18750000,"B2B · 2FA · "],["Nguyễn Văn Đạt","CUS-0009","Active","gold","vip",9,4820000,"2FA · consent ✓"],["Trịnh Công Sơn","CUS-0001","Closed","bronze","dormant",1,185920,""],["Ngô Thị Mai","CUS-0011","Pending Verification","bronze","new",1,894000,"consent ✓"],["[Đã ẩn danh]","CUS-0002","Anonymized","bronze","dormant",0,0,""],["Khách vãng lai","guest-7f3a","Guest","bronze","new",0,0,""]];
+
+
+/* ============ RENDER ============ */
+// order table
+document.getElementById('orderRows').innerHTML = ORDERS.map(([id,cust,date,total,st,flag])=>
+  '<tr'+(flag?' class="flag"':'')+'><td><input type="checkbox" aria-label="Chọn '+id+'" /></td>'+
+  '<td><a class="mono" href="#">'+id+'</a></td><td>'+cust+'</td><td class="tnum">'+date+'</td>'+
+  '<td class="num mono">'+VND(total)+'</td><td>'+badge(st,'sm')+'</td>'+
+  '<td><button class="btn btn-ghost btn-icon btn-sm" aria-label="Hành động">⋯</button></td></tr>').join('');
+
+// pick table
+document.getElementById('pickRows').innerHTML = PICKS.map(([id,ord,ln,rt,st,flag])=>
+  '<tr'+(flag?' class="flag"':'')+'><td><input type="checkbox" aria-label="Chọn '+id+'" /></td>'+
+  '<td><a class="mono" href="#">'+id+'</a></td><td class="mono">'+ord+'</td>'+
+  '<td class="num">'+ln+'</td><td class="mono tnum">'+rt+'</td><td>'+badge(st,'sm')+'</td></tr>').join('');
+
+// biz cards
+document.getElementById('bizCards').innerHTML = BIZ.map(([id,sub,meta,st])=>
+  '<div class="card"><div class="card-h"><div><div class="card-t mono" style="font-size:.9375rem">'+id+'</div><div class="card-sub">'+sub+'</div></div>'+badge(st,'sm')+'</div>'+
+  '<div style="font-size:.8125rem;color:var(--ink-secondary)">'+meta+'</div>'+
+  '<div class="row" style="margin-top:12px"><button class="btn btn-secondary btn-sm">Chi tiết</button><button class="btn btn-ghost btn-sm">Lịch sử</button></div></div>').join('');
+
+// event timeline
+document.getElementById('evTimeline').innerHTML = EVENTS.map(([t,m,d,c])=>
+  '<div class="tl-i '+c+'"><div class="tt">'+t+'</div><div class="tm">'+m+'</div><div class="td">'+d+'</div></div>').join('');
+
+// product grid
+document.getElementById('productGrid').innerHTML = PRODUCTS.map(([name,pid,price,av,avText,sws,dis])=>{
+  const avDot = av==='out'?'○':'●';
+  return '<article class="pcard"><div class="ph">🖼<button class="fav" aria-label="Thêm vào yêu thích">♡</button></div>'+
+    '<div class="pb"><div class="pname">'+name+'</div><div class="pvar mono">'+pid+'</div>'+
+    '<div class="stars">★★★★☆<span class="n">demo</span></div>'+
+    '<span class="price">'+VND(price)+'</span>'+
+    '<div class="avail '+av+'">'+avDot+' '+avText+'</div>'+
+    '<div class="swatches">'+sws.map(c=>'<span class="sw" style="background:'+c+'" title="'+c+'"></span>').join('')+'</div>'+
+    '<button class="btn '+(dis?'btn-secondary':'btn-primary')+'" style="width:100%;margin-top:8px"'+(dis?' disabled':'')+'>'+(dis?'Hết hàng':'Thêm vào giỏ')+'</button>'+
+    '</div></article>';
+}).join('');
+
+// cart lines + totals
+document.getElementById('cartLines').innerHTML = CART.map(([ic,name,v,q,price,inStock])=>
+  '<div class="cline"><div class="th">'+ic+'</div><div class="ci"><div class="cn">'+name+'</div><div class="cv">'+v+'</div>'+
+  (inStock?'':'<div class="avail out">○ Tạm hết hàng — sẽ giao sau</div>')+
+  '<div class="row" style="margin-top:8px"><div class="stepper"><button aria-label="Giảm">−</button><span class="qv">'+q+'</span><button aria-label="Tăng">+</button></div>'+
+  '<span class="price" style="font-size:1rem;margin-left:auto">'+VND(q*price)+'</span></div></div></div>').join('');
+
+// tracking timeline
+document.getElementById('trkTimeline').innerHTML = TRK.map(([t,m,d,c])=>
+  '<div class="tl-i '+c+'"><div class="tt">'+badge(t,'sm')+'</div><div class="tm">'+m+'</div><div class="td">'+d+'</div></div>').join('');
+
+// conversation list
+document.getElementById('convList').innerHTML = CONV.map(([id,subj,st,cust,sla,sales])=>
+  '<div class="box" style="padding:10px 14px;display:flex;align-items:center;gap:10px">'+
+  '<div class="avatar" style="width:30px;height:30px;font-size:.75rem">'+cust.split(' ').slice(-2).map(w=>w[0]).join('')+'</div>'+
+  '<div style="flex:1;min-width:0"><div style="font-size:.8125rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+subj+'</div>'+
+  '<div class="mono" style="font-size:.6875rem;color:var(--ink-tertiary)">'+id+' · '+cust+' · '+sales+'</div></div>'+
+  (sla!=='—'?'<span class="badge sm tone-'+(sla==='trễ'?'danger':'warning')+'"><span class="dot"></span>SLA '+sla+'</span>':'')+
+  badge(st,'sm')+'</div>').join('');
+
+// chat (real messages from messages[])
+const chatEl=document.getElementById('chatThread');
+if(chatEl){
+  chatEl.innerHTML = CHAT_MSGS.map(([sender,body,internalOnly,kind])=>{
+    if(internalOnly) return '<div class="note">🔒 Ghi chú nội bộ: '+body+'</div>';
+    if(kind==='product-link') return '<div class="rich"><div class="rt">👕</div><div><div style="font-weight:600;font-size:.8125rem">Áo Thun Cotton Cao Cấp</div><div style="font-size:.75rem;color:var(--ink-tertiary)">PRD-001 · <span class="mono">149.000đ</span> · còn 351</div></div></div>';
+    const cls = sender==='customer'?'cust':'sale';
+    return '<div class="bub '+cls+'">'+body+'<div class="meta">'+(sender==='customer'?CHAT_META[2]:(CHAT_META[4]||'Sales'))+'</div></div>';
+  }).join('');
+  // chat header
+  const ch=document.getElementById('chatHeader');
+  if(ch){ ch.querySelector('.card-t').textContent=CHAT_META[2];
+    ch.querySelector('.card-sub').textContent=CHAT_META[0]+' · kênh '+CHAT_META[3];
+    ch.querySelector('.chat-status').innerHTML=badge(CHAT_META.length>5?'Active':'Active','sm'); }
+}
+
+// customer grid
+document.getElementById('customerGrid').innerHTML = CUSTOMERS.map(([name,id,st,tier,seg,orders,spent,note])=>
+  '<div class="card"><div class="card-h"><div style="display:flex;gap:10px;align-items:center">'+
+  '<div class="avatar">'+name.replace(/[^A-Za-zÀ-ỹ ]/g,'').trim().split(' ').filter(Boolean).slice(-2).map(w=>w[0]).join('').slice(0,2).toUpperCase()+'</div>'+
+  '<div><div class="card-t" style="font-size:.9375rem">'+name+'</div><div class="card-sub mono" style="font-size:.6875rem">'+id+'</div></div></div>'+badge(st,'sm')+'</div>'+
+  '<div class="row" style="margin:8px 0"><span class="tier '+tier+'">● '+tier[0].toUpperCase()+tier.slice(1)+'</span><span class="tag">'+seg+'</span></div>'+
+  '<div class="kv"><dt>Đơn</dt><dd class="tnum">'+orders+'</dd><dt>Đã chi</dt><dd class="mono tnum">'+VND(spent)+'</dd>'+(note?'<dt>Ghi chú</dt><dd style="font-weight:400;color:var(--ink-secondary)">'+note+'</dd>':'')+'</div>'+
+  '</div>').join('');
+
+/* ============ THEME / MODE TOGGLE ============ */
+const root = document.documentElement;
+document.querySelectorAll('[data-setmode]').forEach(b=>{
+  b.addEventListener('click',()=>{ const m=b.dataset.setmode; root.dataset.mode=m;
+    document.querySelectorAll('[data-setmode]').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false')); });
+});
+const themeBtn=document.getElementById('themeBtn');
+themeBtn.addEventListener('click',()=>{
+  const dark = root.dataset.theme==='dark';
+  root.dataset.theme = dark?'light':'dark';
+  themeBtn.setAttribute('aria-pressed', dark?'false':'true');
+  themeBtn.querySelector('.ic').textContent = dark?'🌙':'☀️';
+  themeBtn.querySelector('.tx').textContent = dark?'Dark':'Light';
+});
+</script>
+</body>
+</html>
