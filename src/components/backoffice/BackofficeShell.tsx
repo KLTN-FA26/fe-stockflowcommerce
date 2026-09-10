@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "cn";
 import { useTheme } from "@/components/theme-provider";
 import { SearchBar } from "@/components/shared/SearchBar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import {
   warehouses,
   staffUsers,
@@ -179,20 +196,135 @@ function pathToBreadcrumb(pathname: string): string {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Sidebar nội dung — dùng shadcn primitives, giữ nguyên style StockFlow     */
+/* -------------------------------------------------------------------------- */
+
+function BackofficeSidebar() {
+  const pathname = usePathname();
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
+
+  const warningCounts = useMemo(() => computeWarningCounts(), []);
+
+  return (
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-border-default [&_[data-slot=sidebar-inner]]:bg-bg-subtle"
+    >
+      {/* Logo + nút thu nhỏ */}
+      <SidebarHeader
+        className={cn(
+          "h-12 shrink-0 flex-row items-center border-b border-border-default p-0",
+          collapsed ? "justify-center px-0" : "gap-1.5 px-3"
+        )}
+      >
+        {!collapsed && (
+          <span className="truncate font-[family-name:var(--font-display)] text-[1.05rem] font-bold tracking-tight text-ink-primary">
+            StockFlow<span className="text-accent">Commerce</span>
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-[var(--r-sm)] text-ink-tertiary transition-colors hover:bg-bg-muted hover:text-ink-primary",
+            !collapsed && "ml-auto"
+          )}
+          aria-label={collapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
+          title={collapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="size-4" />
+          ) : (
+            <PanelLeftClose className="size-4" />
+          )}
+        </button>
+      </SidebarHeader>
+
+      {/* Nav groups */}
+      <SidebarContent className="gap-0 px-2 py-2">
+        {NAV_GROUPS.map((group) => (
+          <SidebarGroup key={group.title} className="mb-1.5 gap-0 p-0">
+            {collapsed ? (
+              <div className="mx-auto my-1.5 w-8 border-t border-border-default" />
+            ) : (
+              <SidebarGroupLabel className="h-auto px-2.5 pt-3 pb-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink-tertiary">
+                {group.title}
+              </SidebarGroupLabel>
+            )}
+
+            <SidebarGroupContent>
+              <SidebarMenu
+                className={cn("gap-0.5", collapsed && "items-center")}
+              >
+                {group.items.map((item) => {
+                  const isActive =
+                    item.href === "/admin"
+                      ? pathname === "/admin"
+                      : pathname === item.href || pathname.startsWith(item.href + "/");
+                  const Icon = item.icon;
+                  const warnCount = warningCounts[item.href] ?? 0;
+
+                  return (
+                    <SidebarMenuItem
+                      key={item.href}
+                      className={cn(collapsed && "w-8")}
+                    >
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.tooltip}
+                        className={cn(
+                          "h-auto rounded-[var(--r-sm)] transition-colors duration-150",
+                          collapsed
+                            ? "justify-center gap-0 group-data-[collapsible=icon]:overflow-visible"
+                            : "gap-2.5 px-2.5 py-1.5 text-[0.8125rem]",
+                          isActive
+                            ? "bg-brand font-medium text-ink-inverse hover:bg-brand hover:text-ink-inverse data-active:bg-brand data-active:text-ink-inverse"
+                            : "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary"
+                        )}
+                      >
+                        <Link href={item.href}>
+                          <Icon className="size-4 shrink-0" />
+                          {!collapsed && <span className="truncate">{item.label}</span>}
+                        </Link>
+                      </SidebarMenuButton>
+
+                      {/* Warning dot */}
+                      {warnCount > 0 &&
+                        (collapsed ? (
+                          <span className="pointer-events-none absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-positive text-[0.5625rem] font-bold leading-none text-white ring-2 ring-bg-subtle">
+                            {warnCount}
+                          </span>
+                        ) : (
+                          <SidebarMenuBadge className="inset-y-0 my-auto size-[18px] min-w-0 justify-center rounded-full bg-positive px-0 text-[0.5625rem] font-bold leading-none text-white peer-data-[size=default]/menu-button:top-0 peer-hover/menu-button:text-white peer-data-active/menu-button:text-white">
+                            {warnCount}
+                          </SidebarMenuBadge>
+                        ))}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+
+    </Sidebar>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Shell                                                                    */
 /* -------------------------------------------------------------------------- */
 
 export function BackofficeShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("all");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [whMenuOpen, setWhMenuOpen] = useState(false);
-
-  const warningCounts = useMemo(() => computeWarningCounts(), []);
-
-  const toggleCollapsed = useCallback(() => setCollapsed((c) => !c), []);
 
   const selectedWhLabel = useMemo(() => {
     if (selectedWarehouse === "all") return "Tất cả kho";
@@ -203,277 +335,194 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
   const currentPageLabel = pathToBreadcrumb(pathname);
 
   return (
-    <div data-mode="A" className="grid min-h-screen grid-cols-1 bg-bg-surface lg:grid-cols-[auto_1fr]">
-      {/* ================================================================== */}
-      {/*  Sidebar                                                          */}
-      {/* ================================================================== */}
-      <aside
-        className={cn(
-          "hidden sticky top-0 h-screen flex-col border-r border-border-default bg-bg-subtle transition-[width] duration-200 ease-in-out lg:flex",
-          collapsed ? "w-[60px]" : "w-[240px]"
-        )}
+    <TooltipProvider>
+      <SidebarProvider
+        data-mode="A"
+        className="bg-bg-surface"
+        style={
+          {
+            "--sidebar-width": "240px",
+            "--sidebar-width-icon": "60px",
+          } as React.CSSProperties
+        }
       >
-        {/* Logo */}
-        <div
-          className={cn(
-            "flex h-12 shrink-0 items-center border-b border-border-default px-3",
-            collapsed ? "justify-center" : "gap-1.5"
-          )}
-        >
-          {collapsed ? (
-            <span className="font-[family-name:var(--font-display)] text-[1.1rem] font-bold text-accent">
-              SF
-            </span>
-          ) : (
-            <span className="font-[family-name:var(--font-display)] text-[1.05rem] font-bold tracking-tight text-ink-primary">
-              StockFlow<span className="text-accent">Commerce</span>
-            </span>
-          )}
-        </div>
+        <BackofficeSidebar />
 
-        {/* Nav groups — scrollable */}
-        <nav className="flex-1 overflow-y-auto px-2 py-2">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.title} className="mb-1.5">
-              {/* Group title */}
-              {!collapsed && (
-                <div className="px-2.5 pb-0.5 pt-3 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink-tertiary">
-                  {group.title}
-                </div>
+        {/* ================================================================== */}
+        {/*  Main area                                                        */}
+        {/* ================================================================== */}
+        <SidebarInset className="flex min-h-0 min-w-0 flex-col bg-bg-surface">
+          {/* Topbar */}
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border-default bg-bg-surface px-4">
+            {/* Mobile sidebar trigger */}
+            <SidebarTrigger className="size-8 shrink-0 text-ink-secondary hover:bg-bg-muted hover:text-ink-primary md:hidden" />
+
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1 text-[0.8125rem]">
+              <Link href="/admin" className="text-ink-tertiary transition-colors hover:text-ink-primary">
+                Back-office
+              </Link>
+              {currentPageLabel !== "Tổng quan" && (
+                <>
+                  <span className="text-ink-tertiary">/</span>
+                  <span className="font-medium text-ink-primary">{currentPageLabel}</span>
+                </>
               )}
-              {collapsed && <div className="my-1.5 border-t border-border-default" />}
+            </nav>
 
-              {group.items.map((item) => {
-                const isActive =
-                  item.href === "/admin"
-                    ? pathname === "/admin"
-                    : pathname === item.href || pathname.startsWith(item.href + "/");
-                const Icon = item.icon;
-                const warnCount = warningCounts[item.href] ?? 0;
+            <div className="flex-1" />
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={collapsed ? item.tooltip : undefined}
-                    className={cn(
-                      "group relative mb-0.5 flex items-center rounded-[var(--r-sm)] transition-colors duration-150",
-                      collapsed
-                        ? "justify-center px-0 py-2"
-                        : "gap-2.5 px-2.5 py-1.5 text-[0.8125rem]",
-                      isActive
-                        ? "bg-brand font-medium text-ink-inverse"
-                        : "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary"
-                    )}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                    {/* Warning dot */}
-                    {warnCount > 0 && (
-                      <span
-                        className={cn(
-                          "flex items-center justify-center rounded-full bg-warning text-[0.5625rem] font-bold text-white",
-                          collapsed
-                            ? "absolute -top-0.5 -right-0.5 size-4"
-                            : "ml-auto size-[18px]"
-                        )}
-                      >
-                        {warnCount}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
+            {/* Global search */}
+            <SearchBar
+              placeholder="Tìm nhanh (⌘K)"
+              className="max-w-[240px]"
+              aria-label="Tìm toàn cục"
+            />
 
-        {/* Collapse toggle */}
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          className="flex h-10 shrink-0 items-center justify-center border-t border-border-default text-ink-tertiary transition-colors hover:text-ink-primary"
-          aria-label={collapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="size-4" />
-          ) : (
-            <PanelLeftClose className="size-4" />
-          )}
-        </button>
-      </aside>
-
-      {/* ================================================================== */}
-      {/*  Main area                                                        */}
-      {/* ================================================================== */}
-      <div className="flex min-h-0 flex-col">
-        {/* Topbar */}
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border-default bg-bg-surface px-4">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1 text-[0.8125rem]">
-            <Link href="/admin" className="text-ink-tertiary transition-colors hover:text-ink-primary">
-              Back-office
-            </Link>
-            {currentPageLabel !== "Tổng quan" && (
-              <>
-                <span className="text-ink-tertiary">/</span>
-                <span className="font-medium text-ink-primary">{currentPageLabel}</span>
-              </>
-            )}
-          </nav>
-
-          <div className="flex-1" />
-
-          {/* Global search */}
-          <SearchBar
-            placeholder="Tìm nhanh (⌘K)"
-            className="max-w-[240px]"
-            aria-label="Tìm toàn cục"
-          />
-
-          {/* Warehouse selector dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setWhMenuOpen((o) => !o);
-                setUserMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-2.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
-            >
-              <WarehouseIcon className="size-3.5" />
-              <span>{selectedWhLabel}</span>
-              <ChevronDown className="size-3" />
-            </button>
-            {whMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-[800]" onClick={() => setWhMenuOpen(false)} />
-                <div className="absolute right-0 top-full z-[801] mt-1 w-56 rounded-[var(--r-md)] border border-border-default bg-bg-surface py-1 shadow-[var(--sh-lg)]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedWarehouse("all");
-                      setWhMenuOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
-                      selectedWarehouse === "all"
-                        ? "font-medium text-accent"
-                        : "text-ink-secondary"
-                    )}
-                  >
-                    Tất cả kho
-                  </button>
-                  {warehouses.map((wh: Warehouse) => (
+            {/* Warehouse selector dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setWhMenuOpen((o) => !o);
+                  setUserMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-2.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+              >
+                <WarehouseIcon className="size-3.5" />
+                <span>{selectedWhLabel}</span>
+                <ChevronDown className="size-3" />
+              </button>
+              {whMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[800]" onClick={() => setWhMenuOpen(false)} />
+                  <div className="absolute right-0 top-full z-[801] mt-1 w-56 rounded-[var(--r-md)] border border-border-default bg-bg-surface py-1 shadow-[var(--sh-lg)]">
                     <button
-                      key={wh.warehouseId}
                       type="button"
                       onClick={() => {
-                        setSelectedWarehouse(wh.warehouseId);
+                        setSelectedWarehouse("all");
                         setWhMenuOpen(false);
                       }}
                       className={cn(
                         "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
-                        selectedWarehouse === wh.warehouseId
+                        selectedWarehouse === "all"
                           ? "font-medium text-accent"
                           : "text-ink-secondary"
                       )}
                     >
-                      <span className="font-[family-name:var(--font-mono)] text-xs text-ink-tertiary">
-                        {wh.code}
-                      </span>
-                      <span className="truncate">{wh.name}</span>
+                      Tất cả kho
                     </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                    {warehouses.map((wh: Warehouse) => (
+                      <button
+                        key={wh.warehouseId}
+                        type="button"
+                        onClick={() => {
+                          setSelectedWarehouse(wh.warehouseId);
+                          setWhMenuOpen(false);
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
+                          selectedWarehouse === wh.warehouseId
+                            ? "font-medium text-accent"
+                            : "text-ink-secondary"
+                        )}
+                      >
+                        <span className="font-[family-name:var(--font-mono)] text-xs text-ink-tertiary">
+                          {wh.code}
+                        </span>
+                        <span className="truncate">{wh.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
 
-          {/* Theme toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex size-8 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-secondary transition-colors hover:text-ink-primary"
-            aria-label={theme === "dark" ? "Chuyển sang Light" : "Chuyển sang Dark"}
-          >
-            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          </button>
-
-          {/* User menu */}
-          <div className="relative">
+            {/* Theme toggle */}
             <button
               type="button"
-              onClick={() => {
-                setUserMenuOpen((o) => !o);
-                setWhMenuOpen(false);
-              }}
-              className="flex items-center gap-2 rounded-[var(--r-sm)] px-1 py-0.5 transition-colors hover:bg-bg-muted"
+              onClick={toggleTheme}
+              className="flex size-8 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-secondary transition-colors hover:text-ink-primary"
+              aria-label={theme === "dark" ? "Chuyển sang Light" : "Chuyển sang Dark"}
             >
-              <div className="flex size-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
-                {currentUser.fullName
-                  .split(" ")
-                  .slice(-2)
-                  .map((w) => w[0])
-                  .join("")}
-              </div>
+              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
-            {userMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-[800]" onClick={() => setUserMenuOpen(false)} />
-                <div className="absolute right-0 top-full z-[801] mt-1 w-64 rounded-[var(--r-md)] border border-border-default bg-bg-surface py-1 shadow-[var(--sh-lg)]">
-                  {/* User info header */}
-                  <div className="border-b border-border-default px-3 py-2">
-                    <div className="text-[0.8125rem] font-semibold text-ink-primary">
-                      {currentUser.fullName}
-                    </div>
-                    <div className="text-xs text-ink-tertiary">{currentUser.email}</div>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {currentUser.roles.map((role) => (
-                        <span
-                          key={role}
-                          className="rounded-full bg-bg-subtle px-2 py-0.5 text-[0.625rem] font-medium text-ink-secondary"
-                        >
-                          {role}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Menu items */}
-                  <button
-                    type="button"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
-                  >
-                    <User className="size-3.5" />
-                    Hồ sơ cá nhân
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
-                  >
-                    <Settings className="size-3.5" />
-                    Cài đặt
-                  </button>
-                  <div className="my-1 border-t border-border-default" />
-                  <button
-                    type="button"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-danger transition-colors hover:bg-bg-muted"
-                  >
-                    <LogOut className="size-3.5" />
-                    Đăng xuất
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
 
-        {/* Content */}
-        <main className="flex-1 overflow-auto p-4">{children}</main>
-      </div>
-    </div>
+            {/* User menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setUserMenuOpen((o) => !o);
+                  setWhMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-[var(--r-sm)] px-1 py-0.5 transition-colors hover:bg-bg-muted"
+              >
+                <div className="flex size-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
+                  {currentUser.fullName
+                    .split(" ")
+                    .slice(-2)
+                    .map((w) => w[0])
+                    .join("")}
+                </div>
+              </button>
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[800]" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-full z-[801] mt-1 w-64 rounded-[var(--r-md)] border border-border-default bg-bg-surface py-1 shadow-[var(--sh-lg)]">
+                    {/* User info header */}
+                    <div className="border-b border-border-default px-3 py-2">
+                      <div className="text-[0.8125rem] font-semibold text-ink-primary">
+                        {currentUser.fullName}
+                      </div>
+                      <div className="text-xs text-ink-tertiary">{currentUser.email}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {currentUser.roles.map((role) => (
+                          <span
+                            key={role}
+                            className="rounded-full bg-bg-subtle px-2 py-0.5 text-[0.625rem] font-medium text-ink-secondary"
+                          >
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Menu items */}
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                    >
+                      <User className="size-3.5" />
+                      Hồ sơ cá nhân
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                    >
+                      <Settings className="size-3.5" />
+                      Cài đặt
+                    </button>
+                    <div className="my-1 border-t border-border-default" />
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-danger transition-colors hover:bg-bg-muted"
+                    >
+                      <LogOut className="size-3.5" />
+                      Đăng xuất
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </header>
+
+          {/* Content */}
+          <main className="flex-1 overflow-auto p-4">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }
