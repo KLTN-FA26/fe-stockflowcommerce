@@ -33,7 +33,7 @@ export function HomeHeader() {
             aria-label={theme === "dark" ? "Chuyển sang Light" : "Chuyển sang Dark"}
             className="rounded-[var(--r-sm)]"
           >
-            {theme === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
           <Button asChild variant="outline" className="rounded-[var(--r-sm)] px-4">
             <Link href={APP_ROUTES.login}>{HOME_COPY.loginLabel}</Link>
