@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/shared/Card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "@/components/shared/Toast";
@@ -367,12 +371,13 @@ export default function PurchaseOrderCreatePage() {
               const Icon = step.icon;
               const status = stepStatus(step.key);
               return (
-                <button
+                <Button
                   key={step.key}
                   type="button"
+                  variant="ghost"
                   onClick={() => setCurrentStep(step.key)}
                   className={cn(
-                    "mb-1 flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
+                    "mb-1 flex w-full justify-start gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
                     status === "active" && "bg-brand font-medium text-ink-inverse",
                     status !== "active" && "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
                     status === "error" && "border border-danger/30 bg-danger/5 text-danger"
@@ -383,7 +388,7 @@ export default function PurchaseOrderCreatePage() {
                   </span>
                   <Icon className="size-3.5" />
                   <span className="flex-1">{step.label}</span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -446,8 +451,10 @@ export default function PurchaseOrderCreatePage() {
             Bước {currentStepIndex + 1}/{STEPS.length} · {STEPS[currentStepIndex]?.label}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 toast.success("Đã lưu nháp", "Dữ liệu PO mock được giữ trong phiên làm việc hiện tại.");
               }}
@@ -455,33 +462,37 @@ export default function PurchaseOrderCreatePage() {
             >
               <Save className="size-3.5" />
               Lưu nháp
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={goBack}
               disabled={currentStepIndex === 0}
               className="rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted disabled:opacity-40"
             >
               Quay lại
-            </button>
+            </Button>
             {currentStep !== "review" ? (
-              <button
+              <Button variant="default"
                 type="button"
+                size="sm"
                 onClick={goNext}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 Tiếp tục
                 <ArrowRight className="size-3.5" />
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="default"
                 type="button"
+                size="sm"
                 onClick={handleSubmitAttempt}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 <Send className="size-3.5" />
                 Gửi duyệt
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -525,43 +536,49 @@ function InfoStep({
           <label className="mb-1 block text-xs font-medium text-ink-secondary">
             Nhà cung cấp <span className="text-danger">*</span>
           </label>
-          <select
-            value={form.supplierId}
-            onChange={(e) => onSupplierChange(e.target.value)}
-            className={fieldClass(showErrors && !form.supplierId)}
-          >
-            <option value="">Chọn nhà cung cấp</option>
-            {activeSuppliers.map((supplier) => (
-              <option key={supplier.supplierId} value={supplier.supplierId}>
-                {supplier.name}
-              </option>
-            ))}
-          </select>
+          <Select value={form.supplierId} onValueChange={onSupplierChange}>
+            <SelectTrigger size="default" aria-label="Nhà cung cấp" className={fieldClass(showErrors && !form.supplierId)}>
+              <SelectValue placeholder="Chọn nhà cung cấp" />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>Nhà cung cấp</SelectLabel>
+                {activeSuppliers.map((supplier) => (
+                <SelectItem key={supplier.supplierId} value={supplier.supplierId}>
+                  {supplier.name}
+                </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
           <FieldError>{showErrors && !form.supplierId ? "Nhà cung cấp là bắt buộc." : undefined}</FieldError>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">
             Kho nhận <span className="text-danger">*</span>
           </label>
-          <select
-            value={form.warehouseId}
-            onChange={(e) => update("warehouseId", e.target.value)}
-            className={fieldClass(showErrors && !form.warehouseId)}
-          >
-            <option value="">Chọn kho nhận</option>
-            {activeWarehouses.map((warehouse) => (
-              <option key={warehouse.warehouseId} value={warehouse.warehouseId}>
-                {warehouse.name}
-              </option>
-            ))}
-          </select>
+          <Select value={form.warehouseId} onValueChange={(value) => update("warehouseId", value)}>
+            <SelectTrigger size="default" aria-label="Kho nhận" className={fieldClass(showErrors && !form.warehouseId)}>
+              <SelectValue placeholder="Chọn kho nhận" />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>Kho nhận</SelectLabel>
+                {activeWarehouses.map((warehouse) => (
+                <SelectItem key={warehouse.warehouseId} value={warehouse.warehouseId}>
+                  {warehouse.name}
+                </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
           <FieldError>{showErrors && !form.warehouseId ? "Kho nhận là bắt buộc." : undefined}</FieldError>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">
             Ngày đặt <span className="text-danger">*</span>
           </label>
-          <input
+          <Input
             type="date"
             value={form.orderDate}
             onChange={(e) => update("orderDate", e.target.value)}
@@ -573,7 +590,7 @@ function InfoStep({
           <label className="mb-1 block text-xs font-medium text-ink-secondary">
             Ngày giao dự kiến <span className="text-danger">*</span>
           </label>
-          <input
+          <Input
             type="date"
             value={form.expectedDate}
             onChange={(e) => update("expectedDate", e.target.value)}
@@ -588,11 +605,11 @@ function InfoStep({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Đơn vị tiền tệ</label>
-          <input value={form.currency || selectedSupplier?.currency || "VND"} readOnly className={fieldClass()} />
+          <Input value={form.currency || selectedSupplier?.currency || "VND"} readOnly className={fieldClass()} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Điều khoản thanh toán</label>
-          <input
+          <Input
             value={form.paymentTerms}
             onChange={(e) => update("paymentTerms", e.target.value)}
             placeholder="Net 30"
@@ -601,7 +618,7 @@ function InfoStep({
         </div>
         <div className="lg:col-span-2">
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Ghi chú</label>
-          <textarea
+          <Textarea
             value={form.notes}
             onChange={(e) => update("notes", e.target.value)}
             rows={3}
@@ -646,14 +663,16 @@ function LinesStep({
     <Card>
       <div className="mb-4 flex items-start justify-between gap-3">
         <SectionTitle title="Dòng hàng" description="Thêm SKU Active, số lượng đặt, đơn giá, thuế và chiết khấu theo từng dòng." />
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={onAddLine}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
         >
           <Plus className="size-3.5" />
           Thêm dòng hàng
-        </button>
+        </Button>
       </div>
 
       {form.lines.length === 0 ? (
@@ -675,39 +694,44 @@ function LinesStep({
                       <div className="text-xs text-ink-tertiary">{selectedSku?.variantLabel ?? "Chưa chọn SKU"}</div>
                     </div>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="icon"
                     onClick={() => onRemoveLine(line.id)}
                     className="flex size-8 items-center justify-center rounded-[var(--r-sm)] border border-danger/30 text-danger transition-colors hover:bg-danger/10"
                     aria-label="Xóa dòng hàng"
                   >
                     <Trash2 className="size-3.5" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.4fr)_100px_130px_100px_120px_80px_140px]">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">
                       SKU <span className="text-danger">*</span>
                     </label>
-                    <select
-                      value={line.skuId}
-                      onChange={(e) => onSkuChange(line.id, e.target.value)}
-                      className={fieldClass(showErrors && (!line.skuId || hasDuplicate))}
-                    >
-                      <option value="">Chọn SKU</option>
-                      {activeSkus.map((sku) => (
-                        <option key={sku.skuId} value={sku.skuId}>
-                          {sku.skuId} — {sku.variantLabel}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={line.skuId} onValueChange={(value) => onSkuChange(line.id, value)}>
+                      <SelectTrigger size="default" aria-label={`SKU dòng ${index + 1}`} className={fieldClass(showErrors && (!line.skuId || hasDuplicate))}>
+                        <SelectValue placeholder="Chọn SKU" />
+                      </SelectTrigger>
+                      <SelectContent align="start">
+                        <SelectGroup>
+                          <SelectLabel>SKU dòng {index + 1}</SelectLabel>
+                          {activeSkus.map((sku) => (
+                          <SelectItem key={sku.skuId} value={sku.skuId}>
+                            {sku.skuId} — {sku.variantLabel}
+                          </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                     {hasDuplicate && <FieldError>SKU bị trùng trong PO.</FieldError>}
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">
                       SL đặt <span className="text-danger">*</span>
                     </label>
-                    <input
+                    <Input
                       value={line.orderedQty}
                       onChange={(e) => updateLine(line.id, { orderedQty: e.target.value })}
                       type="number"
@@ -720,7 +744,7 @@ function LinesStep({
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">
                       Đơn giá <span className="text-danger">*</span>
                     </label>
-                    <input
+                    <Input
                       value={line.unitPrice}
                       onChange={(e) => updateLine(line.id, { unitPrice: e.target.value })}
                       type="number"
@@ -731,7 +755,7 @@ function LinesStep({
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">Thuế (%)</label>
-                    <input
+                    <Input
                       value={String((Number(line.taxRate) || 0) * 100)}
                       onChange={(e) => updateLine(line.id, { taxRate: String((Number(e.target.value) || 0) / 100) })}
                       type="number"
@@ -742,7 +766,7 @@ function LinesStep({
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">Chiết khấu (%)</label>
-                    <input
+                    <Input
                       value={String((Number(line.discountRate) || 0) * 100)}
                       onChange={(e) => updateLine(line.id, { discountRate: String((Number(e.target.value) || 0) / 100) })}
                       type="number"
@@ -753,11 +777,11 @@ function LinesStep({
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">UoM</label>
-                    <input value={line.uom} readOnly className={fieldClass()} />
+                    <Input value={line.uom} readOnly className={fieldClass()} />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-ink-secondary">Thành tiền</label>
-                    <input value={formatMoney(lineTotal(line), currency)} readOnly className={cn(fieldClass(), "text-right tabular-nums")} />
+                    <Input value={formatMoney(lineTotal(line), currency)} readOnly className={cn(fieldClass(), "text-right tabular-nums")} />
                   </div>
                 </div>
               </div>
@@ -883,10 +907,10 @@ function ReviewStep({
           </div>
           `Gửi duyệt` chỉ cập nhật trạng thái preview trong UI. Không có API call và không thêm record vào mock data.
         </div>
-        <button type="button" onClick={onSubmit} className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover">
+        <Button variant="default" type="button" size="sm" onClick={onSubmit} className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse">
           <Send className="size-3.5" />
           Gửi duyệt
-        </button>
+        </Button>
       </Card>
     </div>
   );

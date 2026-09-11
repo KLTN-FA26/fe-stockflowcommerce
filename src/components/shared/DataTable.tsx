@@ -9,9 +9,18 @@ import {
   TableRow,
   TableHead,
   TableCell,
-  TableCaption,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -34,6 +43,10 @@ export interface ColumnDef<T> {
   className?: string;
   /** Header extra class */
   headerClassName?: string;
+  searchable?: boolean;
+  headerSearch?: ReactNode;
+  headerFilter?: ReactNode;
+  hasHeaderFilter?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -56,6 +69,7 @@ interface DataTableProps<T> {
   onSelectionChange?: (keys: Set<string>) => void;
   /** Page size. Default 10. */
   pageSize?: number;
+  pageSizeOptions?: number[];
   className?: string;
 }
 
@@ -72,11 +86,13 @@ export function DataTable<T>({
   selectedKeys,
   onSelectionChange,
   pageSize = 10,
+  pageSizeOptions = [10, 15, 20, 50],
   className,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(0);
+  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
 
   // Sort
   const sorted = useMemo(() => {
@@ -91,9 +107,10 @@ export function DataTable<T>({
   }, [data, columns, sortKey, sortDir]);
 
   // Paginate
-  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / currentPageSize));
   const safePage = Math.min(page, totalPages - 1);
-  const pageData = sorted.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const pageData = sorted.slice(safePage * currentPageSize, (safePage + 1) * currentPageSize);
+  const shouldScroll = pageData.length > 10;
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -102,6 +119,11 @@ export function DataTable<T>({
       setSortKey(key);
       setSortDir("asc");
     }
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setCurrentPageSize(Number(value));
+    setPage(0);
   };
 
   // Selection helpers
@@ -127,9 +149,9 @@ export function DataTable<T>({
 
   return (
     <div className={cn("overflow-hidden rounded-[var(--r-sm)] border border-border-default bg-bg-surface", className)}>
-      <Table>
-        {caption && <TableCaption>{caption}</TableCaption>}
-        <TableHeader>
+      <div className={cn(shouldScroll && "max-h-[520px] overflow-y-auto")}>
+        <Table>
+        <TableHeader className={cn(shouldScroll && "sticky top-0 z-10")}>
           <TableRow className="border-border-default bg-bg-subtle hover:bg-bg-subtle">
             {selectable && (
               <TableHead className="w-[34px]">
@@ -141,24 +163,37 @@ export function DataTable<T>({
                 key={col.key}
                 className={cn(
                   "text-xs font-semibold text-ink-secondary",
-                  col.sortable && "cursor-pointer select-none hover:text-ink-primary",
                   col.align === "right" && "text-right",
                   col.headerClassName
                 )}
-                onClick={() => col.sortable && handleSort(col.key)}
               >
-                <span className="inline-flex items-center gap-1">
-                  {col.header}
-                  {col.sortable && (
-                    <span className="text-ink-tertiary">
-                      {sortKey === col.key ? (
-                        sortDir === "asc" ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />
-                      ) : (
-                        <ChevronsUpDown className="size-3 opacity-40" />
-                      )}
-                    </span>
-                  )}
-                </span>
+                <div className={cn("flex items-center gap-1.5", col.align === "right" && "justify-end")}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    disabled={!col.sortable}
+                    onClick={() => col.sortable && handleSort(col.key)}
+                    className={cn(
+                      "h-auto min-w-0 justify-start gap-1 rounded-none bg-transparent p-0 text-left text-xs font-semibold text-ink-secondary hover:bg-transparent",
+                      col.sortable && "cursor-pointer select-none hover:text-ink-primary",
+                      !col.sortable && "cursor-default opacity-100 disabled:opacity-100"
+                    )}
+                  >
+                    <span className="truncate">{col.header}</span>
+                    {col.sortable && (
+                      <span className="shrink-0 text-ink-tertiary">
+                        {sortKey === col.key ? (
+                          sortDir === "asc" ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />
+                        ) : (
+                          <ChevronsUpDown className="size-3 opacity-40" />
+                        )}
+                      </span>
+                    )}
+                  </Button>
+                  {col.headerFilter}
+                </div>
+                {col.headerSearch && <div className="mt-1.5 w-full">{col.headerSearch}</div>}
               </TableHead>
             ))}
           </TableRow>
@@ -212,50 +247,80 @@ export function DataTable<T>({
             })
           )}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
-      {/* Pagination footer */}
-      {totalPages > 1 && (
+      {(caption || totalPages > 1) && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-default bg-bg-subtle px-3.5 py-2 text-xs text-ink-secondary">
-          <span>
-            Hiển thị {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} / {sorted.length}
-          </span>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              disabled={safePage === 0}
-              onClick={() => setPage((p) => p - 1)}
-              className="flex size-7 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-secondary hover:text-ink-primary disabled:opacity-40"
-              aria-label="Trước"
-            >
-              ‹
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-current={i === safePage ? "true" : undefined}
-                onClick={() => setPage(i)}
-                className={cn(
-                  "flex min-w-7 size-7 items-center justify-center rounded-[var(--r-sm)] border text-xs",
-                  i === safePage
-                    ? "border-brand bg-brand text-ink-inverse font-medium"
-                    : "border-border-default bg-bg-surface text-ink-secondary hover:text-ink-primary"
-                )}
-              >
-                {i + 1}
-              </button>
-            ))}
-            <button
-              type="button"
-              disabled={safePage >= totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-              className="flex size-7 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-secondary hover:text-ink-primary disabled:opacity-40"
-              aria-label="Sau"
-            >
-              ›
-            </button>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-ink-tertiary">Dòng/trang</span>
+              <Select value={String(currentPageSize)} onValueChange={handlePageSizeChange}>
+                <SelectTrigger size="sm" aria-label="Dòng mỗi trang" className="h-7 rounded-[var(--r-sm)] bg-bg-surface px-2 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="start">
+                  <SelectGroup>
+                    <SelectLabel>Dòng/trang</SelectLabel>
+                    {pageSizeOptions.map((option) => (
+                    <SelectItem key={option} value={String(option)} className="text-xs">
+                      {option}
+                    </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <span>
+              {totalPages > 1
+                ? `Hiển thị ${safePage * currentPageSize + 1}–${Math.min((safePage + 1) * currentPageSize, sorted.length)} / ${sorted.length}`
+                : caption ?? `Hiển thị ${sorted.length} / ${sorted.length}`}
+            </span>
           </div>
+          {totalPages > 1 && (
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                disabled={safePage === 0}
+                onClick={() => setPage((p) => p - 1)}
+                className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary disabled:opacity-40"
+                aria-label="Trước"
+              >
+                ‹
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <Button
+                  key={i}
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-current={i === safePage ? "true" : undefined}
+                  onClick={() => setPage(i)}
+                  className={cn(
+                    "min-w-7 rounded-[var(--r-sm)] border text-xs",
+                    i === safePage
+                      ? "border-brand bg-brand font-medium text-ink-inverse hover:bg-brand hover:text-ink-inverse"
+                      : "border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary"
+                  )}
+                >
+                  {i + 1}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                disabled={safePage >= totalPages - 1}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary disabled:opacity-40"
+                aria-label="Sau"
+              >
+                ›
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

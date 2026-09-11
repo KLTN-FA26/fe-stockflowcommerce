@@ -15,6 +15,7 @@ import {
   Box,
   Tag,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "@/components/shared/Toast";
@@ -167,14 +168,14 @@ export default function SkuDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => toast.info("Chỉnh sửa SKU", "Chức năng đang phát triển.")}
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
             >
               <Pencil className="size-3.5" />
               Chỉnh sửa
-            </button>
+            </Button>
             <Link
               href="/admin/products"
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
@@ -192,7 +193,7 @@ export default function SkuDetailPage() {
           <StatusBadge domain="sku" status={sku.status} size="md" withIcon />
           <span className="text-xs text-ink-tertiary">→</span>
           {actions.map((act) => (
-            <button
+            <Button variant="ghost"
               key={act.next}
               type="button"
               onClick={() => handleStatusChange(act.next)}
@@ -202,7 +203,7 @@ export default function SkuDetailPage() {
               )}
             >
               {act.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -217,13 +218,13 @@ export default function SkuDetailPage() {
             title="Thông tin chung"
             icon={Barcode}
             actions={
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => toast.info("Chỉnh sửa thông tin", "Chức năng đang phát triển.")}
                 className="rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
               >
                 <Pencil className="inline size-3" />
-              </button>
+              </Button>
             }
           >
             <div className="divide-y divide-border-default">

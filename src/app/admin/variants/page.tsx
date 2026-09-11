@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "cn";
 import {
@@ -11,13 +11,18 @@ import {
   Package,
   Hash,
   Pipette,
+  BarChart3,
   Eye,
   X,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatTile } from "@/components/shared/StatTile";
-import { SearchBar } from "@/components/shared/SearchBar";
+import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
+import { ListToolbar, type ListSummaryItem } from "@/components/shared/ListToolbar";
 import { toast } from "@/components/shared/Toast";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   products,
@@ -37,6 +42,32 @@ interface AggregatedAttribute {
   productCount: number;
   productIds: string[];
 }
+
+type VariantSearchField = "attributeId" | "nameVi" | "nameEn" | "values";
+
+interface VariantsPageConfig {
+  showStats: boolean;
+  globalSearch: {
+    query: string;
+    fields: VariantSearchField[];
+  };
+}
+
+const STORAGE_KEY = "stockflow:admin:variants:config";
+const DEFAULT_CONFIG: VariantsPageConfig = {
+  showStats: false,
+  globalSearch: {
+    query: "",
+    fields: ["attributeId", "nameVi", "nameEn"],
+  },
+};
+
+const SEARCH_FIELDS: { label: string; value: VariantSearchField; getValue: (attr: AggregatedAttribute) => string }[] = [
+  { label: "Mã thuộc tính", value: "attributeId", getValue: (attr) => attr.attributeId },
+  { label: "Tên VI", value: "nameVi", getValue: (attr) => attr.name.vi },
+  { label: "Tên EN", value: "nameEn", getValue: (attr) => attr.name.en },
+  { label: "Giá trị", value: "values", getValue: (attr) => attr.values.join(" ") },
+];
 
 function aggregateAttributes(productList: Product[]): AggregatedAttribute[] {
   const map = new Map<
@@ -90,8 +121,8 @@ export default function VariantAttributesPage() {
   const [addedValues, setAddedValues] = useState<Map<string, string[]>>(new Map());
   const [removedValues, setRemovedValues] = useState<Map<string, Set<string>>>(new Map());
 
-  /* Search */
-  const [search, setSearch] = useState("");
+  const [config, setConfig] = useState<VariantsPageConfig>(DEFAULT_CONFIG);
+  const [mounted, setMounted] = useState(false);
 
   /* Create dialog */
   const [createOpen, setCreateOpen] = useState(false);
@@ -102,6 +133,39 @@ export default function VariantAttributesPage() {
 
   /* Delete dialog */
   const [deleteTarget, setDeleteTarget] = useState<AggregatedAttribute | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const stored = JSON.parse(raw) as Partial<VariantsPageConfig>;
+        setConfig({
+          ...DEFAULT_CONFIG,
+          ...stored,
+          globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
+        });
+      }
+    } catch {
+      setConfig(DEFAULT_CONFIG);
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  }, [config, mounted]);
+
+  const updateConfig = (updater: (current: VariantsPageConfig) => VariantsPageConfig) => setConfig((current) => updater(current));
+
+  const toggleSearchField = (field: VariantSearchField) => {
+    updateConfig((current) => {
+      const fields = current.globalSearch.fields.includes(field)
+        ? current.globalSearch.fields.filter((item) => item !== field)
+        : [...current.globalSearch.fields, field];
+      return { ...current, globalSearch: { ...current.globalSearch, fields } };
+    });
+  };
 
   /* Effective attributes list */
   const effectiveAttributes = useMemo(() => {
@@ -119,15 +183,13 @@ export default function VariantAttributesPage() {
 
   /* Filtered */
   const filtered = useMemo(() => {
-    if (!search.trim()) return effectiveAttributes;
-    const q = search.toLowerCase();
-    return effectiveAttributes.filter(
-      (a) =>
-        a.name.vi.toLowerCase().includes(q) ||
-        a.name.en.toLowerCase().includes(q) ||
-        a.attributeId.toLowerCase().includes(q)
+    const q = config.globalSearch.query.trim().toLowerCase();
+    if (!q || config.globalSearch.fields.length === 0) return effectiveAttributes;
+    const fieldMap = new Map(SEARCH_FIELDS.map((field) => [field.value, field.getValue]));
+    return effectiveAttributes.filter((attr) =>
+      config.globalSearch.fields.some((field) => (fieldMap.get(field)?.(attr) ?? "").toLowerCase().includes(q))
     );
-  }, [effectiveAttributes, search]);
+  }, [effectiveAttributes, config.globalSearch]);
 
   /* Stats */
   const stats = useMemo(() => {
@@ -198,6 +260,16 @@ export default function VariantAttributesPage() {
     toast.info("Xoá giá trị", `"${value}" đã được xoá.`);
   }, []);
 
+  const hasGlobalSearch = Boolean(config.globalSearch.query.trim());
+  const hasFieldConfig = config.globalSearch.fields.length !== DEFAULT_CONFIG.globalSearch.fields.length ||
+    config.globalSearch.fields.some((field) => !DEFAULT_CONFIG.globalSearch.fields.includes(field));
+  const hasAnyConfig = config.showStats || hasGlobalSearch || hasFieldConfig;
+  const summaryItems: ListSummaryItem[] = [
+    { label: "Stats", value: config.showStats ? "Đang hiện" : "Đang ẩn" },
+    { label: "Search chính", value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng", active: hasGlobalSearch, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: "" } })) },
+    { label: "Trường search", value: config.globalSearch.fields.map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field).join(", ") || "Chưa chọn", active: hasFieldConfig, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } })) },
+  ];
+
   /* Inline add value */
   const [addingValueFor, setAddingValueFor] = useState<string | null>(null);
   const [inlineValue, setInlineValue] = useState("");
@@ -228,33 +300,43 @@ export default function VariantAttributesPage() {
           { label: "Thuộc tính biến thể" },
         ]}
         actions={
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
-          >
-            <Plus className="size-3.5" />
-            Tạo thuộc tính
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={config.showStats ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => updateConfig((current) => ({ ...current, showStats: !current.showStats }))}
+              className={cn("rounded-[var(--r-sm)]", config.showStats && "border border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent")}
+            >
+              <BarChart3 className="size-3.5" />
+              {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
+            </Button>
+            <Button variant="default" type="button" size="sm" onClick={() => setCreateOpen(true)} className="rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse">
+              <Plus className="size-3.5" />
+              Tạo thuộc tính
+            </Button>
+          </div>
         }
       />
 
-      {/* Stats */}
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {stats.map((s) => (
-          <StatTile key={s.label} label={s.label} value={s.value} icon={s.icon} />
-        ))}
-      </div>
+      <ListStatsPanel stats={stats} open={config.showStats} gridClassName="sm:grid-cols-4" />
 
-      {/* Search */}
-      <div className="mb-4">
-        <SearchBar
-          placeholder="Tìm thuộc tính (tên vi/en, mã)..."
-          value={search}
-          onChange={setSearch}
-          className="max-w-[320px]"
-        />
-      </div>
+      <ListToolbar
+        search={config.globalSearch.query}
+        onSearchChange={(value) => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: value } }))}
+        searchPlaceholder="Tìm thuộc tính theo mã, tên, giá trị..."
+        fieldOptions={SEARCH_FIELDS}
+        selectedFields={config.globalSearch.fields}
+        defaultFields={DEFAULT_CONFIG.globalSearch.fields}
+        onToggleField={toggleSearchField}
+        onResetFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))}
+        onSelectAllFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: SEARCH_FIELDS.map((field) => field.value) } }))}
+        hasFieldConfig={hasFieldConfig}
+        onExport={() => toast.success("Xuất file mock", `Sẵn sàng xuất ${filtered.length} thuộc tính đang hiển thị.`)}
+        summaryItems={summaryItems}
+        onResetAll={() => setConfig(DEFAULT_CONFIG)}
+        resetDisabled={!hasAnyConfig}
+      />
 
       {/* Attribute cards */}
       {filtered.length === 0 ? (
@@ -290,22 +372,26 @@ export default function VariantAttributesPage() {
                   >
                     <Eye className="size-3.5" />
                   </Link>
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="icon-sm"
                     onClick={() => toast.info("Chỉnh sửa", "Chức năng đang phát triển.")}
-                    className="flex size-7 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-tertiary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                    className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
                     aria-label="Chỉnh sửa"
                   >
                     <Pencil className="size-3.5" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="icon-sm"
                     onClick={() => setDeleteTarget(attr)}
-                    className="flex size-7 items-center justify-center rounded-[var(--r-sm)] border border-danger/30 bg-bg-surface text-danger/70 transition-colors hover:bg-danger/10 hover:text-danger"
+                    className="rounded-[var(--r-sm)] border-danger/30 bg-bg-surface text-danger/70 hover:bg-danger/10 hover:text-danger"
                     aria-label="Xoá"
                   >
                     <Trash2 className="size-3.5" />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -323,21 +409,23 @@ export default function VariantAttributesPage() {
                       />
                     )}
                     {val}
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => handleRemoveValue(attr.attributeId, val)}
-                      className="ml-0.5 hidden size-3.5 items-center justify-center rounded-full text-ink-tertiary hover:bg-danger/10 hover:text-danger group-hover:inline-flex"
+                      className="ml-0.5 hidden size-3.5 rounded-full p-0 text-ink-tertiary hover:bg-danger/10 hover:text-danger group-hover:inline-flex"
                       aria-label={`Xoá ${val}`}
                     >
                       <X className="size-2.5" />
-                    </button>
+                    </Button>
                   </span>
                 ))}
 
                 {/* Inline add value */}
                 {addingValueFor === attr.attributeId ? (
                   <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/5 px-1.5 py-0.5">
-                    <input
+                    <Input
                       type="text"
                       value={inlineValue}
                       onChange={(e) => setInlineValue(e.target.value)}
@@ -349,39 +437,45 @@ export default function VariantAttributesPage() {
                         }
                       }}
                       placeholder="Giá trị..."
-                      className="w-16 border-none bg-transparent text-xs text-ink-primary outline-none placeholder:text-ink-tertiary"
+                      className="h-6 w-20 border-none bg-transparent px-1 text-xs text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:ring-0"
                       autoFocus
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => handleAddValue(attr.attributeId)}
-                      className="text-xs font-medium text-accent hover:underline"
+                      className="h-6 px-1 text-xs font-medium text-accent hover:bg-transparent hover:text-accent hover:underline"
                     >
                       OK
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => {
                         setAddingValueFor(null);
                         setInlineValue("");
                       }}
-                      className="text-xs text-ink-tertiary hover:text-ink-primary"
+                      className="size-5 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
                     >
                       <X className="size-3" />
-                    </button>
+                    </Button>
                   </span>
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="xs"
                     onClick={() => {
                       setAddingValueFor(attr.attributeId);
                       setInlineValue("");
                     }}
-                    className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-border-strong px-2 py-0.5 text-xs text-ink-tertiary transition-colors hover:border-accent hover:text-accent"
+                    className="rounded-full border-dashed border-border-strong px-2 py-0.5 text-xs text-ink-tertiary hover:border-accent hover:bg-bg-surface hover:text-accent"
                   >
                     <Plus className="size-3" />
                     Thêm
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -406,82 +500,80 @@ export default function VariantAttributesPage() {
       )}
 
       {/* Create dialog */}
-      {createOpen && (
-        <div className="fixed inset-0 z-[900] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/20 backdrop-blur-xs"
-            onClick={() => setCreateOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-md rounded-[var(--r-md)] border border-border-default bg-bg-surface p-6 shadow-[var(--sh-lg)]">
-            <h2 className="mb-4 text-[0.9375rem] font-semibold text-ink-primary">
-              Tạo thuộc tính mới
-            </h2>
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                  Tên tiếng Việt <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newNameVi}
-                  onChange={(e) => setNewNameVi(e.target.value)}
-                  placeholder="Chất liệu"
-                  className="w-full rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] text-ink-primary outline-none transition-colors focus:border-accent placeholder:text-ink-tertiary"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                  Tên tiếng Anh <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newNameEn}
-                  onChange={(e) => setNewNameEn(e.target.value)}
-                  placeholder="Material"
-                  className="w-full rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] text-ink-primary outline-none transition-colors focus:border-accent placeholder:text-ink-tertiary"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                  Giá trị (cách nhau dấu phẩy) <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newValues}
-                  onChange={(e) => setNewValues(e.target.value)}
-                  placeholder="Cotton, Polyester, Linen"
-                  className="w-full rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] text-ink-primary outline-none transition-colors focus:border-accent placeholder:text-ink-tertiary"
-                />
-              </div>
-              <label className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
-                <input
-                  type="checkbox"
-                  checked={newHasSwatch}
-                  onChange={(e) => setNewHasSwatch(e.target.checked)}
-                  className="size-4 rounded border-border-default accent-accent"
-                />
-                Có mẫu màu (swatch)
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="gap-0 sm:max-w-[440px] rounded-[var(--r-xl)] border border-border-default bg-bg-surface p-0 shadow-[var(--sh-lg)] ring-0"
+        >
+          <DialogHeader className="border-b border-border-default px-[18px] py-4">
+            <DialogTitle className="font-[family-name:var(--font-display)] text-[1.05rem] font-semibold leading-tight text-ink-primary">Tạo thuộc tính mới</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 px-[18px] py-[18px]">
+            <DialogDescription className="text-[0.875rem] leading-relaxed text-ink-secondary">
+              Khai báo thuộc tính biến thể UI-only từ dữ liệu mock hiện có.
+            </DialogDescription>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-secondary">
+                Tên tiếng Việt <span className="text-danger">*</span>
               </label>
+              <Input
+                type="text"
+                value={newNameVi}
+                onChange={(e) => setNewNameVi(e.target.value)}
+                placeholder="Chất liệu"
+                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20"
+              />
             </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setCreateOpen(false)}
-                className="rounded-[var(--r-sm)] border border-border-default px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted"
-              >
-                Huỷ
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                className="rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
-              >
-                Tạo thuộc tính
-              </button>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-secondary">
+                Tên tiếng Anh <span className="text-danger">*</span>
+              </label>
+              <Input
+                type="text"
+                value={newNameEn}
+                onChange={(e) => setNewNameEn(e.target.value)}
+                placeholder="Material"
+                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20"
+              />
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-secondary">
+                Giá trị (cách nhau dấu phẩy) <span className="text-danger">*</span>
+              </label>
+              <Input
+                type="text"
+                value={newValues}
+                onChange={(e) => setNewValues(e.target.value)}
+                placeholder="Cotton, Polyester, Linen"
+                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
+              <Checkbox checked={newHasSwatch} onCheckedChange={(checked) => setNewHasSwatch(checked === true)} />
+              Có mẫu màu (swatch)
+            </label>
           </div>
-        </div>
-      )}
+          <DialogFooter className="mx-0 mb-0 rounded-b-[var(--r-xl)] border-t border-border-default bg-bg-subtle px-[18px] py-[14px]">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setCreateOpen(false)}
+              className="rounded-[var(--r-sm)] border-border-strong bg-bg-surface text-ink-primary hover:bg-bg-muted"
+            >
+              Huỷ
+            </Button>
+            <Button variant="default"
+              type="button"
+              size="sm"
+              onClick={handleCreate}
+              className="rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse"
+            >
+              Tạo thuộc tính
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirm */}
       <ConfirmDialog

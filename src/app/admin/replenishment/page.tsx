@@ -1,33 +1,75 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRightCircle, CheckCircle, ClipboardList, Clock, RefreshCw } from "lucide-react";
+import { ArrowRightCircle, BarChart3, CheckCircle, ClipboardList, Clock, RefreshCw } from "lucide-react";
+import { cn } from "cn";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatTile } from "@/components/shared/StatTile";
-import { FilterBar } from "@/components/shared/FilterBar";
-import { SearchBar } from "@/components/shared/SearchBar";
+import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
+import { ColumnFilterButton, ListToolbar, type ListSummaryItem } from "@/components/shared/ListToolbar";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "@/components/shared/Toast";
-import {
-  textCell,
-  numberCell,
-  statusCell,
-} from "@/components/shared/column-helpers";
-import {
-  replenishmentProposals,
-  skus,
-  purchaseOrders,
-  type ReplenishmentProposal,
-} from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { numberCell, statusCell, textCell } from "@/components/shared/column-helpers";
+import { replenishmentProposals, skus, purchaseOrders, type ReplenishmentProposal } from "@/lib/mock-data";
+import { STATUS_LABEL_VI } from "@/lib/status-map";
 
-/* -------------------------------------------------------------------------- */
-/*  Helpers                                                                   */
-/* -------------------------------------------------------------------------- */
+type ProposalStatusFilter = "all" | ReplenishmentProposal["status"];
+type ProposalSearchField = "proposalId" | "skuId" | "variantLabel" | "reason";
+type ProposalColumnSearchKey = "skuId" | "variantLabel" | "reason";
+type ProposalTableColumnKey = "skuId" | "variantLabel" | "stockOnHand" | "incoming" | "stockReserved" | "reorderPoint" | "suggestedQty" | "reason" | "status" | "actions";
 
-/** Compute incoming qty for a SKU: sum of (orderedQty - receivedQty) across
- *  all PO lines where PO status is "Confirmed" or "Partially Received". */
+interface ReplenishmentPageConfig {
+  showStats: boolean;
+  statuses: ProposalStatusFilter[];
+  globalSearch: { query: string; fields: ProposalSearchField[] };
+  columnSearch: Partial<Record<ProposalColumnSearchKey, string>>;
+  visibleColumns: ProposalTableColumnKey[];
+}
+
+const STORAGE_KEY = "stockflow:admin:replenishment:config";
+const DEFAULT_VISIBLE_COLUMNS: ProposalTableColumnKey[] = ["skuId", "variantLabel", "stockOnHand", "incoming", "stockReserved", "reorderPoint", "suggestedQty", "reason", "status", "actions"];
+const DEFAULT_CONFIG: ReplenishmentPageConfig = {
+  showStats: false,
+  statuses: ["all"],
+  globalSearch: { query: "", fields: ["skuId", "variantLabel"] },
+  columnSearch: {},
+  visibleColumns: DEFAULT_VISIBLE_COLUMNS,
+};
+
+const STATUS_OPTIONS = ["all", "Draft Proposal", "Reviewed", "Converted"].map((value) => ({
+  label: value === "all" ? "Tất cả" : STATUS_LABEL_VI[value] ?? value,
+  value: value as ProposalStatusFilter,
+}));
+
+const TABLE_COLUMN_LABELS: Record<ProposalTableColumnKey, string> = {
+  skuId: "SKU",
+  variantLabel: "Tên SKU",
+  stockOnHand: "Tồn hiện tại",
+  incoming: "Hàng đang về",
+  stockReserved: "Hàng chờ xuất",
+  reorderPoint: "Reorder point",
+  suggestedQty: "SL đề xuất",
+  reason: "Lý do",
+  status: "Trạng thái",
+  actions: "Thao tác",
+};
+
+const COLUMN_SEARCH_LABELS: Record<ProposalColumnSearchKey, string> = {
+  skuId: "SKU",
+  variantLabel: "Tên SKU",
+  reason: "Lý do",
+};
+
+function skuLabel(row: ReplenishmentProposal) {
+  return skus.find((sku) => sku.skuId === row.skuId)?.variantLabel ?? "";
+}
+
+function skuNumber(row: ReplenishmentProposal, key: "stockOnHand" | "stockReserved" | "reorderPoint") {
+  return skus.find((sku) => sku.skuId === row.skuId)?.[key] ?? 0;
+}
+
 function computeIncoming(skuId: string): number {
   return purchaseOrders
     .filter((po) => po.status === "Confirmed" || po.status === "Partially Received")
@@ -36,9 +78,12 @@ function computeIncoming(skuId: string): number {
     .reduce((sum, line) => sum + (line.orderedQty - line.receivedQty), 0);
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Stats                                                                     */
-/* -------------------------------------------------------------------------- */
+const SEARCH_FIELDS: { label: string; value: ProposalSearchField; getValue: (row: ReplenishmentProposal) => string }[] = [
+  { label: "Proposal ID", value: "proposalId", getValue: (row) => row.proposalId },
+  { label: "SKU", value: "skuId", getValue: (row) => row.skuId },
+  { label: "Tên SKU", value: "variantLabel", getValue: skuLabel },
+  { label: "Lý do", value: "reason", getValue: (row) => row.reason },
+];
 
 function computeStats(list: ReplenishmentProposal[]) {
   const total = list.length;
@@ -54,20 +99,9 @@ function computeStats(list: ReplenishmentProposal[]) {
   ];
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Filter chips                                                              */
-/* -------------------------------------------------------------------------- */
-
-const STATUS_FILTERS = [
-  { label: "Tất cả", value: "all" },
-  { label: "Draft Proposal", value: "Draft Proposal" },
-  { label: "Reviewed", value: "Reviewed" },
-  { label: "Converted", value: "Converted" },
-];
-
-/* -------------------------------------------------------------------------- */
-/*  Row flag — highlight rows where stock is critical                         */
-/* -------------------------------------------------------------------------- */
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
 
 function shouldFlag(row: ReplenishmentProposal): boolean {
   const sku = skus.find((s) => s.skuId === row.skuId);
@@ -75,36 +109,96 @@ function shouldFlag(row: ReplenishmentProposal): boolean {
   return sku.stockOnHand === 0 || sku.stockAvailable < sku.reorderPoint;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                      */
-/* -------------------------------------------------------------------------- */
-
 export default function ReplenishmentPage() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [config, setConfig] = useState<ReplenishmentPageConfig>(DEFAULT_CONFIG);
+  const [mounted, setMounted] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [convertTarget, setConvertTarget] = useState<ReplenishmentProposal | null>(null);
 
-  // Filtered + searched data
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const stored = JSON.parse(raw) as Partial<ReplenishmentPageConfig>;
+        setConfig({
+          ...DEFAULT_CONFIG,
+          ...stored,
+          globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
+          columnSearch: stored.columnSearch ?? {},
+          visibleColumns: stored.visibleColumns?.length ? stored.visibleColumns : DEFAULT_VISIBLE_COLUMNS,
+        });
+      }
+    } catch {
+      setConfig(DEFAULT_CONFIG);
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  }, [config, mounted]);
+
+  const updateConfig = (updater: (current: ReplenishmentPageConfig) => ReplenishmentPageConfig) => setConfig((current) => updater(current));
+
+  const toggleStatus = (status: ProposalStatusFilter) => {
+    updateConfig((current) => {
+      if (status === "all") return { ...current, statuses: ["all"] };
+      const withoutAll = current.statuses.filter((item) => item !== "all");
+      const next = withoutAll.includes(status) ? withoutAll.filter((item) => item !== status) : [...withoutAll, status];
+      return { ...current, statuses: next.length ? next : ["all"] };
+    });
+  };
+
+  const toggleSearchField = (field: ProposalSearchField) => {
+    updateConfig((current) => {
+      const fields = current.globalSearch.fields.includes(field) ? current.globalSearch.fields.filter((item) => item !== field) : [...current.globalSearch.fields, field];
+      return { ...current, globalSearch: { ...current.globalSearch, fields } };
+    });
+  };
+
+  const toggleTableColumn = (column: ProposalTableColumnKey) => {
+    if (column === "actions") return;
+    updateConfig((current) => {
+      const visibleColumns = current.visibleColumns.includes(column) ? current.visibleColumns.filter((item) => item !== column) : [...current.visibleColumns, column];
+      return { ...current, visibleColumns: visibleColumns.includes("actions") ? visibleColumns : [...visibleColumns, "actions"] };
+    });
+  };
+
+  const updateColumnSearch = (key: ProposalColumnSearchKey, value: string) => updateConfig((current) => ({ ...current, columnSearch: { ...current.columnSearch, [key]: value } }));
+  const clearColumnSearch = () => updateConfig((current) => ({ ...current, columnSearch: {} }));
+  const resetAll = () => setConfig(DEFAULT_CONFIG);
+
   const filtered = useMemo(() => {
     let list = replenishmentProposals;
-    if (statusFilter !== "all") {
-      list = list.filter((p) => p.status === statusFilter);
+    if (!config.statuses.includes("all")) list = list.filter((proposal) => config.statuses.includes(proposal.status));
+
+    const q = normalize(config.globalSearch.query);
+    if (q && config.globalSearch.fields.length > 0) {
+      const fieldMap = new Map(SEARCH_FIELDS.map((field) => [field.value, field.getValue]));
+      list = list.filter((proposal) => config.globalSearch.fields.some((field) => normalize(fieldMap.get(field)?.(proposal) ?? "").includes(q)));
     }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((p) => {
-        const sku = skus.find((s) => s.skuId === p.skuId);
-        return (
-          p.skuId.toLowerCase().includes(q) ||
-          (sku?.variantLabel ?? "").toLowerCase().includes(q)
-        );
-      });
-    }
+
+    const skuQuery = normalize(config.columnSearch.skuId ?? "");
+    if (skuQuery) list = list.filter((proposal) => normalize(proposal.skuId).includes(skuQuery));
+    const variantQuery = normalize(config.columnSearch.variantLabel ?? "");
+    if (variantQuery) list = list.filter((proposal) => normalize(skuLabel(proposal)).includes(variantQuery));
+    const reasonQuery = normalize(config.columnSearch.reason ?? "");
+    if (reasonQuery) list = list.filter((proposal) => normalize(proposal.reason).includes(reasonQuery));
+
     return list;
-  }, [search, statusFilter]);
+  }, [config]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
+  const hasStatusFilter = !config.statuses.includes("all");
+  const hasGlobalSearch = Boolean(config.globalSearch.query.trim());
+  const activeColumnSearch = Object.entries(config.columnSearch).filter(([, value]) => value?.trim());
+  const defaultSearchFields = DEFAULT_CONFIG.globalSearch.fields;
+  const hasFieldConfig = config.globalSearch.fields.length !== defaultSearchFields.length || config.globalSearch.fields.some((field) => !defaultSearchFields.includes(field));
+  const visibleColumnCount = config.visibleColumns.filter((column) => column !== "actions").length;
+  const hasColumnConfig = visibleColumnCount !== DEFAULT_VISIBLE_COLUMNS.length - 1;
+  const hasAnyConfig = hasStatusFilter || hasGlobalSearch || hasFieldConfig || activeColumnSearch.length > 0 || config.showStats || hasColumnConfig;
 
   const handleConvertClick = (row: ReplenishmentProposal) => {
     setConvertTarget(row);
@@ -116,121 +210,86 @@ export default function ReplenishmentPage() {
     setConvertTarget(null);
   };
 
-  // Columns
-  const columns: ColumnDef<ReplenishmentProposal>[] = [
+  const columns: (ColumnDef<ReplenishmentProposal> & { key: ProposalTableColumnKey })[] = [
     {
       key: "skuId",
       header: "SKU",
       sortable: true,
       compare: (a, b) => a.skuId.localeCompare(b.skuId),
-      cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent">
-          {row.skuId}
-        </span>
-      ),
+      headerFilter: <ColumnFilterButton value={config.columnSearch.skuId ?? ""} label="SKU" placeholder="Lọc SKU" onChange={(value) => updateColumnSearch("skuId", value)} />,
+      cell: (row) => <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent">{row.skuId}</span>,
     },
-    textCell<ReplenishmentProposal>("variantLabel", "Tên SKU", (row) => {
-      const sku = skus.find((s) => s.skuId === row.skuId);
-      return sku?.variantLabel ?? "—";
-    }, {
+    {
+      ...textCell<ReplenishmentProposal>("variantLabel", "Tên SKU", (row) => skuLabel(row) || "—", {
+        sortable: true,
+        compare: (a, b) => skuLabel(a).localeCompare(skuLabel(b)),
+        color: "primary",
+      }),
+      key: "variantLabel",
+      headerFilter: <ColumnFilterButton value={config.columnSearch.variantLabel ?? ""} label="Tên SKU" placeholder="Lọc tên SKU" onChange={(value) => updateColumnSearch("variantLabel", value)} />,
+    },
+    numberCell<ReplenishmentProposal>("stockOnHand", "Tồn hiện tại", (row) => skuNumber(row, "stockOnHand"), {
       sortable: true,
-      compare: (a, b) => {
-        const aLabel = skus.find((s) => s.skuId === a.skuId)?.variantLabel ?? "";
-        const bLabel = skus.find((s) => s.skuId === b.skuId)?.variantLabel ?? "";
-        return aLabel.localeCompare(bLabel);
-      },
-      color: "primary",
-    }),
-    numberCell<ReplenishmentProposal>("stockOnHand", "Tồn hiện tại", (row) => {
-      const sku = skus.find((s) => s.skuId === row.skuId);
-      return sku?.stockOnHand ?? 0;
-    }, {
-      sortable: true,
-      compare: (a, b) => {
-        const aVal = skus.find((s) => s.skuId === a.skuId)?.stockOnHand ?? 0;
-        const bVal = skus.find((s) => s.skuId === b.skuId)?.stockOnHand ?? 0;
-        return aVal - bVal;
-      },
-    }),
+      compare: (a, b) => skuNumber(a, "stockOnHand") - skuNumber(b, "stockOnHand"),
+    }) as ColumnDef<ReplenishmentProposal> & { key: ProposalTableColumnKey },
     {
       key: "incoming",
       header: "Hàng đang về",
-      align: "right" as const,
+      align: "right",
       sortable: true,
       compare: (a, b) => computeIncoming(a.skuId) - computeIncoming(b.skuId),
-      cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">
-          {computeIncoming(row.skuId).toLocaleString("vi-VN")}
-        </span>
-      ),
+      cell: (row) => <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">{computeIncoming(row.skuId).toLocaleString("vi-VN")}</span>,
     },
-    numberCell<ReplenishmentProposal>("stockReserved", "Hàng chờ xuất", (row) => {
-      const sku = skus.find((s) => s.skuId === row.skuId);
-      return sku?.stockReserved ?? 0;
-    }, {
+    numberCell<ReplenishmentProposal>("stockReserved", "Hàng chờ xuất", (row) => skuNumber(row, "stockReserved"), {
       sortable: true,
-      compare: (a, b) => {
-        const aVal = skus.find((s) => s.skuId === a.skuId)?.stockReserved ?? 0;
-        const bVal = skus.find((s) => s.skuId === b.skuId)?.stockReserved ?? 0;
-        return aVal - bVal;
-      },
-    }),
-    numberCell<ReplenishmentProposal>("reorderPoint", "Reorder point", (row) => {
-      const sku = skus.find((s) => s.skuId === row.skuId);
-      return sku?.reorderPoint ?? 0;
-    }, {
+      compare: (a, b) => skuNumber(a, "stockReserved") - skuNumber(b, "stockReserved"),
+    }) as ColumnDef<ReplenishmentProposal> & { key: ProposalTableColumnKey },
+    numberCell<ReplenishmentProposal>("reorderPoint", "Reorder point", (row) => skuNumber(row, "reorderPoint"), {
       sortable: true,
-      compare: (a, b) => {
-        const aVal = skus.find((s) => s.skuId === a.skuId)?.reorderPoint ?? 0;
-        const bVal = skus.find((s) => s.skuId === b.skuId)?.reorderPoint ?? 0;
-        return aVal - bVal;
-      },
-    }),
+      compare: (a, b) => skuNumber(a, "reorderPoint") - skuNumber(b, "reorderPoint"),
+    }) as ColumnDef<ReplenishmentProposal> & { key: ProposalTableColumnKey },
     {
       key: "suggestedQty",
       header: "SL đề xuất",
-      align: "right" as const,
+      align: "right",
       sortable: true,
       compare: (a, b) => a.suggestedQty - b.suggestedQty,
-      cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-bold text-accent">
-          {row.suggestedQty.toLocaleString("vi-VN")}
-        </span>
-      ),
+      cell: (row) => <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-bold text-accent">{row.suggestedQty.toLocaleString("vi-VN")}</span>,
     },
-    textCell<ReplenishmentProposal>("reason", "Lý do", (row) => row.reason, {
-      color: "secondary",
-    }),
+    {
+      ...textCell<ReplenishmentProposal>("reason", "Lý do", (row) => row.reason, { color: "secondary" }),
+      key: "reason",
+      headerFilter: <ColumnFilterButton value={config.columnSearch.reason ?? ""} label="Lý do" placeholder="Lọc lý do" onChange={(value) => updateColumnSearch("reason", value)} />,
+    },
     statusCell<ReplenishmentProposal>("status", "Trạng thái", (row) => row.status, "proposal", {
       sortable: true,
       compare: (a, b) => a.status.localeCompare(b.status),
       withIcon: true,
-    }),
+    }) as ColumnDef<ReplenishmentProposal> & { key: ProposalTableColumnKey },
     {
       key: "actions",
       header: "",
       cell: (row) => {
         if (row.status === "Reviewed") {
           return (
-            <button
+            <Button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
+              variant="outline"
+              size="xs"
+              onClick={(event) => {
+                event.stopPropagation();
                 handleConvertClick(row);
               }}
-              className="inline-flex items-center gap-1 rounded-[var(--r-sm)] border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+              className="rounded-[var(--r-sm)] border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 hover:text-accent"
             >
               <ArrowRightCircle className="size-3.5" />
               Convert
-            </button>
+            </Button>
           );
         }
         if (row.status === "Converted" && row.convertedToPoId) {
           return (
-            <Link
-              href={`/admin/purchase-orders/${row.convertedToPoId}`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
-            >
+            <Link href={`/admin/purchase-orders/${row.convertedToPoId}`} className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
               {row.convertedToPoId}
             </Link>
           );
@@ -240,41 +299,80 @@ export default function ReplenishmentPage() {
     },
   ];
 
+  const visibleColumns = columns.filter((column) => config.visibleColumns.includes(column.key));
+  const summaryItems: ListSummaryItem[] = [
+    { label: "Stats", value: config.showStats ? "Đang hiện" : "Đang ẩn" },
+    { label: "Trạng thái", value: config.statuses.map((status) => STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status).join(", "), active: hasStatusFilter, onClear: () => updateConfig((current) => ({ ...current, statuses: ["all"] })) },
+    { label: "Search chính", value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng", active: hasGlobalSearch, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: "" } })) },
+    { label: "Trường search", value: config.globalSearch.fields.map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field).join(", ") || "Chưa chọn", active: hasFieldConfig, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } })) },
+    { label: "Search trong cột", value: activeColumnSearch.length ? activeColumnSearch.map(([key, value]) => `${COLUMN_SEARCH_LABELS[key as ProposalColumnSearchKey]} “${value}”`).join(", ") : "Chưa dùng", active: activeColumnSearch.length > 0, onClear: clearColumnSearch },
+    { label: "Cột hiển thị", value: `${visibleColumnCount}/${DEFAULT_VISIBLE_COLUMNS.length - 1}`, active: hasColumnConfig, onClear: () => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS })) },
+  ];
+
   return (
     <>
       <PageHeader
         title="Đề xuất nhập hàng"
-        breadcrumbs={[
-          { label: "Back-office", href: "/admin" },
-          { label: "Đề xuất nhập hàng" },
-        ]}
+        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Đề xuất nhập hàng" }]}
+        actions={
+          <Button
+            type="button"
+            variant={config.showStats ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => updateConfig((current) => ({ ...current, showStats: !current.showStats }))}
+            className={cn("rounded-[var(--r-sm)]", config.showStats && "border border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent")}
+          >
+            <BarChart3 className="size-3.5" />
+            {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
+          </Button>
+        }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {stats.map((s) => (
-          <StatTile key={s.label} label={s.label} value={s.value} icon={s.icon} />
-        ))}
-      </div>
+      <ListStatsPanel stats={stats} open={config.showStats} gridClassName="sm:grid-cols-4" />
 
-      <FilterBar
-        chips={STATUS_FILTERS}
-        active={statusFilter}
-        onChange={setStatusFilter}
-        className="mb-4"
-      >
-        <SearchBar
-          placeholder="Tìm SKU ID hoặc tên..."
-          value={search}
-          onChange={setSearch}
-          className="order-first basis-full lg:basis-[280px] lg:grow-0"
-        />
-      </FilterBar>
+      <ListToolbar
+        search={config.globalSearch.query}
+        onSearchChange={(value) => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: value } }))}
+        searchPlaceholder="Tìm đề xuất theo SKU, tên SKU, lý do..."
+        statusOptions={STATUS_OPTIONS}
+        selectedStatuses={config.statuses}
+        onToggleStatus={toggleStatus}
+        onClearStatuses={() => updateConfig((current) => ({ ...current, statuses: ["all"] }))}
+        hasStatusFilter={hasStatusFilter}
+        fieldOptions={SEARCH_FIELDS}
+        selectedFields={config.globalSearch.fields}
+        defaultFields={DEFAULT_CONFIG.globalSearch.fields}
+        onToggleField={toggleSearchField}
+        onResetFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))}
+        onSelectAllFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: SEARCH_FIELDS.map((field) => field.value) } }))}
+        hasFieldConfig={hasFieldConfig}
+        columnOptions={DEFAULT_VISIBLE_COLUMNS.map((column) => ({ label: TABLE_COLUMN_LABELS[column], value: column }))}
+        selectedColumns={config.visibleColumns}
+        defaultColumns={DEFAULT_VISIBLE_COLUMNS}
+        lockedColumns={["actions"]}
+        visibleColumnCount={visibleColumnCount}
+        onToggleColumn={toggleTableColumn}
+        onResetColumns={() => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS }))}
+        hasColumnConfig={hasColumnConfig}
+        selectedCount={selectedKeys.size}
+        onBulkDelete={() => {
+          toast.info("Xoá đề xuất", `Đã chọn ${selectedKeys.size} đề xuất nhập hàng. Chức năng này đang ở UI-only.`);
+          setSelectedKeys(new Set());
+        }}
+        onExport={() => toast.success("Xuất file mock", `Sẵn sàng xuất ${filtered.length} đề xuất nhập hàng đang hiển thị.`)}
+        summaryItems={summaryItems}
+        onResetAll={resetAll}
+        resetDisabled={!hasAnyConfig}
+      />
 
       <DataTable
         data={filtered}
-        columns={columns}
+        columns={visibleColumns}
         rowKey={(row) => row.proposalId}
         caption={`Hiển thị ${filtered.length} đề xuất nhập hàng`}
+        selectable
+        selectedKeys={selectedKeys}
+        onSelectionChange={setSelectedKeys}
         flagRow={shouldFlag}
         pageSize={15}
       />

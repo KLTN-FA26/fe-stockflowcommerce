@@ -16,6 +16,8 @@ import {
   Box,
   Tag,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -266,14 +268,14 @@ export default function VariantDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => toast.info("Chỉnh sửa thuộc tính", "Chức năng đang phát triển.")}
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
             >
               <Pencil className="size-3.5" />
               Chỉnh sửa
-            </button>
+            </Button>
             <Link
               href="/admin/variants"
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
@@ -327,7 +329,7 @@ export default function VariantDetailPage() {
                 <Tag className="size-4 text-accent" />
                 Danh sách giá trị ({effectiveValues.length})
               </h2>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   setAddingValue(true);
@@ -337,7 +339,7 @@ export default function VariantDetailPage() {
               >
                 <Plus className="size-3" />
                 Thêm giá trị
-              </button>
+              </Button>
             </div>
 
             <div className="divide-y divide-border-default rounded-[var(--r-sm)] border border-border-default">
@@ -377,7 +379,7 @@ export default function VariantDetailPage() {
                   </span>
 
                   {/* Remove */}
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => handleRemoveValue(val.value)}
                     className={cn(
@@ -390,7 +392,7 @@ export default function VariantDetailPage() {
                     title={val.skuCount > 0 ? "Không thể xoá — đã có SKU liên quan" : "Xoá giá trị"}
                   >
                     <Trash2 className="size-3" />
-                  </button>
+                  </Button>
                 </div>
               ))}
 
@@ -400,7 +402,7 @@ export default function VariantDetailPage() {
                   {baseAttr.hasSwatch && (
                     <span className="size-6 shrink-0 rounded-full border border-dashed border-accent/40 bg-bg-muted" />
                   )}
-                  <input
+                  <Input
                     type="text"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
@@ -412,17 +414,17 @@ export default function VariantDetailPage() {
                       }
                     }}
                     placeholder="Nhập giá trị mới..."
-                    className="flex-1 border-none bg-transparent text-[0.8125rem] text-ink-primary outline-none placeholder:text-ink-tertiary"
+                    className="h-8 flex-1 border-none bg-transparent px-0 text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:ring-0"
                     autoFocus
                   />
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={handleAddValue}
                     className="rounded-[var(--r-sm)] bg-accent px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-accent/90"
                   >
                     Thêm
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => {
                       setAddingValue(false);
@@ -431,7 +433,7 @@ export default function VariantDetailPage() {
                     className="text-ink-tertiary hover:text-ink-primary"
                   >
                     <X className="size-4" />
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

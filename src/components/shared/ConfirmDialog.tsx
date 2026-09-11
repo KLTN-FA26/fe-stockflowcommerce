@@ -9,6 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -83,25 +84,28 @@ export function ConfirmDialog({
         </div>
 
         <DialogFooter className="mx-0 mb-0 rounded-b-[var(--r-xl)] border-t border-border-default bg-bg-subtle px-[18px] py-[14px]">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => { setReason(""); onOpenChange(false); }}
-            className="rounded-[var(--r-sm)] border border-border-strong bg-bg-surface px-4 py-1.5 text-[0.8125rem] font-medium text-ink-primary transition-colors hover:bg-bg-muted"
+            className="rounded-[var(--r-sm)] border-border-strong bg-bg-surface text-ink-primary hover:bg-bg-muted"
           >
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
+            size="sm"
             disabled={!canConfirm}
             onClick={handleConfirm}
             className={
               variant === "danger"
-                ? "rounded-[var(--r-sm)] bg-danger px-4 py-1.5 text-[0.8125rem] font-medium text-white transition-colors hover:bg-danger/90 disabled:opacity-50"
-                : "rounded-[var(--r-sm)] bg-brand px-4 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover disabled:opacity-50"
+                ? "rounded-[var(--r-sm)] bg-danger text-white hover:bg-danger/90 disabled:opacity-50"
+                : "rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse disabled:opacity-50"
             }
           >
             {confirmLabel}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

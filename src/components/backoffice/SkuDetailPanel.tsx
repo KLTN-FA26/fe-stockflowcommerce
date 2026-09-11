@@ -119,17 +119,19 @@ export function SkuDetailPanel({ sku, open, onClose, onStatusChange }: SkuDetail
                 <div className="flex flex-wrap gap-2 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3">
                   <span className="self-center text-xs font-medium text-ink-tertiary">Hành động:</span>
                   {actions.map((act) => (
-                    <button
+                    <Button
                       key={act.next}
                       type="button"
+                      variant="outline"
+                      size="xs"
                       onClick={() => onStatusChange?.(sku.skuId, act.next)}
                       className={cn(
-                        "rounded-[var(--r-sm)] border px-3 py-1 text-xs font-medium transition-colors",
+                        "rounded-[var(--r-sm)] text-xs font-medium",
                         ACTION_TONE_CLASSES[act.tone] ?? "border-border-default text-ink-secondary hover:bg-bg-muted"
                       )}
                     >
                       {act.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

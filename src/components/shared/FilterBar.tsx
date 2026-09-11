@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "cn";
+import { Button } from "@/components/ui/button";
 
 interface FilterChip {
   label: string;
@@ -32,20 +33,22 @@ export function FilterBar({
       {chips.map((chip) => {
         const isActive = chip.value === active;
         return (
-          <button
+          <Button
             key={chip.value}
             type="button"
+            variant="outline"
+            size="sm"
             aria-pressed={isActive}
             onClick={() => onChange?.(chip.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.8125rem] transition-colors duration-150",
+              "h-7 rounded-full px-3 text-[0.8125rem] transition-colors duration-150",
               isActive
-                ? "border-brand bg-brand text-ink-inverse font-medium"
-                : "border-border-default bg-bg-surface text-ink-secondary hover:border-accent"
+                ? "border-brand bg-brand font-medium text-ink-inverse hover:bg-brand hover:text-ink-inverse"
+                : "border-border-default bg-bg-surface text-ink-secondary hover:border-accent hover:bg-bg-surface"
             )}
           >
             {chip.label}
-          </button>
+          </Button>
         );
       })}
       {children}

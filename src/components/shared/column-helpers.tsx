@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
 import type { StatusDomain } from "@/lib/mock-data";
 import type { ColumnDef } from "@/components/shared/DataTable";
 
@@ -25,13 +26,14 @@ export function codeCell<T>(
       const value = getValue(row);
       if (opts?.onClick) {
         return (
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={() => opts.onClick!(row)}
-            className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
+            className="h-auto p-0 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
           >
             {value}
-          </button>
+          </Button>
         );
       }
       return (
