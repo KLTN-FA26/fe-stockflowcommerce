@@ -1,13 +1,14 @@
 /**
  * Global app store — zustand.
  *
- * Persists warehouse selection across sessions.
- * `impersonatedRole` powers the "Xem với vai trò…" dropdown for demo.
+ * Persists warehouse selection, sidebar, theme, locale, sound.
+ * Role impersonation lives in auth-store.ts (not here) to keep
+ * auth concerns co-located.
  */
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { WarehouseId, RoleName } from "@/lib/mock-data";
+import type { WarehouseId } from "@/lib/mock-data";
 
 export interface AppState {
   /* ── Warehouse ─────────────────────────────────────────────────────── */
@@ -29,10 +30,6 @@ export interface AppState {
   /* ── Sound ─────────────────────────────────────────────────────────── */
   muted: boolean;
   toggleMuted: () => void;
-
-  /* ── Role impersonation (dev/demo) ─────────────────────────────────── */
-  impersonatedRole: RoleName | null;
-  setImpersonatedRole: (r: RoleName | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -42,8 +39,7 @@ export const useAppStore = create<AppState>()(
       setWarehouseId: (id) => set({ warehouseId: id }),
 
       sidebarCollapsed: false,
-      toggleSidebar: () =>
-        set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
       theme: "light",
       setTheme: (theme) => set({ theme }),
@@ -53,9 +49,6 @@ export const useAppStore = create<AppState>()(
 
       muted: false,
       toggleMuted: () => set((s) => ({ muted: !s.muted })),
-
-      impersonatedRole: null,
-      setImpersonatedRole: (r) => set({ impersonatedRole: r }),
     }),
     {
       name: "stockflow-app",
@@ -74,7 +67,6 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,
         locale: state.locale,
         muted: state.muted,
-        impersonatedRole: state.impersonatedRole,
       }),
     },
   ),
