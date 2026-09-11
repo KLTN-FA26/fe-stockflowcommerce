@@ -10,11 +10,14 @@
 
 import React, { Suspense, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@/lib/auth/auth-store";
-import { loginApi, mockLoginApi } from "@/lib/auth/auth-api";
+
+import { ADMIN_ROUTES } from "@/constants";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loginApi, mockLoginApi } from "@/lib/auth/auth-api";
+import { useAuthStore } from "@/lib/auth/auth-store";
 
 const IS_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
@@ -46,7 +49,7 @@ interface MockUser {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/admin";
+  const callbackUrl = searchParams.get("callbackUrl") || ADMIN_ROUTES.home;
 
   const login = useAuthStore((s) => s.login);
 

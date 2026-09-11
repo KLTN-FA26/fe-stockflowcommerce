@@ -15,13 +15,8 @@
  */
 
 import { NextResponse } from "next/server";
+
 import type { NextRequest } from "next/server";
-
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
-
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-}
 
 function isStaticAsset(pathname: string): boolean {
   return (
@@ -37,21 +32,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Read the auth token from cookie (set by client on login)
-  const authToken = request.cookies.get("stockflow-auth-token")?.value;
-  const isAuthenticated = !!authToken;
-
-  // Protected routes: /admin/*
-  if (pathname.startsWith("/admin") && !isAuthenticated) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Already authenticated → redirect away from login
-  if (isPublicPath(pathname) && isAuthenticated) {
-    return NextResponse.redirect(new URL("/admin", request.url));
-  }
+  // Client guards own auth redirects after zustand rehydrates from localStorage.
+  // Middleware cannot read localStorage, so cookie-based redirects can cause page bounce.
 
   return NextResponse.next();
 }

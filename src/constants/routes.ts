@@ -1,3 +1,7 @@
+export const PUBLIC_ROUTES = {
+  login: "/login",
+} as const;
+
 const ADMIN_BASE = "/admin";
 
 export const ADMIN_ROUTES = {

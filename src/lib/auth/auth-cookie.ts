@@ -7,7 +7,9 @@
  * but it's NOT used for API auth — that goes through the Authorization header.
  */
 
-const COOKIE_NAME = "stockflow-auth-token";
+import { STORAGE_KEYS } from "@/constants";
+
+const COOKIE_NAME = STORAGE_KEYS.authCookie;
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 /** Set the auth cookie after successful login. */

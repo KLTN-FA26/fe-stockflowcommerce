@@ -14,6 +14,9 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+
+import { STORAGE_KEYS } from "@/constants";
+
 import type { RoleName } from "./roles";
 import { setAuthCookie, removeAuthCookie } from "./auth-cookie";
 
@@ -91,7 +94,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "stockflow-auth",
+      name: STORAGE_KEYS.auth,
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
           ? localStorage
@@ -100,9 +103,16 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         tokens: state.tokens,
-        isAuthenticated: state.isAuthenticated,
-        // Don't persist impersonatedRole — reset on page refresh
       }),
+      merge: (persisted, current) => {
+        const persistedState = persisted as Partial<AuthState>;
+        return {
+          ...current,
+          ...persistedState,
+          isAuthenticated: !!persistedState.user && !!persistedState.tokens,
+          impersonatedRole: null,
+        };
+      },
     },
   ),
 );

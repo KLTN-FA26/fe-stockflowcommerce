@@ -7,4 +7,5 @@ export type { AuthUser, AuthTokens } from "./auth-store";
 export { loginApi, mockLoginApi, refreshTokenApi, logoutApi } from "./auth-api";
 export { setAuthCookie, removeAuthCookie, getAuthCookie } from "./auth-cookie";
 export { Can, useCan } from "./components/Can";
+export { AuthGuard } from "./components/AuthGuard";
 export { RoleSwitcher } from "./components/RoleSwitcher";
