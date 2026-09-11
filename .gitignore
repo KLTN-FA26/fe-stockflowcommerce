@@ -44,3 +44,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code — cấu hình cá nhân, không commit
+# (.claude/settings.json, rules/, commands/, skills/, agents/, hooks/ thì CÓ commit)
+CLAUDE.local.md
+.claude/settings.local.json
