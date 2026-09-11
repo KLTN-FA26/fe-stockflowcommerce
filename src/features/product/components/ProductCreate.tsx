@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Category, ProductAttribute, ProductType, Sku, Uom } from "@/features/product";
@@ -354,7 +354,7 @@ export function ProductCreate() {
   };
 
   if (isLoading) {
-    return <Skeleton className="h-[720px] rounded-[var(--card-radius)]" />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (

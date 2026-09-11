@@ -29,7 +29,7 @@ import {
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { dateCell, statusCell, textCell } from "@/components/shared/column-helpers";
 import { STATUS_LABEL_VI } from "@/lib/status-map";
 import {
@@ -448,7 +448,7 @@ export function PurchaseOrderList() {
   ];
 
   if (isLoading) {
-    return <Skeleton className="h-[640px] rounded-[var(--card-radius)]" />;
+    return <PageSkeleton variant="list" />;
   }
 
   return (

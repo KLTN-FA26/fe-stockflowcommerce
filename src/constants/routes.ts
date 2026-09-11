@@ -1,5 +1,10 @@
 const ADMIN_BASE = "/admin";
 
+export const APP_ROUTES = {
+  home: "/",
+  login: "/login",
+} as const;
+
 export const ADMIN_ROUTES = {
   home: ADMIN_BASE,
   products: {

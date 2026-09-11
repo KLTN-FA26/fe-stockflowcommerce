@@ -1,16 +1,55 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { cn } from "cn";
-import { useTheme } from "@/components/theme-provider";
-import { ADMIN_ROUTES, BRAND, BRAND_WORDMARK_GRADIENT } from "@/constants";
+import {
+  ArrowRightLeft,
+  ChevronsUpDown,
+  ClipboardList,
+  FileText,
+  LayoutDashboard,
+  Lightbulb,
+  LogOut,
+  MapPin,
+  Moon,
+  Move,
+  Package,
+  PackageCheck,
+  Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Receipt,
+  Settings,
+  ShoppingCart,
+  Sun,
+  Truck,
+  User,
+  Users,
+  Warehouse as WarehouseIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+
+import { ADMIN_ROUTES, APP_ROUTES, BRAND, BRAND_WORDMARK_GRADIENT } from "@/constants";
+
+import { logoutApi } from "@/lib/auth/auth-api";
+import { useAuthStore } from "@/lib/auth/auth-store";
+import {
+  invoices,
+  moveTasks,
+  packingTasks,
+  pickTasks,
+  purchaseOrders,
+  putawayTasks,
+  shipments,
+  transferOrders,
+  warehouses,
+} from "@/lib/mock-data";
 
 import { Logo } from "@/components/shared/Logo";
 import { SearchBar } from "@/components/shared/SearchBar";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sidebar,
   SidebarContent,
@@ -27,46 +66,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  warehouses,
-  staffUsers,
-  purchaseOrders,
-  invoices,
-  pickTasks,
-  packingTasks,
-  shipments,
-  putawayTasks,
-  transferOrders,
-  moveTasks,
-  type Warehouse,
-} from "@/lib/mock-data";
-import {
-  LayoutDashboard,
-  Package,
-  FileText,
-  ShoppingCart,
-  Receipt,
-  Warehouse as WarehouseIcon,
-  MapPin,
-  Lightbulb,
-  ArrowRightLeft,
-  Move,
-  ClipboardList,
-  PackageCheck,
-  Truck,
-  Palette,
-  Moon,
-  Sun,
-  ChevronsUpDown,
-  PanelLeftClose,
-  PanelLeftOpen,
-  LogOut,
-  Settings,
-  User,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+import type { LucideIcon } from "lucide-react";
+import type { Warehouse } from "@/lib/mock-data";
 /* -------------------------------------------------------------------------- */
 /*  Warning dot counts — computed from mock data                             */
 /* -------------------------------------------------------------------------- */
@@ -219,12 +222,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
-
-/* -------------------------------------------------------------------------- */
-/*  Current user                                                             */
-/* -------------------------------------------------------------------------- */
-
-const currentUser = staffUsers[0]!; // Trần Minh Quang
 
 /* -------------------------------------------------------------------------- */
 /*  Breadcrumb helper                                                        */
@@ -498,7 +495,11 @@ function BackofficeSidebar({
 
 export function BackofficeShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const currentUser = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const refreshToken = useAuthStore((state) => state.tokens?.refreshToken);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("all");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -509,6 +510,18 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
   }, [selectedWarehouse]);
 
   const currentPageLabel = pathToBreadcrumb(pathname);
+  const currentUserName = currentUser?.fullName ?? "Người dùng";
+
+  async function handleLogout() {
+    setUserMenuOpen(false);
+    try {
+      if (refreshToken) await logoutApi(refreshToken);
+    } finally {
+      logout();
+      router.replace(APP_ROUTES.login);
+      router.refresh();
+    }
+  }
 
   return (
     <TooltipProvider>
@@ -584,14 +597,15 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setUserMenuOpen((o) => !o)}
+                onClick={() => setUserMenuOpen((open) => !open)}
                 className="hover:bg-bg-muted h-auto gap-2 rounded-[var(--r-sm)] bg-transparent px-1 py-0.5 transition-colors"
+                aria-label="Mở menu tài khoản"
               >
                 <div className="bg-accent flex size-8 items-center justify-center rounded-full text-xs font-bold text-white">
-                  {currentUser.fullName
+                  {currentUserName
                     .split(" ")
                     .slice(-2)
-                    .map((w) => w[0])
+                    .map((word) => word[0])
                     .join("")}
                 </div>
               </Button>
@@ -602,11 +616,13 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
                     {/* User info header */}
                     <div className="border-border-default border-b px-3 py-2">
                       <div className="text-ink-primary text-[0.8125rem] font-semibold">
-                        {currentUser.fullName}
+                        {currentUserName}
                       </div>
-                      <div className="text-ink-tertiary text-xs">{currentUser.email}</div>
+                      <div className="text-ink-tertiary text-xs">
+                        {currentUser?.email ?? "Chưa có thông tin email"}
+                      </div>
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {currentUser.roles.map((role) => (
+                        {currentUser?.roles.map((role) => (
                           <span
                             key={role}
                             className="bg-bg-subtle text-ink-secondary rounded-full px-2 py-0.5 text-[0.625rem] font-medium"
@@ -639,7 +655,7 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => setUserMenuOpen(false)}
+                      onClick={handleLogout}
                       className="text-danger hover:bg-bg-muted hover:text-danger h-auto w-full justify-start gap-2 rounded-none bg-transparent px-3 py-1.5 text-[0.8125rem] transition-colors"
                     >
                       <LogOut className="size-3.5" />

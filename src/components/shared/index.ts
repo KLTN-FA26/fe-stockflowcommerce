@@ -6,6 +6,7 @@ export { FilterBar } from "./FilterBar";
 export { StatTile } from "./StatTile";
 export { EmptyState } from "./EmptyState";
 export { Skeleton } from "./Skeleton";
+export { PageSkeleton } from "./PageSkeleton";
 export { Alert } from "./Alert";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { ToastProvider, toast } from "./Toast";

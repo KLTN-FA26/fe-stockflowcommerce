@@ -452,7 +452,7 @@ export function registerAllMockRoutes(): void {
   registerMockRoute("POST", "/auth/login", async (config) => {
     const { staffUsers } = await import("@/lib/mock-data");
     const body = typeof config.data === "string" ? JSON.parse(config.data) : config.data;
-    const user = staffUsers.find((u) => u.email === body?.email);
+    const user = staffUsers.find((u) => u.userId === body?.userId || u.email === body?.email);
 
     if (!user) {
       return { status: 401, data: { message: "Email hoặc mật khẩu không đúng" }, headers: {} };

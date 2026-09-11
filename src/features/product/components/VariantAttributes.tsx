@@ -34,7 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
 
 /* -------------------------------------------------------------------------- */
 /*  Aggregate unique attributes from all products                             */
@@ -294,7 +294,7 @@ export function VariantAttributes() {
   );
 
   if (productsQuery.isLoading) {
-    return <Skeleton className="h-[620px] rounded-[var(--card-radius)]" />;
+    return <PageSkeleton variant="list" />;
   }
 
   return (
