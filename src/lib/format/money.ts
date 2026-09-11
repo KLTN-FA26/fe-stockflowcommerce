@@ -1,0 +1,32 @@
+/**
+ * Money formatting — single source of truth.
+ *
+ * Replaces per-page `formatUSD`, `formatCompactVND`, etc.
+ * Currency always comes from the record's `currency` field (BR-07 module 02).
+ */
+
+import type { Currency } from "@/lib/mock-data";
+
+/** Full precision money format. */
+export function formatMoney(amount: number, currency: Currency = "VND"): string {
+  return new Intl.NumberFormat(currency === "USD" ? "en-US" : "vi-VN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "VND" ? 0 : 2,
+  }).format(amount);
+}
+
+/** Compact format for stats tiles: "1,2 tỷ ₫", "345 tr ₫". */
+export function formatCompact(amount: number, currency: Currency = "VND"): string {
+  if (currency !== "VND") return formatMoney(amount, currency);
+  if (amount >= 1_000_000_000)
+    return `${(amount / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ ₫`;
+  if (amount >= 1_000_000)
+    return `${(amount / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr ₫`;
+  return formatMoney(amount, currency);
+}
+
+/** VND shorthand (backwards compat). */
+export function formatVND(amount: number): string {
+  return formatMoney(amount, "VND");
+}

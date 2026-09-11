@@ -3,6 +3,7 @@ import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/shared/Toast";
+import { AppProviders } from "@/providers/app-providers";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -37,7 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          {children}
+          <AppProviders>
+            {children}
+          </AppProviders>
           <ToastProvider />
         </ThemeProvider>
       </body>
