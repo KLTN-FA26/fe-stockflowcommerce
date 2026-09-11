@@ -16,8 +16,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const THEME_INIT_SCRIPT = `
 (function(){
   try{
-    document.documentElement.setAttribute('data-theme','light');
-    document.documentElement.classList.remove('dark');
+    document.documentElement.setAttribute('data-theme','dark');
+    document.documentElement.classList.add('dark');
   }catch(e){}
 })();
 `;
@@ -44,8 +44,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // nên markup SSR và lần render client đầu tiên khớp nhau.
   const [theme, setThemeState] = useState<ColorTheme>(() =>
     typeof document === "undefined"
-      ? "light"
-      : (document.documentElement.dataset.theme as ColorTheme) || "light",
+      ? "dark"
+      : (document.documentElement.dataset.theme as ColorTheme) || "dark",
   );
   const isClient = useIsClient();
 

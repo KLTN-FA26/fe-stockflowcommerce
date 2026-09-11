@@ -8,6 +8,5 @@
 
 export { HomeFeatureStrip } from "./components/HomeFeatureStrip";
 export { HomeFooter } from "./components/HomeFooter";
-export { HomeHeader } from "./components/HomeHeader";
 export { HomeHero } from "./components/HomeHero";
 export { WarehouseSceneLazy } from "./components/WarehouseSceneLazy";

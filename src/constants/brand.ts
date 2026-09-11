@@ -13,6 +13,11 @@ export const BRAND = {
   /** Chỉ mark, không chữ — favicon, app icon, logo thu gọn. Tỉ lệ gốc 1:1. */
   iconSrc: "/stockflowcommerce-icon.svg",
   name: "StockFlowCommerce",
+  wordmark: {
+    primary: "Stock",
+    accent: "Flow",
+    suffix: "Commerce",
+  },
   /** Alt text cho bản có chữ — wordmark đã chứa tên nên alt nêu đúng tên thương hiệu. */
   logoAlt: "StockFlowCommerce",
 } as const;

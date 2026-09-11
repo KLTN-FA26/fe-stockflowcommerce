@@ -1,10 +1,4 @@
-import {
-  HomeFeatureStrip,
-  HomeFooter,
-  HomeHeader,
-  HomeHero,
-  WarehouseSceneLazy,
-} from "@/features/home";
+import { HomeFooter, HomeHero, WarehouseSceneLazy } from "@/features/home";
 
 /**
  * Trang chủ vừa đúng một khung hình, không có thanh cuộn.
@@ -15,21 +9,20 @@ import {
  */
 export default function Home() {
   return (
-    <div className="bg-bg-base text-ink-primary flex h-dvh flex-col overflow-hidden">
-      <HomeHeader />
+    <div className="bg-bg-base text-ink-primary relative isolate flex min-h-dvh flex-col overflow-x-hidden">
+      <div className="absolute inset-0" aria-hidden="true">
+        <WarehouseSceneLazy />
+        <div className="from-bg-base/65 via-bg-base/20 dark:from-bg-base/82 dark:via-bg-base/50 absolute inset-0 bg-gradient-to-r to-transparent" />
+        <div className="from-bg-base/25 dark:from-bg-base/55 absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
+      </div>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col justify-center gap-6 px-6 py-6 lg:px-8">
-        <div className="grid min-h-0 flex-1 items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+      <div className="relative z-10 flex min-h-dvh flex-col">
+        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-5 py-10 sm:px-6 lg:px-8">
           <HomeHero />
-          <div className="hidden h-full min-h-0 lg:block" aria-hidden="true">
-            <WarehouseSceneLazy />
-          </div>
-        </div>
+        </main>
 
-        <HomeFeatureStrip />
-      </main>
-
-      <HomeFooter />
+        <HomeFooter />
+      </div>
     </div>
   );
 }

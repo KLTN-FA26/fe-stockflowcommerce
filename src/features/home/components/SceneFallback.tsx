@@ -12,11 +12,11 @@ import { BIN_GRID } from "../constants";
 export function SceneFallback() {
   return (
     <div
-      className="border-border-default bg-bg-subtle flex h-full w-full items-center justify-center rounded-[var(--r-md)] border"
+      className="bg-bg-subtle flex h-full w-full items-center justify-end overflow-hidden"
       role="img"
       aria-label="Minh hoạ kệ kho nhiều tầng"
     >
-      <div className="grid w-full max-w-xs grid-cols-4 gap-2 p-8">
+      <div className="grid w-2/3 max-w-2xl grid-cols-4 gap-3 p-8 opacity-50">
         {BIN_GRID.map((bin) => (
           <div
             key={bin.id}

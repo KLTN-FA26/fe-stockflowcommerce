@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 import { HOME_COPY, HOME_FEATURES } from "./constants";
 
-import { HomeFeatureStrip, HomeFooter, HomeHeader, HomeHero } from "./index";
+import { HomeFeatureStrip, HomeFooter, HomeHero } from "./index";
 
 import type { ReactElement } from "react";
 
@@ -39,6 +39,15 @@ describe("HomeHero", () => {
       APP_ROUTES.login,
     );
   });
+
+  it("đặt logo trong hero và không lặp lại CTA đăng nhập", () => {
+    renderWithTheme(<HomeHero />);
+    expect(screen.getByRole("link", { name: /StockFlowCommerce/i })).toHaveAttribute(
+      "href",
+      APP_ROUTES.home,
+    );
+    expect(screen.queryByRole("link", { name: HOME_COPY.loginLabel })).not.toBeInTheDocument();
+  });
 });
 
 describe("HomeFeatureStrip", () => {
@@ -50,28 +59,20 @@ describe("HomeFeatureStrip", () => {
   });
 });
 
-describe("HomeHeader", () => {
-  it("có link đăng nhập", () => {
-    renderWithTheme(<HomeHeader />);
-    expect(screen.getByRole("link", { name: HOME_COPY.loginLabel })).toHaveAttribute(
-      "href",
-      APP_ROUTES.login,
-    );
-  });
-
-  it("nút đổi theme đặt data-theme trên documentElement", async () => {
-    const user = userEvent.setup();
-    renderWithTheme(<HomeHeader />);
-
-    await user.click(screen.getByRole("button", { name: /Chuyển sang Dark/i }));
-
-    expect(document.documentElement.dataset.theme).toBe("dark");
-  });
-});
-
 describe("HomeFooter", () => {
   it("hiện dòng bản quyền", () => {
     renderWithTheme(<HomeFooter />);
     expect(screen.getByText(HOME_COPY.footerLeft)).toBeInTheDocument();
+  });
+
+  it("đặt nút theme ở footer và chuyển từ Dark sang Light", async () => {
+    const user = userEvent.setup();
+    renderWithTheme(<HomeFooter />);
+
+    expect(screen.getByRole("button", { name: /Chuyển sang Light/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Chuyển sang Light/i }));
+
+    expect(document.documentElement.dataset.theme).toBe("light");
   });
 });

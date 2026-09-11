@@ -19,7 +19,7 @@ export function HomeFeatureStrip() {
 
   return (
     <motion.ul
-      className="grid gap-3 sm:grid-cols-3"
+      className="grid max-w-6xl gap-3 sm:grid-cols-3 lg:gap-4"
       variants={STRIP_VARIANTS}
       initial={prefersReducedMotion ? false : "hidden"}
       animate={prefersReducedMotion ? undefined : "visible"}
@@ -28,13 +28,15 @@ export function HomeFeatureStrip() {
         <motion.li
           key={title}
           variants={CARD_VARIANTS}
-          className="border-border-default bg-bg-surface hover:border-border-strong group rounded-[var(--r-sm)] border p-4 transition-colors duration-150"
+          className="border-border-default bg-bg-surface/70 hover:border-border-strong hover:bg-bg-surface group rounded-2xl border p-5 shadow-xl backdrop-blur-xl transition duration-300 hover:-translate-y-1"
         >
-          <div className="bg-bg-subtle text-accent flex size-9 items-center justify-center rounded-[var(--r-sm)] transition-transform duration-150 group-hover:-translate-y-[2px]">
-            <Icon className="size-4" aria-hidden="true" />
+          <div className="border-border-default bg-bg-muted text-ink-primary flex size-10 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-110">
+            <Icon className="size-5" aria-hidden="true" />
           </div>
-          <h2 className="mt-3 text-sm font-semibold">{title}</h2>
-          <p className="text-ink-secondary mt-1 text-xs leading-5">{description}</p>
+          <h2 className="text-ink-primary mt-4 text-sm font-semibold sm:text-base">{title}</h2>
+          <p className="text-ink-secondary mt-2 text-xs leading-5 sm:text-sm sm:leading-6">
+            {description}
+          </p>
         </motion.li>
       ))}
     </motion.ul>

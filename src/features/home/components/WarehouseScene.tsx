@@ -1,10 +1,12 @@
 "use client";
 
+import { ContactShadows } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { ACESFilmicToneMapping } from "three";
 
-import { CAMERA_POSITION, CAMERA_ZOOM, SCENE_TIMING } from "../constants";
+import { CAMERA_POSITION, CAMERA_TARGET, SCENE_TIMING, WAREHOUSE_CENTER_X } from "../constants";
 import { useSceneColors } from "../use-scene-colors";
 
 import { WarehouseBins } from "./WarehouseBins";
@@ -28,7 +30,7 @@ function ParallaxRig({ enabled }: { enabled: boolean }) {
     const [baseX, baseY] = CAMERA_POSITION;
     state.camera.position.x = baseX + target.current.x * parallaxTravel;
     state.camera.position.y = baseY + target.current.y * parallaxTravel;
-    state.camera.lookAt(0, 0, 0);
+    state.camera.lookAt(...CAMERA_TARGET);
   });
 
   return null;
@@ -76,17 +78,60 @@ export function WarehouseScene() {
       }}
     >
       <Canvas
-        orthographic
-        camera={{ position: CAMERA_POSITION, zoom: CAMERA_ZOOM, near: 0.1, far: 100 }}
+        shadows
+        camera={{ position: CAMERA_POSITION, fov: 44, near: 0.1, far: 90 }}
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true }}
-        onCreated={() => setReady(true)}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        onCreated={(state) => {
+          state.camera.lookAt(...CAMERA_TARGET);
+          state.gl.toneMapping = ACESFilmicToneMapping;
+          state.gl.toneMappingExposure = 1.1;
+          setReady(true);
+        }}
       >
-        <ambientLight intensity={0.85} />
-        <directionalLight position={[5, 8, 5]} intensity={1.1} />
-        <directionalLight position={[-6, 3, -4]} intensity={0.35} />
+        <color attach="background" args={[colors.subtle]} />
+        <fog attach="fog" args={[colors.subtle, 30, 58]} />
+
+        <ambientLight intensity={0.72} />
+        <hemisphereLight args={["white", colors.surface, 1.15]} />
+        <directionalLight
+          castShadow
+          position={[8, 12, 10]}
+          intensity={2.4}
+          color="white"
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-far={48}
+          shadow-camera-left={-14}
+          shadow-camera-right={14}
+          shadow-camera-top={14}
+          shadow-camera-bottom={-14}
+        />
+        <directionalLight position={[-8, 5, -6]} intensity={0.7} color="lightblue" />
+        <pointLight
+          position={[WAREHOUSE_CENTER_X, 5.6, 3]}
+          intensity={4}
+          distance={13}
+          color="lightcyan"
+        />
+        <pointLight
+          position={[WAREHOUSE_CENTER_X, 5.6, -8]}
+          intensity={3}
+          distance={12}
+          color="lightcyan"
+        />
 
         <WarehouseBins colors={colors} animate={animate} />
+        <ContactShadows
+          position={[0, 0.025, -4]}
+          scale={38}
+          opacity={0.32}
+          blur={2.5}
+          far={12}
+          resolution={512}
+          frames={1}
+          color="black"
+        />
 
         <ParallaxRig enabled={animate} />
         <PauseWhenHidden enabled={animate} />

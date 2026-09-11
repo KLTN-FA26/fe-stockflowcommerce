@@ -3,9 +3,14 @@ import { Boxes, ClipboardCheck, ScanLine } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 /** Copy của trang chủ — giữ nguyên văn bản bản cũ, không viết mới. */
+const HOME_TITLE_LEAD = "Kiểm soát dòng hàng từ";
+const HOME_TITLE_ACCENT = "nhập kho đến bàn giao.";
+
 export const HOME_COPY = {
   eyebrow: "Cổng vận hành nội bộ",
-  title: "Kiểm soát dòng hàng từ nhập kho đến bàn giao.",
+  title: `${HOME_TITLE_LEAD} ${HOME_TITLE_ACCENT}`,
+  titleLead: HOME_TITLE_LEAD,
+  titleAccent: HOME_TITLE_ACCENT,
   description:
     "StockFlowCommerce tập trung dữ liệu mua hàng, tồn kho và hoàn tất đơn vào một không gian làm việc nhất quán cho đội ngũ vận hành.",
   ctaLabel: "Vào hệ thống",
@@ -108,7 +113,6 @@ export const SCENE_TIMING = {
  * Vị trí camera orthographic, cố định ở góc isometric.
  * Dùng ở hai chỗ: prop `camera` của <Canvas> và gốc toạ độ cho phép tính parallax.
  */
-export const CAMERA_POSITION: readonly [number, number, number] = [6, 5, 8];
-
-/** Độ phóng của camera orthographic — càng lớn kệ càng to trong khung. */
-export const CAMERA_ZOOM = 62;
+export const CAMERA_POSITION: readonly [number, number, number] = [-6.4, 6.5, 17.6];
+export const CAMERA_TARGET: readonly [number, number, number] = [1.2, 2.45, -6.4];
+export const WAREHOUSE_CENTER_X = 3.8;

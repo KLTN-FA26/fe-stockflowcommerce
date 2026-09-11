@@ -21,7 +21,7 @@ export interface SceneColors {
  */
 const COLOR_VARS: Record<keyof SceneColors, string> = {
   ink: "--ink-primary",
-  accent: "--accent",
+  accent: "--scene-accent",
   surface: "--bg-surface",
   subtle: "--bg-subtle",
   border: "--border-default",
@@ -50,7 +50,9 @@ function readSceneColors(): SceneColors {
 
   const computed = getComputedStyle(document.documentElement);
   const entries = Object.entries(COLOR_VARS).map(([role, cssVar]) => {
-    const value = computed.getPropertyValue(cssVar).trim();
+    const value =
+      computed.getPropertyValue(cssVar).trim() ||
+      (role === "accent" ? computed.getPropertyValue("--accent").trim() : "");
     return [role, value || SCENE_COLOR_FALLBACK[role as keyof SceneColors]] as const;
   });
 

@@ -82,7 +82,7 @@ describe("useSceneColors", () => {
     }
   });
 
-  it("toggle theme (light → dark) qua toggleTheme() thì đổi đúng màu theo class .dark", async () => {
+  it("mặc định Dark và toggle theme (dark → light) đổi đúng màu scene", async () => {
     // Bug đã fix: hook cũ dùng useMemo(() => readSceneColors(theme), [theme]) — chạy
     // trong render phase, TRƯỚC khi effect của ThemeProvider kịp set class "dark" lên
     // <html>, nên luôn trả màu của theme cũ (lệch một nhịp). Test này phải fail trên
@@ -91,10 +91,10 @@ describe("useSceneColors", () => {
 
     const { result } = renderHook(() => useSceneColorsAndToggle(), { wrapper });
 
-    // Trạng thái ban đầu: light — đọc từ :root.
+    // Trạng thái ban đầu: dark — đọc từ .dark.
     await waitFor(() => {
-      expect(result.current.colors.ink).toBe("#123456");
-      expect(result.current.colors.accent).toBe("#1e88e5");
+      expect(result.current.colors.ink).toBe("#abcdef");
+      expect(result.current.colors.accent).toBe("#4ea6f0");
     });
 
     act(() => {
@@ -104,8 +104,8 @@ describe("useSceneColors", () => {
     // MutationObserver bắt thay đổi class "dark" là microtask/callback bất đồng bộ
     // → dùng waitFor thay vì assert ngay.
     await waitFor(() => {
-      expect(result.current.colors.ink).toBe("#abcdef");
-      expect(result.current.colors.accent).toBe("#4ea6f0");
+      expect(result.current.colors.ink).toBe("#123456");
+      expect(result.current.colors.accent).toBe("#1e88e5");
     });
   });
 });
