@@ -27,6 +27,11 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/shared/Card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -253,8 +258,8 @@ function parseNonNegativeNumber(value: string) {
 
 function fieldClass(hasError = false) {
   return cn(
-    "w-full rounded-[var(--r-sm)] border bg-bg-surface px-3 py-1.5 text-[0.8125rem] text-ink-primary outline-none transition-colors placeholder:text-ink-tertiary",
-    hasError ? "border-danger focus:border-danger" : "border-border-default focus:border-accent"
+    "w-full rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20",
+    hasError && "border-danger focus-visible:border-danger focus-visible:ring-danger/20"
   );
 }
 
@@ -401,12 +406,13 @@ export default function ProductCreatePage() {
               const status = stepStatus(step.key);
               const isSkipped = step.key === "customization" && form.type === "Standard";
               return (
-                <button
+                <Button
                   key={step.key}
                   type="button"
+                  variant="ghost"
                   onClick={() => setCurrentStep(step.key)}
                   className={cn(
-                    "mb-1 flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
+                    "mb-1 flex w-full justify-start gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
                     status === "active" && "bg-brand font-medium text-ink-inverse",
                     status !== "active" && "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
                     status === "error" && "border border-danger/30 bg-danger/5 text-danger",
@@ -419,7 +425,7 @@ export default function ProductCreatePage() {
                   <Icon className="size-3.5" />
                   <span className="flex-1">{step.label}</span>
                   {isSkipped && <span className="text-[0.625rem]">Skip</span>}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -476,8 +482,10 @@ export default function ProductCreatePage() {
             Bước {currentStepIndex + 1}/{STEPS.length} · {STEPS[currentStepIndex]?.label}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 toast.success("Đã lưu nháp", "Dữ liệu mock được giữ trong phiên làm việc hiện tại.");
               }}
@@ -485,33 +493,37 @@ export default function ProductCreatePage() {
             >
               <Save className="size-3.5" />
               Lưu nháp
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={goBack}
               disabled={currentStepIndex === 0}
               className="rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted disabled:opacity-40"
             >
               Quay lại
-            </button>
+            </Button>
             {currentStep !== "review" ? (
-              <button
+              <Button variant="default"
                 type="button"
+                size="sm"
                 onClick={goNext}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 Tiếp tục
                 <ArrowRight className="size-3.5" />
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="default"
                 type="button"
+                size="sm"
                 onClick={handleSubmitAttempt}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 <Send className="size-3.5" />
                 Gửi duyệt
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -537,63 +549,94 @@ function DraftStep({ form, update, showErrors }: { form: FormState; update: <K e
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Tên sản phẩm <span className="text-danger">*</span></label>
-          <input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Áo thun cotton cao cấp" className={fieldClass(showErrors && !form.name.trim())} />
+          <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Áo thun cotton cao cấp" className={fieldClass(showErrors && !form.name.trim())} />
           <FieldError>{showErrors && !form.name.trim() ? "Tên sản phẩm là bắt buộc." : undefined}</FieldError>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Tên tiếng Anh</label>
-          <input value={form.nameEn} onChange={(e) => update("nameEn", e.target.value)} placeholder="Premium Cotton T-Shirt" className={fieldClass()} />
+          <Input value={form.nameEn} onChange={(e) => update("nameEn", e.target.value)} placeholder="Premium Cotton T-Shirt" className={fieldClass()} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Mã sản phẩm nội bộ <span className="text-danger">*</span></label>
-          <input value={form.productCode} onChange={(e) => update("productCode", normalizeCode(e.target.value))} placeholder="TEE-COTTON" className={fieldClass(showErrors && !form.productCode.trim())} />
+          <Input value={form.productCode} onChange={(e) => update("productCode", normalizeCode(e.target.value))} placeholder="TEE-COTTON" className={fieldClass(showErrors && !form.productCode.trim())} />
           <FieldError>{showErrors && !form.productCode.trim() ? "Mã sản phẩm là bắt buộc." : undefined}</FieldError>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Danh mục <span className="text-danger">*</span></label>
-          <select value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className={fieldClass(showErrors && !form.categoryId)}>
-            <option value="">Chọn danh mục</option>
-            {categories.map((category: Category) => (
-              <option key={category.categoryId} value={category.categoryId}>
-                {"— ".repeat(category.level - 1)}{category.name.vi} · {category.categoryId}
-              </option>
-            ))}
-          </select>
+          <Select value={form.categoryId} onValueChange={(value) => update("categoryId", value)}>
+            <SelectTrigger size="default" aria-label="Danh mục" className={fieldClass(showErrors && !form.categoryId)}>
+              <SelectValue placeholder="Chọn danh mục" />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>Danh mục</SelectLabel>
+                {categories.map((category: Category) => (
+                <SelectItem key={category.categoryId} value={category.categoryId}>
+                  {"— ".repeat(category.level - 1)}{category.name.vi} · {category.categoryId}
+                </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
           <FieldError>{showErrors && !form.categoryId ? "Danh mục là bắt buộc." : undefined}</FieldError>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Thương hiệu <span className="text-danger">*</span></label>
-          <input value={form.brand} onChange={(e) => update("brand", e.target.value)} placeholder="StockFlow Basics" className={fieldClass(showErrors && !form.brand.trim())} />
+          <Input value={form.brand} onChange={(e) => update("brand", e.target.value)} placeholder="StockFlow Basics" className={fieldClass(showErrors && !form.brand.trim())} />
           <FieldError>{showErrors && !form.brand.trim() ? "Thương hiệu là bắt buộc." : undefined}</FieldError>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Loại sản phẩm</label>
-          <select value={form.type} onChange={(e) => update("type", e.target.value as ProductType)} className={fieldClass()}>
-            <option value="Standard">Standard</option>
-            <option value="Customizable">Customizable</option>
-          </select>
+          <Select value={form.type} onValueChange={(value) => update("type", value as ProductType)}>
+            <SelectTrigger size="default" aria-label="Loại sản phẩm" className={fieldClass()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>Loại sản phẩm</SelectLabel>
+                <SelectItem value="Standard">Standard</SelectItem>
+                <SelectItem value="Customizable">Customizable</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Tax class</label>
-          <select value={form.taxClass} onChange={(e) => update("taxClass", e.target.value as TaxClass)} className={fieldClass()}>
-            <option value="standard">standard</option>
-            <option value="reduced">reduced</option>
-            <option value="exempt">exempt</option>
-          </select>
+          <Select value={form.taxClass} onValueChange={(value) => update("taxClass", value as TaxClass)}>
+            <SelectTrigger size="default" aria-label="Tax class" className={fieldClass()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>Tax class</SelectLabel>
+                <SelectItem value="standard">standard</SelectItem>
+                <SelectItem value="reduced">reduced</SelectItem>
+                <SelectItem value="exempt">exempt</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">UoM</label>
-          <select value={form.uom} onChange={(e) => update("uom", e.target.value as Uom)} className={fieldClass()}>
-            {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => <option key={uom} value={uom}>{uom}</option>)}
-          </select>
+          <Select value={form.uom} onValueChange={(value) => update("uom", value as Uom)}>
+            <SelectTrigger size="default" aria-label="UoM" className={fieldClass()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>UoM</SelectLabel>
+                {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => <SelectItem key={uom} value={uom}>{uom}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div className="lg:col-span-2">
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Mô tả</label>
-          <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={3} placeholder="Mô tả nội bộ / catalog..." className={fieldClass()} />
+          <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={3} placeholder="Mô tả nội bộ / catalog..." className={fieldClass()} />
         </div>
         <div className="lg:col-span-2">
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Mô tả tiếng Anh</label>
-          <textarea value={form.descriptionEn} onChange={(e) => update("descriptionEn", e.target.value)} rows={3} placeholder="English description..." className={fieldClass()} />
+          <Textarea value={form.descriptionEn} onChange={(e) => update("descriptionEn", e.target.value)} rows={3} placeholder="English description..." className={fieldClass()} />
         </div>
       </div>
     </Card>
@@ -634,7 +677,7 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
           return (
             <div key={attr.attributeId} className={cn("rounded-[var(--r-sm)] border p-3", active ? "border-accent/40 bg-accent/5" : "border-border-default bg-bg-surface")}>
               <label className="flex items-start gap-2">
-                <input type="checkbox" checked={active} onChange={() => toggleAttribute(attr.attributeId)} className="mt-1 size-4 rounded border-border-default accent-accent" />
+                <Checkbox checked={active} onCheckedChange={() => toggleAttribute(attr.attributeId)} className="mt-1" />
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium text-ink-primary">{attr.name.vi}</span>
                   <span className="block text-xs text-ink-tertiary">{attr.name.en} · {attr.attributeId}</span>
@@ -645,9 +688,11 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
                   {attr.values.map((value) => {
                     const checked = values.includes(value);
                     return (
-                      <button
+                      <Button
                         key={value}
                         type="button"
+                        variant="outline"
+                        size="xs"
                         onClick={() => toggleValue(attr.attributeId, value)}
                         className={cn(
                           "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors",
@@ -656,7 +701,7 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
                       >
                         {attr.swatch?.[value] && <span className="size-2.5 rounded-full border border-border-default" style={{ backgroundColor: attr.swatch[value] }} />}
                         {value}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -683,11 +728,9 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
       key: "enabled",
       header: "Dùng",
       cell: (row) => (
-        <input
-          type="checkbox"
+        <Checkbox
           checked={row.enabled}
-          onChange={() => update("disabledSkuKeys", row.enabled ? [...form.disabledSkuKeys, row.key] : form.disabledSkuKeys.filter((key) => key !== row.key))}
-          className="size-4 rounded border-border-default accent-accent"
+          onCheckedChange={() => update("disabledSkuKeys", row.enabled ? [...form.disabledSkuKeys, row.key] : form.disabledSkuKeys.filter((key) => key !== row.key))}
         />
       ),
     },
@@ -696,7 +739,7 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
       header: "SKU preview",
       cell: (row) => (
         <div>
-          <input
+          <Input
             value={row.skuCode}
             onChange={(e) => update("skuOverrides", { ...form.skuOverrides, [row.key]: normalizeCode(e.target.value) })}
             className={cn(fieldClass(duplicates.has(row.skuCode)), "font-[family-name:var(--font-mono)]")}
@@ -720,7 +763,7 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
       header: "Giá vốn",
       align: "right",
       cell: (row) => (
-        <input
+        <Input
           value={form.skuCosts[row.key] ?? ""}
           onChange={(e) => update("skuCosts", { ...form.skuCosts, [row.key]: e.target.value })}
           inputMode="numeric"
@@ -754,29 +797,37 @@ function LogisticsStep({ form, update, showErrors, skuCount }: { form: FormState
       <div className="grid gap-4 lg:grid-cols-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Khối lượng (kg) <span className="text-danger">*</span></label>
-          <input value={form.weightKg} onChange={(e) => update("weightKg", e.target.value)} inputMode="decimal" placeholder="0.25" className={fieldClass(showErrors && !parsePositiveNumber(form.weightKg))} />
+          <Input value={form.weightKg} onChange={(e) => update("weightKg", e.target.value)} inputMode="decimal" placeholder="0.25" className={fieldClass(showErrors && !parsePositiveNumber(form.weightKg))} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Dài (cm) <span className="text-danger">*</span></label>
-          <input value={form.lengthCm} onChange={(e) => update("lengthCm", e.target.value)} inputMode="decimal" placeholder="30" className={fieldClass(showErrors && !parsePositiveNumber(form.lengthCm))} />
+          <Input value={form.lengthCm} onChange={(e) => update("lengthCm", e.target.value)} inputMode="decimal" placeholder="30" className={fieldClass(showErrors && !parsePositiveNumber(form.lengthCm))} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Rộng (cm) <span className="text-danger">*</span></label>
-          <input value={form.widthCm} onChange={(e) => update("widthCm", e.target.value)} inputMode="decimal" placeholder="22" className={fieldClass(showErrors && !parsePositiveNumber(form.widthCm))} />
+          <Input value={form.widthCm} onChange={(e) => update("widthCm", e.target.value)} inputMode="decimal" placeholder="22" className={fieldClass(showErrors && !parsePositiveNumber(form.widthCm))} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Cao (cm) <span className="text-danger">*</span></label>
-          <input value={form.heightCm} onChange={(e) => update("heightCm", e.target.value)} inputMode="decimal" placeholder="2" className={fieldClass(showErrors && !parsePositiveNumber(form.heightCm))} />
+          <Input value={form.heightCm} onChange={(e) => update("heightCm", e.target.value)} inputMode="decimal" placeholder="2" className={fieldClass(showErrors && !parsePositiveNumber(form.heightCm))} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Pack size <span className="text-danger">*</span></label>
-          <input value={form.packSize} onChange={(e) => update("packSize", e.target.value)} inputMode="numeric" placeholder="1" className={fieldClass(showErrors && !parsePositiveNumber(form.packSize))} />
+          <Input value={form.packSize} onChange={(e) => update("packSize", e.target.value)} inputMode="numeric" placeholder="1" className={fieldClass(showErrors && !parsePositiveNumber(form.packSize))} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">UoM</label>
-          <select value={form.uom} onChange={(e) => update("uom", e.target.value as Uom)} className={fieldClass()}>
-            {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => <option key={uom} value={uom}>{uom}</option>)}
-          </select>
+          <Select value={form.uom} onValueChange={(value) => update("uom", value as Uom)}>
+            <SelectTrigger size="default" aria-label="UoM" className={fieldClass()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectGroup>
+                <SelectLabel>UoM</SelectLabel>
+                {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => <SelectItem key={uom} value={uom}>{uom}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </Card>
@@ -795,7 +846,7 @@ function InventoryStep({ form, update }: { form: FormState; update: <K extends k
             ["expiryTracking", "Theo dõi hạn dùng"],
           ].map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
-              <input type="checkbox" checked={Boolean(form[key as keyof FormState])} onChange={(e) => update(key as keyof FormState, e.target.checked as never)} className="size-4 rounded border-border-default accent-accent" />
+              <Checkbox checked={Boolean(form[key as keyof FormState])} onCheckedChange={(checked) => update(key as keyof FormState, (checked === true) as never)} />
               {label}
             </label>
           ))}
@@ -808,11 +859,11 @@ function InventoryStep({ form, update }: { form: FormState; update: <K extends k
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">Reorder point</label>
-            <input value={form.reorderPoint} onChange={(e) => update("reorderPoint", e.target.value)} inputMode="numeric" placeholder="20" className={fieldClass(!parseNonNegativeNumber(form.reorderPoint))} />
+            <Input value={form.reorderPoint} onChange={(e) => update("reorderPoint", e.target.value)} inputMode="numeric" placeholder="20" className={fieldClass(!parseNonNegativeNumber(form.reorderPoint))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">Tồn tối đa</label>
-            <input value={form.maxStock} onChange={(e) => update("maxStock", e.target.value)} inputMode="numeric" placeholder="200" className={fieldClass(!parseNonNegativeNumber(form.maxStock))} />
+            <Input value={form.maxStock} onChange={(e) => update("maxStock", e.target.value)} inputMode="numeric" placeholder="200" className={fieldClass(!parseNonNegativeNumber(form.maxStock))} />
           </div>
         </div>
       </div>
@@ -849,18 +900,18 @@ function CustomizationStep({ form, update, showErrors }: { form: FormState; upda
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Template 2D</label>
-          <input value={form.templateName} onChange={(e) => update("templateName", e.target.value)} placeholder="template-tshirt-front.svg" className={fieldClass(showErrors && !form.templateName.trim() && !form.model3dUrl.trim())} />
+          <Input value={form.templateName} onChange={(e) => update("templateName", e.target.value)} placeholder="template-tshirt-front.svg" className={fieldClass(showErrors && !form.templateName.trim() && !form.model3dUrl.trim())} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Model 3D</label>
-          <input value={form.model3dUrl} onChange={(e) => update("model3dUrl", e.target.value)} placeholder="/mock/3d/tshirt.glb" className={fieldClass(showErrors && !form.templateName.trim() && !form.model3dUrl.trim())} />
+          <Input value={form.model3dUrl} onChange={(e) => update("model3dUrl", e.target.value)} placeholder="/mock/3d/tshirt.glb" className={fieldClass(showErrors && !form.templateName.trim() && !form.model3dUrl.trim())} />
         </div>
         <div className="lg:col-span-2">
           <div className="mb-2 flex items-center justify-between">
             <label className="block text-xs font-medium text-ink-secondary">Print areas <span className="text-danger">*</span></label>
-            <button type="button" onClick={addPrintArea} className="inline-flex items-center gap-1 rounded-[var(--r-sm)] border border-border-default px-2 py-1 text-xs font-medium text-ink-secondary hover:bg-bg-muted">
+            <Button type="button" variant="outline" size="xs" onClick={addPrintArea} className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted">
               <Plus className="size-3" /> Thêm vùng in
-            </button>
+            </Button>
           </div>
           <div className="space-y-2">
             {form.printAreas.length === 0 && (
@@ -868,16 +919,24 @@ function CustomizationStep({ form, update, showErrors }: { form: FormState; upda
             )}
             {form.printAreas.map((area) => (
               <div key={area.id} className="grid gap-2 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3 md:grid-cols-[1fr_130px_100px_100px_80px_auto]">
-                <input value={area.name} onChange={(e) => updatePrintArea(area.id, { name: e.target.value })} className={fieldClass()} />
-                <select value={area.position} onChange={(e) => updatePrintArea(area.id, { position: e.target.value as PrintAreaDraft["position"] })} className={fieldClass()}>
-                  {PRINT_POSITIONS.map((position) => <option key={position.value} value={position.value}>{position.label}</option>)}
-                </select>
-                <input value={area.widthMm} onChange={(e) => updatePrintArea(area.id, { widthMm: e.target.value })} placeholder="W mm" className={fieldClass()} />
-                <input value={area.heightMm} onChange={(e) => updatePrintArea(area.id, { heightMm: e.target.value })} placeholder="H mm" className={fieldClass()} />
-                <input value={area.minDpi} onChange={(e) => updatePrintArea(area.id, { minDpi: e.target.value })} placeholder="DPI" className={fieldClass()} />
-                <button type="button" onClick={() => update("printAreas", form.printAreas.filter((item) => item.id !== area.id))} className="flex size-8 items-center justify-center rounded-[var(--r-sm)] border border-danger/30 text-danger hover:bg-danger/10">
+                <Input value={area.name} onChange={(e) => updatePrintArea(area.id, { name: e.target.value })} className={fieldClass()} />
+                <Select value={area.position} onValueChange={(value) => updatePrintArea(area.id, { position: value as PrintAreaDraft["position"] })}>
+                  <SelectTrigger size="default" aria-label="Vị trí print area" className={fieldClass()}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="start">
+                    <SelectGroup>
+                      <SelectLabel>Vị trí print area</SelectLabel>
+                        {PRINT_POSITIONS.map((position) => <SelectItem key={position.value} value={position.value}>{position.label}</SelectItem>)}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <Input value={area.widthMm} onChange={(e) => updatePrintArea(area.id, { widthMm: e.target.value })} placeholder="W mm" className={fieldClass()} />
+                <Input value={area.heightMm} onChange={(e) => updatePrintArea(area.id, { heightMm: e.target.value })} placeholder="H mm" className={fieldClass()} />
+                <Input value={area.minDpi} onChange={(e) => updatePrintArea(area.id, { minDpi: e.target.value })} placeholder="DPI" className={fieldClass()} />
+                <Button type="button" variant="outline" size="icon" onClick={() => update("printAreas", form.printAreas.filter((item) => item.id !== area.id))} className="rounded-[var(--r-sm)] border-danger/30 text-danger hover:bg-danger/10 hover:text-danger">
                   <Trash2 className="size-3.5" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -888,7 +947,7 @@ function CustomizationStep({ form, update, showErrors }: { form: FormState; upda
             {PRINT_TECHNIQUES.map((technique) => {
               const active = form.allowedTechniques.includes(technique);
               return (
-                <button key={technique} type="button" onClick={() => update("allowedTechniques", active ? form.allowedTechniques.filter((t) => t !== technique) : [...form.allowedTechniques, technique])} className={cn("rounded-full border px-2 py-0.5 text-xs", active ? "border-accent bg-accent/10 text-accent" : "border-border-default bg-bg-subtle text-ink-secondary")}>{technique}</button>
+                <Button key={technique} type="button" variant="outline" size="xs" onClick={() => update("allowedTechniques", active ? form.allowedTechniques.filter((t) => t !== technique) : [...form.allowedTechniques, technique])} className={cn("rounded-full px-2 py-0.5 text-xs", active ? "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent" : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted")}>{technique}</Button>
               );
             })}
           </div>
@@ -905,23 +964,23 @@ function CatalogStep({ form, update }: { form: FormState; update: <K extends key
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">Ảnh mock URLs</label>
-          <textarea value={form.imageUrls} onChange={(e) => update("imageUrls", e.target.value)} rows={3} placeholder="/mock/img/new-1.jpg\n/mock/img/new-2.jpg" className={fieldClass()} />
+          <Textarea value={form.imageUrls} onChange={(e) => update("imageUrls", e.target.value)} rows={3} placeholder="/mock/img/new-1.jpg\n/mock/img/new-2.jpg" className={fieldClass()} />
         </div>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">SEO title</label>
-            <input value={form.seoTitle} onChange={(e) => update("seoTitle", e.target.value)} placeholder="Áo thun cotton in theo yêu cầu" className={fieldClass()} />
+            <Input value={form.seoTitle} onChange={(e) => update("seoTitle", e.target.value)} placeholder="Áo thun cotton in theo yêu cầu" className={fieldClass()} />
           </div>
           <div>
             <label className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
-              <input type="checkbox" checked={form.catalogVisible} onChange={(e) => update("catalogVisible", e.target.checked)} className="size-4 rounded border-border-default accent-accent" />
+              <Checkbox checked={form.catalogVisible} onCheckedChange={(checked) => update("catalogVisible", checked === true)} />
               Đánh dấu sẵn sàng hiển thị catalog sau khi Published
             </label>
           </div>
         </div>
         <div className="lg:col-span-2">
           <label className="mb-1 block text-xs font-medium text-ink-secondary">SEO description</label>
-          <textarea value={form.seoDescription} onChange={(e) => update("seoDescription", e.target.value)} rows={3} placeholder="Mô tả ngắn phục vụ catalog..." className={fieldClass()} />
+          <Textarea value={form.seoDescription} onChange={(e) => update("seoDescription", e.target.value)} rows={3} placeholder="Mô tả ngắn phục vụ catalog..." className={fieldClass()} />
         </div>
       </div>
     </Card>
@@ -968,10 +1027,10 @@ function ReviewStep({ form, skuRows, issuesByStep, submitted, onSubmit }: { form
         <p className="text-[0.8125rem] leading-relaxed text-ink-secondary">
           `Gửi duyệt` chỉ cập nhật trạng thái preview trong UI. Không có API call và không thêm record vào mock data.
         </p>
-        <button type="button" onClick={onSubmit} className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover">
+        <Button variant="default" type="button" size="sm" onClick={onSubmit} className="mt-4 w-full rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse">
           <Send className="size-3.5" />
           Gửi duyệt
-        </button>
+        </Button>
       </Card>
     </div>
   );

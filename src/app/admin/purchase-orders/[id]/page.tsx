@@ -12,6 +12,7 @@ import {
   RefreshCw,
   CircleDot,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
@@ -572,9 +573,11 @@ export default function PurchaseOrderDetailPage({
             {actions.length > 0 && (
               <div className="space-y-2">
                 {actions.map((act) => (
-                  <button
+                  <Button
                     key={act.label}
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleAction}
                     className={cn(
                       "w-full rounded-[var(--r-sm)] border px-3 py-2 text-[0.8125rem] font-medium transition-colors",
@@ -582,7 +585,7 @@ export default function PurchaseOrderDetailPage({
                     )}
                   >
                     {act.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}

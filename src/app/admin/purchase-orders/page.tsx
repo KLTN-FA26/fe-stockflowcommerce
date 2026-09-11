@@ -1,49 +1,66 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  CheckCircle,
-  ClipboardCheck,
-  Clock,
-  Eye,
-  PackageCheck,
-  Plus,
-  ReceiptText,
-  ShoppingCart,
-  Truck,
-} from "lucide-react";
+import { BarChart3, CheckCircle, ClipboardCheck, Clock, Eye, PackageCheck, Plus, ReceiptText, ShoppingCart, Truck } from "lucide-react";
+import { cn } from "cn";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatTile } from "@/components/shared/StatTile";
-import { FilterBar } from "@/components/shared/FilterBar";
-import { SearchBar } from "@/components/shared/SearchBar";
+import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
+import { ColumnFilterButton, ListToolbar, type ListSummaryItem } from "@/components/shared/ListToolbar";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
-import {
-  textCell,
-  dateCell,
-  statusCell,
-} from "@/components/shared/column-helpers";
-import {
-  purchaseOrders,
-  suppliers,
-  warehouses,
-  formatVND,
-  type PurchaseOrder,
-} from "@/lib/mock-data";
+import { toast } from "@/components/shared/Toast";
+import { Button } from "@/components/ui/button";
+import { dateCell, statusCell, textCell } from "@/components/shared/column-helpers";
+import { purchaseOrders, suppliers, warehouses, formatVND, type PurchaseOrder } from "@/lib/mock-data";
+import { STATUS_LABEL_VI } from "@/lib/status-map";
 
-/* -------------------------------------------------------------------------- */
-/*  Currency formatter                                                        */
-/* -------------------------------------------------------------------------- */
+type PoStatusFilter = "all" | PurchaseOrder["status"];
+type PoSearchField = "poNumber" | "supplier" | "warehouse" | "poId";
+type PoColumnSearchKey = "poNumber" | "supplier" | "warehouse";
+type PoTableColumnKey = "poNumber" | "supplier" | "warehouse" | "expectedDate" | "grandTotal" | "status" | "actions";
 
-const formatUSD = (amount: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    amount,
-  );
-
-function formatMoney(amount: number, currency: string): string {
-  return currency === "USD" ? formatUSD(amount) : formatVND(amount);
+interface PurchaseOrdersPageConfig {
+  showStats: boolean;
+  statuses: PoStatusFilter[];
+  globalSearch: { query: string; fields: PoSearchField[] };
+  columnSearch: Partial<Record<PoColumnSearchKey, string>>;
+  visibleColumns: PoTableColumnKey[];
 }
+
+const STORAGE_KEY = "stockflow:admin:purchase-orders:config";
+const DEFAULT_VISIBLE_COLUMNS: PoTableColumnKey[] = ["poNumber", "supplier", "warehouse", "expectedDate", "grandTotal", "status", "actions"];
+const DEFAULT_CONFIG: PurchaseOrdersPageConfig = {
+  showStats: false,
+  statuses: ["all"],
+  globalSearch: { query: "", fields: ["poNumber", "supplier"] },
+  columnSearch: {},
+  visibleColumns: DEFAULT_VISIBLE_COLUMNS,
+};
+
+const STATUS_OPTIONS = ["all", "Draft", "Pending Approval", "Approved", "Confirmed", "Partially Received", "Received", "Closed", "Cancelled"].map((value) => ({
+  label: value === "all" ? "Tất cả" : STATUS_LABEL_VI[value] ?? value,
+  value: value as PoStatusFilter,
+}));
+
+const TABLE_COLUMN_LABELS: Record<PoTableColumnKey, string> = {
+  poNumber: "Mã PO",
+  supplier: "Nhà cung cấp",
+  warehouse: "Kho nhận",
+  expectedDate: "Ngày giao DK",
+  grandTotal: "Tổng tiền",
+  status: "Trạng thái",
+  actions: "Thao tác",
+};
+
+const COLUMN_SEARCH_LABELS: Record<PoColumnSearchKey, string> = {
+  poNumber: "Mã PO",
+  supplier: "Nhà cung cấp",
+  warehouse: "Kho nhận",
+};
+
+const formatUSD = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+const formatMoney = (amount: number, currency: string) => currency === "USD" ? formatUSD(amount) : formatVND(amount);
 
 function formatCompactVND(amount: number): string {
   if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ ₫`;
@@ -51,24 +68,29 @@ function formatCompactVND(amount: number): string {
   return formatVND(amount);
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Stats helpers                                                             */
-/* -------------------------------------------------------------------------- */
+function supplierName(po: PurchaseOrder) {
+  return suppliers.find((supplier) => supplier.supplierId === po.supplierId)?.name ?? "";
+}
+
+function warehouseName(po: PurchaseOrder) {
+  return warehouses.find((warehouse) => warehouse.warehouseId === po.warehouseId)?.name ?? "";
+}
+
+const SEARCH_FIELDS: { label: string; value: PoSearchField; getValue: (po: PurchaseOrder) => string }[] = [
+  { label: "Mã PO", value: "poNumber", getValue: (po) => po.poNumber },
+  { label: "Nhà cung cấp", value: "supplier", getValue: supplierName },
+  { label: "Kho nhận", value: "warehouse", getValue: warehouseName },
+  { label: "PO ID", value: "poId", getValue: (po) => po.poId },
+];
 
 function computeStats(list: PurchaseOrder[]) {
   const total = list.length;
   const draft = list.filter((po) => po.status === "Draft").length;
-  const pendingApproval = list.filter(
-    (po) => po.status === "Pending Approval",
-  ).length;
+  const pendingApproval = list.filter((po) => po.status === "Pending Approval").length;
   const confirmed = list.filter((po) => po.status === "Confirmed").length;
-  const partiallyReceived = list.filter(
-    (po) => po.status === "Partially Received",
-  ).length;
+  const partiallyReceived = list.filter((po) => po.status === "Partially Received").length;
   const received = list.filter((po) => po.status === "Received").length;
-  const totalValueVND = list
-    .filter((po) => po.currency === "VND")
-    .reduce((s, po) => s + po.grandTotal, 0);
+  const totalValueVND = list.filter((po) => po.currency === "VND").reduce((s, po) => s + po.grandTotal, 0);
 
   return [
     { label: "Tổng PO", value: total.toString(), icon: ShoppingCart },
@@ -81,79 +103,118 @@ function computeStats(list: PurchaseOrder[]) {
   ];
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Filter chips                                                              */
-/* -------------------------------------------------------------------------- */
-
-const STATUS_FILTERS = [
-  { label: "Tất cả", value: "all" },
-  { label: "Draft", value: "Draft" },
-  { label: "Pending Approval", value: "Pending Approval" },
-  { label: "Approved", value: "Approved" },
-  { label: "Confirmed", value: "Confirmed" },
-  { label: "Partially Received", value: "Partially Received" },
-  { label: "Received", value: "Received" },
-  { label: "Closed", value: "Closed" },
-  { label: "Cancelled", value: "Cancelled" },
-];
-
-/* -------------------------------------------------------------------------- */
-/*  Row flag — highlight POs needing attention                                */
-/* -------------------------------------------------------------------------- */
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
 
 function shouldFlag(row: PurchaseOrder): boolean {
   return ["Pending Approval", "Cancelled"].includes(row.status);
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                      */
-/* -------------------------------------------------------------------------- */
-
 export default function PurchaseOrdersPage() {
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [config, setConfig] = useState<PurchaseOrdersPageConfig>(DEFAULT_CONFIG);
+  const [mounted, setMounted] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-  // Filtered + searched data
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const stored = JSON.parse(raw) as Partial<PurchaseOrdersPageConfig>;
+        setConfig({
+          ...DEFAULT_CONFIG,
+          ...stored,
+          globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
+          columnSearch: stored.columnSearch ?? {},
+          visibleColumns: stored.visibleColumns?.length ? stored.visibleColumns : DEFAULT_VISIBLE_COLUMNS,
+        });
+      }
+    } catch {
+      setConfig(DEFAULT_CONFIG);
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  }, [config, mounted]);
+
+  const updateConfig = (updater: (current: PurchaseOrdersPageConfig) => PurchaseOrdersPageConfig) => setConfig((current) => updater(current));
+  const navigateToDetail = (po: PurchaseOrder) => router.push(`/admin/purchase-orders/${po.poId}`);
+
+  const toggleStatus = (status: PoStatusFilter) => {
+    updateConfig((current) => {
+      if (status === "all") return { ...current, statuses: ["all"] };
+      const withoutAll = current.statuses.filter((item) => item !== "all");
+      const next = withoutAll.includes(status) ? withoutAll.filter((item) => item !== status) : [...withoutAll, status];
+      return { ...current, statuses: next.length ? next : ["all"] };
+    });
+  };
+
+  const toggleSearchField = (field: PoSearchField) => {
+    updateConfig((current) => {
+      const fields = current.globalSearch.fields.includes(field) ? current.globalSearch.fields.filter((item) => item !== field) : [...current.globalSearch.fields, field];
+      return { ...current, globalSearch: { ...current.globalSearch, fields } };
+    });
+  };
+
+  const toggleTableColumn = (column: PoTableColumnKey) => {
+    if (column === "actions") return;
+    updateConfig((current) => {
+      const visibleColumns = current.visibleColumns.includes(column) ? current.visibleColumns.filter((item) => item !== column) : [...current.visibleColumns, column];
+      return { ...current, visibleColumns: visibleColumns.includes("actions") ? visibleColumns : [...visibleColumns, "actions"] };
+    });
+  };
+
+  const updateColumnSearch = (key: PoColumnSearchKey, value: string) => updateConfig((current) => ({ ...current, columnSearch: { ...current.columnSearch, [key]: value } }));
+  const clearColumnSearch = () => updateConfig((current) => ({ ...current, columnSearch: {} }));
+  const resetAll = () => setConfig(DEFAULT_CONFIG);
+
   const filtered = useMemo(() => {
     let list = purchaseOrders;
-    if (statusFilter !== "all") {
-      list = list.filter((po) => po.status === statusFilter);
+    if (!config.statuses.includes("all")) list = list.filter((po) => config.statuses.includes(po.status));
+
+    const q = normalize(config.globalSearch.query);
+    if (q && config.globalSearch.fields.length > 0) {
+      const fieldMap = new Map(SEARCH_FIELDS.map((field) => [field.value, field.getValue]));
+      list = list.filter((po) => config.globalSearch.fields.some((field) => normalize(fieldMap.get(field)?.(po) ?? "").includes(q)));
     }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((po) => {
-        const supplierName =
-          suppliers
-            .find((s) => s.supplierId === po.supplierId)
-            ?.name.toLowerCase() ?? "";
-        return (
-          po.poNumber.toLowerCase().includes(q) || supplierName.includes(q)
-        );
-      });
-    }
+
+    const poQuery = normalize(config.columnSearch.poNumber ?? "");
+    if (poQuery) list = list.filter((po) => normalize(po.poNumber).includes(poQuery));
+    const supplierQuery = normalize(config.columnSearch.supplier ?? "");
+    if (supplierQuery) list = list.filter((po) => normalize(supplierName(po)).includes(supplierQuery));
+    const warehouseQuery = normalize(config.columnSearch.warehouse ?? "");
+    if (warehouseQuery) list = list.filter((po) => normalize(warehouseName(po)).includes(warehouseQuery));
+
     return list;
-  }, [search, statusFilter]);
+  }, [config]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
+  const hasStatusFilter = !config.statuses.includes("all");
+  const hasGlobalSearch = Boolean(config.globalSearch.query.trim());
+  const activeColumnSearch = Object.entries(config.columnSearch).filter(([, value]) => value?.trim());
+  const defaultSearchFields = DEFAULT_CONFIG.globalSearch.fields;
+  const hasFieldConfig = config.globalSearch.fields.length !== defaultSearchFields.length || config.globalSearch.fields.some((field) => !defaultSearchFields.includes(field));
+  const visibleColumnCount = config.visibleColumns.filter((column) => column !== "actions").length;
+  const hasColumnConfig = visibleColumnCount !== DEFAULT_VISIBLE_COLUMNS.length - 1;
+  const hasAnyConfig = hasStatusFilter || hasGlobalSearch || hasFieldConfig || activeColumnSearch.length > 0 || config.showStats || hasColumnConfig;
 
-  const navigateToDetail = (po: PurchaseOrder) =>
-    router.push(`/admin/purchase-orders/${po.poId}`);
-
-  // Columns
-  const columns: ColumnDef<PurchaseOrder>[] = [
+  const columns: (ColumnDef<PurchaseOrder> & { key: PoTableColumnKey })[] = [
     {
       key: "poNumber",
       header: "Mã PO",
       sortable: true,
       compare: (a, b) => a.poNumber.localeCompare(b.poNumber),
+      headerFilter: <ColumnFilterButton value={config.columnSearch.poNumber ?? ""} label="Mã PO" placeholder="Lọc mã PO" onChange={(value) => updateColumnSearch("poNumber", value)} />,
       cell: (row) => (
         <Link
           href={`/admin/purchase-orders/${row.poId}`}
           className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={(event) => {
+            event.preventDefault();
             navigateToDetail(row);
           }}
         >
@@ -161,136 +222,137 @@ export default function PurchaseOrdersPage() {
         </Link>
       ),
     },
-    textCell<PurchaseOrder>(
-      "supplier",
-      "Nhà cung cấp",
-      (row) =>
-        suppliers.find((s) => s.supplierId === row.supplierId)?.name ?? "—",
-      {
+    {
+      ...textCell<PurchaseOrder>("supplier", "Nhà cung cấp", (row) => supplierName(row) || "—", {
         sortable: true,
-        compare: (a, b) => {
-          const nameA =
-            suppliers.find((s) => s.supplierId === a.supplierId)?.name ?? "";
-          const nameB =
-            suppliers.find((s) => s.supplierId === b.supplierId)?.name ?? "";
-          return nameA.localeCompare(nameB);
-        },
+        compare: (a, b) => supplierName(a).localeCompare(supplierName(b)),
         color: "primary",
-      },
-    ),
-    textCell<PurchaseOrder>(
-      "warehouse",
-      "Kho nhận",
-      (row) =>
-        warehouses.find((w) => w.warehouseId === row.warehouseId)?.name ?? "—",
-      {
+      }),
+      key: "supplier",
+      headerFilter: <ColumnFilterButton value={config.columnSearch.supplier ?? ""} label="Nhà cung cấp" placeholder="Lọc NCC" onChange={(value) => updateColumnSearch("supplier", value)} />,
+    },
+    {
+      ...textCell<PurchaseOrder>("warehouse", "Kho nhận", (row) => warehouseName(row) || "—", {
         sortable: true,
-        compare: (a, b) => {
-          const nameA =
-            warehouses.find((w) => w.warehouseId === a.warehouseId)?.name ?? "";
-          const nameB =
-            warehouses.find((w) => w.warehouseId === b.warehouseId)?.name ?? "";
-          return nameA.localeCompare(nameB);
-        },
+        compare: (a, b) => warehouseName(a).localeCompare(warehouseName(b)),
         color: "secondary",
-      },
-    ),
-    dateCell<PurchaseOrder>(
-      "expectedDate",
-      "Ngày giao DK",
-      (row) => row.expectedDate,
-      {
-        sortable: true,
-        compare: (a, b) =>
-          new Date(a.expectedDate).getTime() -
-          new Date(b.expectedDate).getTime(),
-      },
-    ),
+      }),
+      key: "warehouse",
+      headerFilter: <ColumnFilterButton value={config.columnSearch.warehouse ?? ""} label="Kho nhận" placeholder="Lọc kho" onChange={(value) => updateColumnSearch("warehouse", value)} />,
+    },
+    dateCell<PurchaseOrder>("expectedDate", "Ngày giao DK", (row) => row.expectedDate, {
+      sortable: true,
+      compare: (a, b) => new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime(),
+    }) as ColumnDef<PurchaseOrder> & { key: PoTableColumnKey },
     {
       key: "grandTotal",
       header: "Tổng tiền",
-      align: "right" as const,
+      align: "right",
       sortable: true,
       compare: (a, b) => a.grandTotal - b.grandTotal,
-      cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">
-          {formatMoney(row.grandTotal, row.currency)}
-        </span>
-      ),
+      cell: (row) => <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">{formatMoney(row.grandTotal, row.currency)}</span>,
     },
-    statusCell<PurchaseOrder>(
-      "status",
-      "Trạng thái",
-      (row) => row.status,
-      "po",
-      {
-        sortable: true,
-        compare: (a, b) => a.status.localeCompare(b.status),
-        withIcon: true,
-      },
-    ),
+    statusCell<PurchaseOrder>("status", "Trạng thái", (row) => row.status, "po", {
+      sortable: true,
+      compare: (a, b) => a.status.localeCompare(b.status),
+      withIcon: true,
+    }) as ColumnDef<PurchaseOrder> & { key: PoTableColumnKey },
     {
       key: "actions",
       header: "",
       cell: (row) => (
-        <button
+        <Button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
+          variant="outline"
+          size="icon-sm"
+          onClick={(event) => {
+            event.stopPropagation();
             navigateToDetail(row);
           }}
-          className="flex size-7 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-tertiary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+          className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
           aria-label="Xem chi tiết"
         >
           <Eye className="size-3.5" />
-        </button>
+        </Button>
       ),
     },
+  ];
+
+  const visibleColumns = columns.filter((column) => config.visibleColumns.includes(column.key));
+  const summaryItems: ListSummaryItem[] = [
+    { label: "Stats", value: config.showStats ? "Đang hiện" : "Đang ẩn" },
+    { label: "Trạng thái", value: config.statuses.map((status) => STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status).join(", "), active: hasStatusFilter, onClear: () => updateConfig((current) => ({ ...current, statuses: ["all"] })) },
+    { label: "Search chính", value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng", active: hasGlobalSearch, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: "" } })) },
+    { label: "Trường search", value: config.globalSearch.fields.map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field).join(", ") || "Chưa chọn", active: hasFieldConfig, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } })) },
+    { label: "Search trong cột", value: activeColumnSearch.length ? activeColumnSearch.map(([key, value]) => `${COLUMN_SEARCH_LABELS[key as PoColumnSearchKey]} “${value}”`).join(", ") : "Chưa dùng", active: activeColumnSearch.length > 0, onClear: clearColumnSearch },
+    { label: "Cột hiển thị", value: `${visibleColumnCount}/${DEFAULT_VISIBLE_COLUMNS.length - 1}`, active: hasColumnConfig, onClear: () => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS })) },
   ];
 
   return (
     <>
       <PageHeader
         title="Đơn đặt NCC"
-        breadcrumbs={[
-          { label: "Back-office", href: "/admin" },
-          { label: "Đơn đặt NCC" },
-        ]}
+        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Đơn đặt NCC" }]}
         actions={
-          <button
-            type="button"
-            onClick={() => router.push("/admin/purchase-orders/create")}
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
-          >
-            <Plus className="size-3.5" />
-            Tạo đơn đặt hàng
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={config.showStats ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => updateConfig((current) => ({ ...current, showStats: !current.showStats }))}
+              className={cn("rounded-[var(--r-sm)]", config.showStats && "border border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent")}
+            >
+              <BarChart3 className="size-3.5" />
+              {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
+            </Button>
+            <Button variant="default" type="button" size="sm" onClick={() => router.push("/admin/purchase-orders/create")} className="rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse">
+              <Plus className="size-3.5" />
+              Tạo đơn đặt hàng
+            </Button>
+          </div>
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-        {stats.map((s) => (
-          <StatTile key={s.label} label={s.label} value={s.value} icon={s.icon} />
-        ))}
-      </div>
+      <ListStatsPanel stats={stats} open={config.showStats} gridClassName="lg:grid-cols-4 xl:grid-cols-7" />
 
-      <FilterBar
-        chips={STATUS_FILTERS}
-        active={statusFilter}
-        onChange={setStatusFilter}
-        className="mb-4"
-      >
-        <SearchBar
-          placeholder="Tìm mã PO / NCC..."
-          value={search}
-          onChange={setSearch}
-          className="order-first basis-full lg:basis-[280px] lg:grow-0"
-        />
-      </FilterBar>
+      <ListToolbar
+        search={config.globalSearch.query}
+        onSearchChange={(value) => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: value } }))}
+        searchPlaceholder="Tìm PO theo mã, NCC, kho..."
+        statusOptions={STATUS_OPTIONS}
+        selectedStatuses={config.statuses}
+        onToggleStatus={toggleStatus}
+        onClearStatuses={() => updateConfig((current) => ({ ...current, statuses: ["all"] }))}
+        hasStatusFilter={hasStatusFilter}
+        fieldOptions={SEARCH_FIELDS}
+        selectedFields={config.globalSearch.fields}
+        defaultFields={DEFAULT_CONFIG.globalSearch.fields}
+        onToggleField={toggleSearchField}
+        onResetFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))}
+        onSelectAllFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: SEARCH_FIELDS.map((field) => field.value) } }))}
+        hasFieldConfig={hasFieldConfig}
+        columnOptions={DEFAULT_VISIBLE_COLUMNS.map((column) => ({ label: TABLE_COLUMN_LABELS[column], value: column }))}
+        selectedColumns={config.visibleColumns}
+        defaultColumns={DEFAULT_VISIBLE_COLUMNS}
+        lockedColumns={["actions"]}
+        visibleColumnCount={visibleColumnCount}
+        onToggleColumn={toggleTableColumn}
+        onResetColumns={() => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS }))}
+        hasColumnConfig={hasColumnConfig}
+        selectedCount={selectedKeys.size}
+        onBulkDelete={() => {
+          toast.info("Xoá PO", `Đã chọn ${selectedKeys.size} đơn đặt hàng. Chức năng này đang ở UI-only.`);
+          setSelectedKeys(new Set());
+        }}
+        onExport={() => toast.success("Xuất file mock", `Sẵn sàng xuất ${filtered.length} đơn đặt hàng đang hiển thị.`)}
+        summaryItems={summaryItems}
+        onResetAll={resetAll}
+        resetDisabled={!hasAnyConfig}
+      />
 
       <DataTable
         data={filtered}
-        columns={columns}
+        columns={visibleColumns}
         rowKey={(row) => row.poId}
         caption={`Hiển thị ${filtered.length} đơn đặt hàng`}
         flagRow={shouldFlag}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ShoppingBag, Warehouse } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/components/shared/Toast";
 
 export default function Home() {
@@ -35,10 +36,11 @@ export default function Home() {
         {/* Mode cards */}
         <div className="grid w-full max-w-lg gap-4 sm:grid-cols-2">
           {/* Mode A — Back-office */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => router.push("/admin")}
-            className="group relative flex flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border-default bg-bg-surface px-6 py-8 text-center transition-all duration-300 hover:border-accent/50 hover:shadow-[0_0_40px_color-mix(in_srgb,var(--accent)_12%,transparent)]"
+            className="group relative h-auto flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border-default bg-bg-surface px-6 py-8 text-center transition-all duration-300 hover:border-accent/50 hover:bg-bg-surface hover:shadow-[0_0_40px_color-mix(in_srgb,var(--accent)_12%,transparent)]"
           >
             <div className="pointer-events-none absolute -right-6 -top-6 size-28 rounded-full bg-accent/8 transition-transform duration-300 group-hover:scale-150" />
             <div className="relative flex size-14 items-center justify-center rounded-xl bg-accent text-ink-inverse shadow-[0_10px_24px_color-mix(in_srgb,var(--accent)_30%,transparent)]">
@@ -55,18 +57,19 @@ export default function Home() {
             <p className="text-[0.8125rem] leading-5 text-ink-tertiary">
               Quản lý kho vận, đơn hàng NCC, nhập/xuất hàng. Data-dense, desktop-first.
             </p>
-          </button>
+          </Button>
 
           {/* Mode B — Storefront */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() =>
               toast.info(
                 "Đang phát triển",
                 "Storefront (Mode B) chưa được dựng trong tiến trình hiện tại. Sẽ bổ sung sau."
               )
             }
-            className="group relative flex flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border-default bg-bg-surface px-6 py-8 text-center transition-all duration-300 hover:border-[#A9682F]/50 hover:shadow-[0_0_40px_color-mix(in_srgb,#A9682F_12%,transparent)]"
+            className="group relative h-auto flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border-default bg-bg-surface px-6 py-8 text-center transition-all duration-300 hover:border-[#A9682F]/50 hover:bg-bg-surface hover:shadow-[0_0_40px_color-mix(in_srgb,#A9682F_12%,transparent)]"
           >
             <div className="pointer-events-none absolute -right-6 -top-6 size-28 rounded-full bg-[#A9682F]/8 transition-transform duration-300 group-hover:scale-150" />
             <div className="relative flex size-14 items-center justify-center rounded-xl bg-[#A9682F] text-white shadow-[0_10px_24px_color-mix(in_srgb,#A9682F_30%,transparent)]">
@@ -86,7 +89,7 @@ export default function Home() {
             <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-border-default bg-bg-subtle px-2.5 py-0.5 text-[0.6875rem] font-medium text-ink-tertiary">
               Đang phát triển
             </span>
-          </button>
+          </Button>
         </div>
 
         {/* Footer */}

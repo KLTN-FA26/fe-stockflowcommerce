@@ -13,12 +13,12 @@
 /* Mode A · Light (mặc định) */
 :root {
   color-scheme: light;
-  --bg-base: #FAFAF8;
+  --bg-base: #F3F4F6;
   --bg-surface: #FFFFFF;
-  --bg-subtle: #F2F2EF;
-  --bg-muted: #E8E8E3;
-  --border-default: #E2E2DC;
-  --border-strong: #C9C9C0;
+  --bg-subtle: #F7F8FA;
+  --bg-muted: #EEF0F3;
+  --border-default: #DADDE1;
+  --border-strong: #C5CAD1;
   --ink-primary: #1A1B18;
   --ink-secondary: #5C5E58;
   --ink-tertiary: #8A8C85;

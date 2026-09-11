@@ -19,6 +19,7 @@ import {
   Pencil,
   Plus,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
@@ -113,10 +114,11 @@ function Section({
   return (
     <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
       <div className="mb-3 flex items-center gap-2">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setOpen((o) => !o)}
-          className="flex flex-1 items-center gap-2 text-left text-[0.9375rem] font-semibold text-ink-primary hover:text-accent"
+          className="h-auto flex-1 justify-start gap-2 bg-transparent p-0 text-left text-[0.9375rem] font-semibold text-ink-primary hover:bg-transparent hover:text-accent"
         >
           {Icon && <Icon className="size-4 text-accent" />}
           {title}
@@ -125,7 +127,7 @@ function Section({
           ) : (
             <ChevronRight className="size-3.5 text-ink-tertiary" />
           )}
-        </button>
+        </Button>
         {actions && open && <div className="flex items-center gap-2">{actions}</div>}
       </div>
       <AnimatePresence initial={false}>
@@ -277,16 +279,17 @@ export default function ProductDetailPage() {
       sortable: true,
       compare: (a, b) => a.skuId.localeCompare(b.skuId),
       cell: (row) => (
-        <button
+        <Button
           type="button"
+          variant="link"
           onClick={(e) => {
             e.stopPropagation();
             openSkuPanel(row);
           }}
-          className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
+          className="h-auto p-0 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
         >
           {row.skuId}
-        </button>
+        </Button>
       ),
     },
     textCell<Sku>("variantLabel", "Biến thể", (row) => row.variantLabel, {
@@ -342,14 +345,14 @@ export default function ProductDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => toast.info("Chỉnh sửa sản phẩm", "Chức năng đang phát triển.")}
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
             >
               <Pencil className="size-3.5" />
               Chỉnh sửa
-            </button>
+            </Button>
             <Link
               href="/admin/products"
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
@@ -367,7 +370,7 @@ export default function ProductDetailPage() {
           <StatusBadge domain="product" status={product.status} size="md" withIcon />
           <span className="text-xs text-ink-tertiary">→</span>
           {actions.map((act) => (
-            <button
+            <Button variant="ghost"
               key={act.next}
               type="button"
               onClick={() => handleStatusChange(act.next)}
@@ -377,7 +380,7 @@ export default function ProductDetailPage() {
               )}
             >
               {act.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -392,13 +395,13 @@ export default function ProductDetailPage() {
             title="Thông tin chung"
             icon={Layers}
             actions={
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => toast.info("Chỉnh sửa thông tin", "Chức năng đang phát triển.")}
                 className="rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
               >
                 <Pencil className="inline size-3" />
-              </button>
+              </Button>
             }
           >
             <div className="divide-y divide-border-default">
@@ -642,14 +645,14 @@ export default function ProductDetailPage() {
           <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink-primary">Hình ảnh ({product.images.length})</h2>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => toast.info("Thêm hình ảnh", "Chức năng đang phát triển.")}
                 className="inline-flex items-center gap-1 rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
               >
                 <Plus className="size-3" />
                 Thêm
-              </button>
+              </Button>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {product.images.map((img, i) => (

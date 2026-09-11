@@ -6,6 +6,7 @@ import Link from "next/link";
 import { cn } from "cn";
 import { useTheme } from "@/components/theme-provider";
 import { SearchBar } from "@/components/shared/SearchBar";
+import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Sidebar,
@@ -224,11 +225,13 @@ function BackofficeSidebar() {
           </span>
         )}
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           onClick={toggleSidebar}
           className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-[var(--r-sm)] text-ink-tertiary transition-colors hover:bg-bg-muted hover:text-ink-primary",
+            "size-7 shrink-0 rounded-[var(--r-sm)] bg-transparent text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary",
             !collapsed && "ml-auto"
           )}
           aria-label={collapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
@@ -239,7 +242,7 @@ function BackofficeSidebar() {
           ) : (
             <PanelLeftClose className="size-4" />
           )}
-        </button>
+        </Button>
       </SidebarHeader>
 
       {/* Nav groups */}
@@ -381,47 +384,51 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
 
             {/* Warehouse selector dropdown */}
             <div className="relative">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setWhMenuOpen((o) => !o);
                   setUserMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-2.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                className="rounded-[var(--r-sm)] border-border-default bg-bg-subtle px-2.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
               >
                 <WarehouseIcon className="size-3.5" />
                 <span>{selectedWhLabel}</span>
                 <ChevronDown className="size-3" />
-              </button>
+              </Button>
               {whMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-[800]" onClick={() => setWhMenuOpen(false)} />
                   <div className="absolute right-0 top-full z-[801] mt-1 w-56 rounded-[var(--r-md)] border border-border-default bg-bg-surface py-1 shadow-[var(--sh-lg)]">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => {
                         setSelectedWarehouse("all");
                         setWhMenuOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
+                        "h-auto w-full justify-start gap-2 rounded-none bg-transparent px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
                         selectedWarehouse === "all"
                           ? "font-medium text-accent"
                           : "text-ink-secondary"
                       )}
                     >
                       Tất cả kho
-                    </button>
+                    </Button>
                     {warehouses.map((wh: Warehouse) => (
-                      <button
+                      <Button
                         key={wh.warehouseId}
                         type="button"
+                        variant="ghost"
                         onClick={() => {
                           setSelectedWarehouse(wh.warehouseId);
                           setWhMenuOpen(false);
                         }}
                         className={cn(
-                          "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
+                          "h-auto w-full justify-start gap-2 rounded-none bg-transparent px-3 py-1.5 text-left text-[0.8125rem] transition-colors hover:bg-bg-muted",
                           selectedWarehouse === wh.warehouseId
                             ? "font-medium text-accent"
                             : "text-ink-secondary"
@@ -431,7 +438,7 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
                           {wh.code}
                         </span>
                         <span className="truncate">{wh.name}</span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </>
@@ -439,24 +446,27 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Theme toggle */}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
               onClick={toggleTheme}
-              className="flex size-8 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-secondary transition-colors hover:text-ink-primary"
+              className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
               aria-label={theme === "dark" ? "Chuyển sang Light" : "Chuyển sang Dark"}
             >
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </button>
+            </Button>
 
             {/* User menu */}
             <div className="relative">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => {
                   setUserMenuOpen((o) => !o);
                   setWhMenuOpen(false);
                 }}
-                className="flex items-center gap-2 rounded-[var(--r-sm)] px-1 py-0.5 transition-colors hover:bg-bg-muted"
+                className="h-auto gap-2 rounded-[var(--r-sm)] bg-transparent px-1 py-0.5 transition-colors hover:bg-bg-muted"
               >
                 <div className="flex size-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
                   {currentUser.fullName
@@ -465,7 +475,7 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
                     .map((w) => w[0])
                     .join("")}
                 </div>
-              </button>
+              </Button>
               {userMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-[800]" onClick={() => setUserMenuOpen(false)} />
@@ -488,31 +498,34 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
                       </div>
                     </div>
                     {/* Menu items */}
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                      className="h-auto w-full justify-start gap-2 rounded-none bg-transparent px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
                     >
                       <User className="size-3.5" />
                       Hồ sơ cá nhân
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                      className="h-auto w-full justify-start gap-2 rounded-none bg-transparent px-3 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
                     >
                       <Settings className="size-3.5" />
                       Cài đặt
-                    </button>
+                    </Button>
                     <div className="my-1 border-t border-border-default" />
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-[0.8125rem] text-danger transition-colors hover:bg-bg-muted"
+                      className="h-auto w-full justify-start gap-2 rounded-none bg-transparent px-3 py-1.5 text-[0.8125rem] text-danger transition-colors hover:bg-bg-muted hover:text-danger"
                     >
                       <LogOut className="size-3.5" />
                       Đăng xuất
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}

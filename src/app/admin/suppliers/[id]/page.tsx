@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/shared/Card";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { toast } from "@/components/shared/Toast";
@@ -284,29 +285,29 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
               </span>
             </div>
             <div className="space-y-2">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => toast.success("Mock action", `Cập nhật hồ sơ ${supplier.supplierId} là UI-only.`)}
-                className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 Cập nhật hồ sơ
-              </button>
+              </Button>
               {supplier.active ? (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => toast.warning("Mock action", `Tạm ngưng ${supplier.supplierId} là UI-only.`)}
                   className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border border-danger/30 bg-bg-surface px-3 py-2 text-[0.8125rem] font-medium text-danger transition-colors hover:bg-danger/5"
                 >
                   Tạm ngưng NCC
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => toast.success("Mock action", `Kích hoạt lại ${supplier.supplierId} là UI-only.`)}
                   className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border border-positive/30 bg-bg-surface px-3 py-2 text-[0.8125rem] font-medium text-positive transition-colors hover:bg-positive/5"
                 >
                   Kích hoạt lại
-                </button>
+                </Button>
               )}
             </div>
           </section>

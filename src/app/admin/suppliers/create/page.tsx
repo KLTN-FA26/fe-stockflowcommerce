@@ -19,6 +19,9 @@ import { cn } from "cn";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card } from "@/components/shared/Card";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "@/components/shared/Toast";
 import { suppliers, type Currency } from "@/lib/mock-data";
@@ -119,27 +122,31 @@ function FieldLabel({ children, required = false }: { children: React.ReactNode;
   );
 }
 
-function TextInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+function TextInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   return (
-    <input
+    <Input
       {...props}
       className={cn(
-        "h-9 w-full rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 text-[0.8125rem] text-ink-primary outline-none transition-colors placeholder:text-ink-tertiary focus:border-accent",
+        "h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20",
         className
       )}
     />
   );
 }
 
-function SelectInput({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+function SelectInput({ label, value, onValueChange, children }: { label: string; value: string; onValueChange: (value: string) => void; children: React.ReactNode }) {
   return (
-    <select
-      {...props}
-      className={cn(
-        "h-9 w-full rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 text-[0.8125rem] text-ink-primary outline-none transition-colors focus:border-accent",
-        className
-      )}
-    />
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger size="default" aria-label={label} className="h-9 w-full rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none focus-visible:border-accent focus-visible:ring-accent/20">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="start">
+        <SelectGroup>
+          <SelectLabel>{label}</SelectLabel>
+          {children}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -247,15 +254,15 @@ export default function CreateSupplierPage() {
               const Icon = step.icon;
               const status = stepStatus(step.key);
               return (
-                <button
+                <Button
                   key={step.key}
                   type="button"
+                  variant="ghost"
                   onClick={() => setCurrentStep(step.key)}
                   className={cn(
-                    "mb-1 flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
-                    status === "active" && "bg-brand font-medium text-ink-inverse",
-                    status === "done" && "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
-                    status === "idle" && "text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary",
+                    "mb-1 flex w-full justify-start gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
+                    status === "active" && "bg-brand font-medium text-ink-inverse hover:bg-brand hover:text-ink-inverse",
+                    status !== "active" && "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
                     status === "error" && "border border-danger/30 bg-danger/5 font-medium text-danger"
                   )}
                 >
@@ -263,8 +270,8 @@ export default function CreateSupplierPage() {
                     {status === "done" ? <Check className="size-3" /> : index + 1}
                   </span>
                   <Icon className="size-3.5 shrink-0" />
-                  <span className="truncate">{step.label}</span>
-                </button>
+                  <span className="flex-1 truncate">{step.label}</span>
+                </Button>
               );
             })}
           </div>
@@ -301,9 +308,9 @@ export default function CreateSupplierPage() {
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>Trạng thái</FieldLabel>
-                  <SelectInput value={form.active ? "active" : "inactive"} onChange={(e) => updateForm("active", e.target.value === "active")}>
-                    <option value="active">Đang hoạt động</option>
-                    <option value="inactive">Tạm ngưng</option>
+                  <SelectInput label="Trạng thái" value={form.active ? "active" : "inactive"} onValueChange={(value) => updateForm("active", value === "active")}>
+                    <SelectItem value="active">Đang hoạt động</SelectItem>
+                    <SelectItem value="inactive">Tạm ngưng</SelectItem>
                   </SelectInput>
                 </div>
               </div>
@@ -377,10 +384,10 @@ export default function CreateSupplierPage() {
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel required>Tiền tệ PO</FieldLabel>
-                  <SelectInput value={form.currency} onChange={(e) => updateForm("currency", e.target.value as Currency)}>
-                    <option value="VND">VND</option>
-                    <option value="USD">USD</option>
-                    <option value="CNY">CNY</option>
+                  <SelectInput label="Tiền tệ PO" value={form.currency} onValueChange={(value) => updateForm("currency", value as Currency)}>
+                    <SelectItem value="VND">VND</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="CNY">CNY</SelectItem>
                   </SelectInput>
                 </div>
                 <div className="space-y-1.5">
@@ -442,40 +449,46 @@ export default function CreateSupplierPage() {
             Bước {currentIndex + 1}/{STEPS.length} · {STEPS[currentIndex]!.label}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={saveDraft}
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
             >
               <Save className="size-3.5" />
               Lưu nháp
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={goBack}
               disabled={currentIndex === 0}
               className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary disabled:cursor-not-allowed disabled:opacity-45"
             >
               Quay lại
-            </button>
+            </Button>
             {currentStep !== "review" ? (
-              <button
+              <Button variant="default"
                 type="button"
+                size="sm"
                 onClick={goNext}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 Tiếp tục
                 <ArrowRight className="size-3.5" />
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="default"
                 type="button"
+                size="sm"
                 onClick={handleSubmitAttempt}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium text-ink-inverse transition-colors hover:bg-brand-hover"
+                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
               >
                 <Send className="size-3.5" />
                 Gửi duyệt
-              </button>
+              </Button>
             )}
           </div>
         </div>

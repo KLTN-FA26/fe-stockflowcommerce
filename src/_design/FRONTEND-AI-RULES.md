@@ -95,7 +95,7 @@ Token định nghĩa một lần trong `globals.css` (`@theme`) + `lib/tokens.ts
 
 Hệ thống dùng **hai theme độc lập** cho hai mảng (đã chốt với người dùng):
 
-- **Mảng A (Kho vận / Back-office):** theme **Ink + Cyan** — lạnh, nghiêm túc, data-dense. CTA = ink đen, thông tin/tiến trình = cyan.
+- **Mảng A (Kho vận / Back-office):** theme **Ink + Blue** — lạnh, nghiêm túc, data-dense. CTA = ink đen, thông tin/tiến trình = blue.
 - **Mảng B (Storefront / TMĐT):** theme **Caramel** — ấm áp, thân thiện, **đối lập có chủ đích** với A. CTA = caramel nâu ấm, nền kem ấm.
 
 Hai theme dùng **chung bộ semantic trạng thái** (positive/info/warning/danger/neutral/muted/special) — không đổi. Không trộn token của mảng này vào mảng kia.
@@ -104,12 +104,12 @@ Hai theme dùng **chung bộ semantic trạng thái** (positive/info/warning/dan
 
 | Token | Light | Dark | Vai trò |
 |-------|-------|------|---------|
-| `bg.base` | `#FAFAF8` | `#0E0F11` | nền trang |
-| `bg.surface` | `#FFFFFF` | `#17181B` | card, panel |
-| `bg.subtle` | `#F2F2EF` | `#1F2124` | nền phụ, header bảng, hover |
-| `bg.muted` | `#E8E8E3` | `#2A2C30` | nền disabled, divider đậm |
-| `border.default` | `#E2E2DC` | `#2E3034` | viền card, ô nhập |
-| `border.strong` | `#C9C9C0` | `#3D4045` | viền focus, divider |
+| `bg.base` | `#F3F4F6` | `#0E0F11` | nền trang, app shell |
+| `bg.surface` | `#FFFFFF` | `#17181B` | card, panel, table body |
+| `bg.subtle` | `#F7F8FA` | `#1F2124` | nền phụ trắng lạnh, sidebar, header bảng, toolbar |
+| `bg.muted` | `#EEF0F3` | `#2A2C30` | hover, selected nhẹ, disabled, divider đậm |
+| `border.default` | `#DADDE1` | `#2E3034` | viền card, ô nhập |
+| `border.strong` | `#C5CAD1` | `#3D4045` | viền focus, divider |
 
 **Chữ (ink):**
 
@@ -120,12 +120,12 @@ Hai theme dùng **chung bộ semantic trạng thái** (positive/info/warning/dan
 | `ink.tertiary` | `#8A8C85` | `#76786F` | placeholder, meta |
 | `ink.inverse` | `#FFFFFF` | `#1A1B18` | chữ trên nền accent |
 
-**Brand — Mảng A (Ink + Cyan):**
+**Brand — Mảng A (Ink + Blue):**
 
 | Token | Giá trị | Vai trò |
 |-------|---------|---------|
 | `brand.ink` | `#1A1B18` | CTA back-office (nút nghiêm túc, tương phản cao) |
-| `accent.cyan` | `#0E9BB0` | tiến trình, thông tin, link phụ |
+| `accent.blue` | `#1E88E5` (light) · `#4EA6F0` (dark) | tiến trình, thông tin, link phụ |
 
 **Brand — Mảng B (Caramel, ấm):**
 
@@ -237,13 +237,85 @@ Dùng scale 4px. Token đặt tên theo mức, KHÔNG gọi thẳng `p-4` trong 
 - Layout: **sidebar điều hướng cố định (trái) + topbar (breadcrumb, tìm kiếm toàn cục, kho đang chọn, user) + vùng nội dung**.
 - Màu accent tiết chế; màu chủ yếu phục vụ **trạng thái** và **nút hành động chính**.
 
+### 4.1.1 Quy chuẩn shadcn-first cho Back-office
+- Mặc định mọi control tương tác phải dùng shadcn/ui hoặc shared component đã chuẩn hoá. Không viết raw `<button>`, `<input>`, `<select>`, `<textarea>`, custom dropdown, custom modal/dialog hoặc chip tự chế trong page-level code nếu shadcn/shared đã đáp ứng.
+- Mapping bắt buộc: raw `button` → `<Button>`; raw `input` → `<Input>`; raw `textarea` → `<Textarea>`; raw `select`/dropdown đơn → `<Select>`; multi-select/filter dropdown → `<Popover>` + `<Command>` + `<Checkbox>`; modal/confirm → `<Dialog>` hoặc `<ConfirmDialog>`; table → `<DataTable>`; status → `<StatusBadge>`; tag/chip cấu hình → `<Badge>` + mini `<Button>` khi cần xoá.
+- Ngoại lệ raw/native chỉ được phép trong `src/components/ui/*` khi đang bọc Radix/native primitive, element semantic/layout không có hành vi control, hidden/file input đặc thù, Next `<Link>/<Image>`, SVG/icon, hoặc primitive của thư viện cần `asChild`.
+- Form Mode A dùng density chặt: control cao `h-8`/`h-9`, `rounded-[var(--r-sm)]`, `border-border-default`, `bg-bg-surface`, text `text-[0.8125rem]`, focus `focus-visible:border-accent focus-visible:ring-accent/20`.
+- Button tone theo ý nghĩa và theo trạng thái nền gốc: primary/CTA/tạo mới/tiếp tục/gửi duyệt dùng `variant="default"` + `bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse` trong Mode A; button phụ dùng `variant="outline"`/secondary; control vốn không có nền như tab, row action, icon-only, collapse/sidebar/user-menu mới dùng `variant="ghost"` + `bg-transparent`; destructive/bulk delete dùng `danger`. Không đổi button vốn không nền thành nền đen, nhưng cũng không xoá nền đen của CTA/tạo mới.
+- Với shadcn `<Select>`, luôn có label hiển thị bằng mắt gần control và `SelectLabel` trong dropdown nếu danh sách option cần tiêu đề; `SelectLabel` phải nằm trong `SelectGroup`. `aria-label`/`aria-labelledby` chỉ là bổ trợ accessibility, không thay thế visible label. Dùng `value` + `onValueChange`; cast union type tại ranh giới UI, không rename field/status trong mock. Với `<Checkbox>`, luôn convert `checked === true` trước khi ghi state boolean.
+- Không cài thêm shadcn component tràn lan. Chỉ thêm khi có nhu cầu thật: `dropdown-menu` cho action menu nhiều item, `tabs` cho tab chuẩn, `alert-dialog` cho destructive confirm riêng, `switch`/`radio-group` khi boolean/choice xuất hiện lặp lại nhiều nơi.
+
 ### 4.2 Bảng dữ liệu (bắt buộc)
 Mọi danh sách chứng từ (PO, Receipt, Invoice, Pick task, Transfer…) dùng **shadcn DataTable** với:
 - **Phân trang** (pagination), **lọc** (filter theo trạng thái, kho, ngày, NCC…), **sắp xếp** (sort) trên cột.
 - Cột bắt buộc: mã chứng từ (mono, link tới detail) · đối tượng liên quan · ngày · SL/giá trị · **`<StatusBadge>`** · cột hành động (icon-button hoặc menu).
 - Số (SL, tiền) → căn phải, tabular-nums, mono.
 - Row có trạng thái "cần chú ý" (Exception, Short, Discrepancy, On Hold) → tô nền `status.warning` rất nhạt ở mép trái (left border 2px).
-- Bulk-select (checkbox) cho thao tác hàng loạt (release pick, duyệt nhiều PO).
+- Bulk-select (checkbox) cho thao tác hàng loạt (release pick, duyệt nhiều PO). Khi có row được chọn, hiện action phụ cạnh nút export/action phải, ví dụ `Xoá đã chọn`; hành động destructive vẫn cần confirm nếu làm thật. Trong prototype UI-only, chỉ toast và không mutate mock data.
+
+#### 4.2.1 Pattern chuẩn cho trang danh sách Mode A
+Các page danh sách quản trị dùng cùng cấu trúc UI sau để đồng bộ:
+
+1. **PageHeader**
+   - Dùng `<PageHeader>` với breadcrumb, title, subtitle và actions bên phải.
+   - Action chính dùng shadcn `<Button>` `size="sm"`, nền `brand`, icon lucide, nhãn động từ rõ ràng.
+   - Stats không show trực tiếp mặc định. Có nút `Hiện thống kê` / `Ẩn thống kê` trong PageHeader.
+   - Stats dùng `<StatTile>` và animation `framer-motion`. Không animate `height: auto`; dùng wrapper `gridTemplateRows: 0fr ↔ 1fr`, `min-h-0`, `overflow-hidden` để tránh flicker khi đóng.
+
+2. **Toolbar tìm kiếm & công cụ**
+   - Toolbar là một hàng data-dense: search input bên trái, các icon công cụ cạnh search, nút export/action phụ ngoài cùng phải.
+   - Search input chính luôn hiển thị mặc định, dùng shadcn `<Input>` nền `bg.surface` trắng, icon `<Search>` màu `accent`, border `border.default`, focus `accent.blue` nhẹ.
+   - Không dùng title/tile lớn trong toolbar; tránh làm section trống và cao.
+   - Các công cụ bổ trợ dùng shadcn `<Popover>` + `<Command>` + `<Checkbox>` + `<Button>`:
+     - Lọc trạng thái/facet: icon `<Filter>`, tone `info`.
+     - Chọn phạm vi search field: icon `<ListFilter>`, tone `special`.
+     - Ẩn/hiện cột: icon `<Columns3>`, tone `warning`.
+   - Mặc định button công cụ phải có nền/viền trung tính, chỉ icon có màu tone để vẫn có tín hiệu màu. Khi config thật sự khác mặc định mới bật active state: border tone + bg tone nhạt (~10%).
+   - `open`, `focus-visible`, hover hoặc auto-highlight của `cmdk` không được làm button trông như active config. Active chỉ dựa vào state config thật.
+   - Nút export đặt ngoài cùng phải, có icon + text (`Xuất Excel`), tone `positive`, dùng shadcn `<Button variant="outline" size="sm">`.
+
+3. **Config summary section**
+   - Bên dưới toolbar có một thanh compact `Cấu hình`, không dùng card lớn nhiều khoảng trống.
+   - Dùng shadcn `<Badge variant="outline">` cho từng nhóm config.
+   - Summary phải tách rõ loại search:
+     - `Search chính`: query của search bar mặc định.
+     - `Trường search`: danh sách field mà search chính đang quét.
+     - `Search trong cột`: filter nhập từ header từng cột.
+     - `Cột hiển thị`: số cột đang bật / tổng cột cấu hình được.
+     - `Trạng thái`: facet/status đang chọn.
+   - Mỗi badge có nút `X` mini để reset riêng nhóm config khi nhóm đó khác mặc định.
+   - Nút `Reset` bên phải reset toàn bộ config của page.
+   - Config tạm thời lưu `localStorage` theo từng page; key theo format `stockflow:<route>:config`. Khi đọc localStorage phải merge với `DEFAULT_CONFIG` để không lỗi khi schema config thay đổi.
+
+4. **Search chính vs search trong cột**
+   - Search chính là input ở toolbar, lọc rộng theo các field được chọn trong `Trường search`.
+   - `Trường search` chỉ là scope của search chính; không gọi nó là `Global search` trong UI vì dễ nhầm với search trong cột.
+   - Search trong cột không render input thường trực trong header. Header chỉ hiển thị label + sort + icon filter nhỏ.
+   - Click icon filter cột mở shadcn `<Popover>` chứa `<Input>` nền trắng và nút `Xoá`.
+   - Khi cột có filter, icon filter cột đổi tone `info`; nếu không có filter, icon trung tính.
+   - Sort chỉ gắn vào label/sort button, không gắn lên toàn bộ `<TableHead>`, để filter popover và checkbox không trigger sort.
+
+5. **Table footer & pagination**
+   - Caption/số dòng không đặt trên table header. Đưa xuống footer table.
+   - Footer layout: đầu hàng là chọn `Dòng/trang` bằng shadcn `<Select>`, kế tiếp là range `Hiển thị x–y / tổng`, pagination nằm góc phải.
+   - Page size options mặc định: `10`, `15`, `20`, `50`. Khi đổi page size, reset về trang đầu.
+   - Nếu current page có hơn 10 dòng, table body phải nằm trong vùng scroll nội bộ (`max-h` khoảng 520px) và header sticky. Nếu 10 dòng trở xuống, table không tạo scroll nội bộ.
+
+6. **Màu và bề mặt cho data-table Mode A**
+   - Page/app shell dùng `bg.base`.
+   - Card/table body/item row dùng `bg.surface` trắng.
+   - Sidebar, table header, toolbar, footer table, summary bar dùng `bg.subtle` trắng lạnh nhẹ.
+   - Hover/selected nhẹ dùng `bg.muted` hoặc tone alpha thấp.
+   - Border dùng `border.default`; Mode A ưu tiên border thay vì shadow.
+   - Không dùng nền xám đậm cho item phụ bên dưới table; nếu item đại diện row/table data thì dùng `bg.surface` để đồng bộ với table body.
+   - Tone semantic cho toolbar: `info` = filter/facet, `special` = field scope, `warning` = column visibility, `positive` = export/success, `danger` = xoá/bulk destructive.
+
+7. **Command/Popover UX**
+   - Trong `<CommandItem>`, checkbox là tín hiệu chọn duy nhất; không thêm dấu check phụ bên phải nếu đã có checkbox.
+   - Tắt/giảm auto highlight của `cmdk` (`data-selected`) để không nhìn như selected thật; hover có thể dùng `bg.muted` nhẹ.
+   - Popover title ngắn, mô tả rõ chức năng: `Lọc trạng thái`, `Trường tìm kiếm`, `Ẩn hiện cột`.
+   - Footer popover dùng shadcn `<Button>`: reset/mặc định bên trái, áp dụng bên phải.
 
 ### 4.3 Trải nghiệm thao tác (operation-friendly)
 - **Ưu tiên không cần chuột:** tự focus ô input đầu tiên khi mở form/dialog; `Enter` submit, `Esc` đóng; điều hướng bảng bằng phím mũi tên; shortcut quét barcode (input luôn sẵn sàng nhận ký tự từ máy quét).
@@ -385,13 +457,13 @@ Một component generic duy nhất xử lý **~69 trạng thái** toàn hệ th�
 ### 6.3 Quy ước dùng chung
 - Component shared KHÔNG chứa nghiệp vụ cứng — nhận dữ liệu qua props, nhận `density`/`tone`/`size` làm variant.
 - Mọi component hỗ trợ **dark mode** qua token (không hardcode màu).
-- Mọi component interactive có **focus-visible** rõ ràng (ring `border.strong` / `accent.cyan`) và tôn trọng **`prefers-reduced-motion`**.
+- Mọi component interactive có **focus-visible** rõ ràng (ring `border.strong` / `accent.blue`) và tôn trọng **`prefers-reduced-motion`**.
 
 ---
 
 ## 7. Theme (light/dark) & cách áp dụng
 
-- **Hai mảng dùng hai theme tách biệt** (đã chốt): A = Ink + Cyan (lạnh), B = Caramel (ấm). Không trộn token của mảng này vào mảng kia.
+- **Hai mảng dùng hai theme tách biệt** (đã chốt): A = Ink + Blue (lạnh), B = Caramel (ấm). Không trộn token của mảng này vào mảng kia.
 - **Cả hai theme đều hỗ trợ light + dark.** Token mục 3 đã có cột Light/Dark.
 - `<ThemeProvider>` bọc ở root layout; class `dark` trên `<html>`; lưu lựa chọn (in-memory cho demo — KHÔNG dùng localStorage trong artifact preview).
 - Dark mode back-office: nền `#0E0F11`, giảm contrast gắt (chữ `#F4F4F1` không phải trắng tuyệt đối), giữ nguyên semantic tone nhưng hạ saturation nhẹ.
