@@ -1,0 +1,23 @@
+const ADMIN_BASE = "/admin";
+
+export const ADMIN_ROUTES = {
+  home: ADMIN_BASE,
+  products: {
+    create: `${ADMIN_BASE}/products/create`,
+    detail: (id: string) => `${ADMIN_BASE}/products/${id}`,
+    list: `${ADMIN_BASE}/products`,
+    skuDetail: (id: string) => `${ADMIN_BASE}/products/sku/${id}`,
+  },
+  purchaseOrders: {
+    create: `${ADMIN_BASE}/purchase-orders/create`,
+    detail: (id: string) => `${ADMIN_BASE}/purchase-orders/${id}`,
+    list: `${ADMIN_BASE}/purchase-orders`,
+  },
+  replenishment: {
+    list: `${ADMIN_BASE}/replenishment`,
+  },
+  variants: {
+    detail: (id: string) => `${ADMIN_BASE}/variants/${id}`,
+    list: `${ADMIN_BASE}/variants`,
+  },
+} as const;

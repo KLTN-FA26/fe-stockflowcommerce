@@ -61,3 +61,11 @@ Dự án dùng **pnpm** — KHÔNG `npm install` (crash trên cây symlink pnpm)
 Commands: `/module <tên>` · `/validate` · `/design-check` · `/fix-lint`
 Agents: `design-reviewer` · `architecture-reviewer`
 Skills: `status-badge` (thêm trạng thái mới) · `zod-br-schema` (encode BR)
+
+## Code style bắt buộc (§15 PRODUCTION-FRONTEND-RULES)
+
+- **Import theo thứ tự:** `"use client"` → external → `@/constants` → `@/lib`/`@/hooks` → `@/features` → `@/components` → relative → `import type` (tách riêng, cuối) → side-effect. Nhóm cách nhau 1 dòng trống, trong nhóm sort alphabet.
+- **Không hardcode string/số:** route → `ADMIN_ROUTES`, nhãn → `UI_LABELS`, status → `PO_STATUS`/`*_STATUS`, cột → `*_COLUMNS`, pageSize → `PAGE_SIZE`, ngưỡng/dung sai → `constants/numbers.ts` (cite docs), storage key → `STORAGE_KEYS`, query key → `queryKeys.*`, toast → `TOAST_MESSAGES`. Dùng lại ≥2 lần = phải vào constants.
+- **`src/constants/` là tầng thấp nhất** — không import gì từ `src/` ngoài chính nó.
+- **Không `any`** (tường minh lẫn ngầm), không `@ts-ignore`, không `as unknown as` không lý do, không `!` non-null. Chưa biết type → `unknown` + narrow/zod parse. `catch (e: unknown)` + type guard.
+- Chuỗi status lấy nguyên văn từ `constants/statuses.ts` (nguồn cho zod enum + status-map + lifecycle) — không gõ tay lại.

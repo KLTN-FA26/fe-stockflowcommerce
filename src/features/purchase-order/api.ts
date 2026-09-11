@@ -5,9 +5,10 @@
  * mock adapter intercepts these and returns data from mock-data.ts.
  */
 
+import { PAGE_SIZE } from "@/constants";
 import { api } from "@/lib/api/client";
 import type { PaginatedResponse } from "@/lib/api/query-factory";
-import type { PurchaseOrder, ReplenishmentProposal } from "./types";
+import type { PurchaseOrder, ReplenishmentProposal, Supplier, Warehouse } from "./types";
 
 /* ── List ────────────────────────────────────────────────────────────── */
 
@@ -98,5 +99,22 @@ export async function listReplenishmentProposals(
     "/replenishment-proposals",
     { params, signal },
   );
+  return data;
+}
+
+export async function listPoSuppliers(signal?: AbortSignal): Promise<PaginatedResponse<Supplier>> {
+  const { data } = await api.get<PaginatedResponse<Supplier>>("/suppliers", {
+    params: { pageSize: PAGE_SIZE.masterData },
+    signal,
+  });
+  return data;
+}
+
+export async function listPoWarehouses(
+  signal?: AbortSignal,
+): Promise<PaginatedResponse<Warehouse>> {
+  const { data } = await api.get<PaginatedResponse<Warehouse>>("/warehouses", {
+    signal,
+  });
   return data;
 }
