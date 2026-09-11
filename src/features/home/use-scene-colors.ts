@@ -1,10 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-
-import { useTheme } from "@/components/theme-provider";
-
-import type { ColorTheme } from "@/components/theme-provider";
+import { useEffect, useState } from "react";
 
 export interface SceneColors {
   /** Màu khối hàng và khung kệ. */
@@ -45,10 +41,11 @@ export const SCENE_COLOR_FALLBACK: SceneColors = {
 };
 
 /**
- * @param _theme — không đọc trực tiếp; tham số này chỉ để `useMemo` ở dưới khai báo
- * đúng dependency (đổi theme → class `dark` trên `<html>` đổi → CSS variable đổi).
+ * Đọc màu tại đúng thời điểm gọi — nguồn sự thật là DOM (`document.documentElement`),
+ * không phải React state. Không nhận tham số theme: hàm này không cần biết theme là
+ * gì, chỉ cần đọc `getComputedStyle` sau khi `ThemeProvider` đã mutate DOM xong.
  */
-function readSceneColors(_theme: ColorTheme): SceneColors {
+function readSceneColors(): SceneColors {
   if (typeof window === "undefined") return SCENE_COLOR_FALLBACK;
 
   const computed = getComputedStyle(document.documentElement);
@@ -63,16 +60,37 @@ function readSceneColors(_theme: ColorTheme): SceneColors {
 /**
  * Màu của scene 3D, đồng bộ với design token hiện hành.
  *
- * Phụ thuộc `useTheme()` nên khi người dùng đổi light/dark, hook tính lại và đọc giá trị
- * CSS variable mới — material đổi màu tại chỗ, Canvas KHÔNG remount.
+ * Không dùng `useTheme()` để suy luận thời điểm đổi màu: `ThemeProvider` set React
+ * state `theme` TRƯỚC, rồi effect riêng của nó mới set `class="dark"` /
+ * `data-theme` lên `<html>` SAU (xem `theme-provider.tsx`). Nếu hook này chạy lại
+ * theo `theme` (render phase, vd qua `useMemo`), nó đọc `getComputedStyle` trước khi
+ * class kịp đổi → luôn lệch một nhịp so với theme thật.
  *
- * Đọc trực tiếp trong render qua `useMemo` (khoá theo `theme`) thay vì `useEffect` +
- * `setState`: tránh vi phạm `react-hooks/set-state-in-effect` (cascading render) —
- * xem lý do tương tự ở `use-page-config.ts`. `getComputedStyle` chỉ đọc, không ghi DOM,
- * nên an toàn khi gọi trong lúc render.
+ * Thay vào đó, quan sát trực tiếp nguồn sự thật là DOM bằng `MutationObserver` trên
+ * `document.documentElement` (`class` / `data-theme`). `setState` trong effect ở đây
+ * hợp lệ theo đúng ngoại lệ của rule `react-hooks/set-state-in-effect`: effect này
+ * subscribe để nhận update từ external system (DOM bị `ThemeProvider` mutate), không
+ * phải tính state từ props/state khác.
  */
 export function useSceneColors(): SceneColors {
-  const { theme } = useTheme();
+  // Lazy initializer — đọc ngay trong render lần đầu, giống pattern ThemeProvider
+  // đọc `data-theme` ở dòng 45-49 của theme-provider.tsx. Không setState trong effect
+  // cho lần render đầu tiên.
+  const [colors, setColors] = useState<SceneColors>(() => readSceneColors());
 
-  return useMemo(() => readSceneColors(theme), [theme]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const observer = new MutationObserver(() => {
+      setColors(readSceneColors());
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return colors;
 }
