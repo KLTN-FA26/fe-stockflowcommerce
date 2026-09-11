@@ -34,7 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminTableSkeleton } from "@/components/shared/AdminSkeletons";
 
 /* -------------------------------------------------------------------------- */
 /*  Aggregate unique attributes from all products                             */
@@ -294,7 +294,7 @@ export function VariantAttributes() {
   );
 
   if (productsQuery.isLoading) {
-    return <Skeleton className="h-[620px] rounded-[var(--card-radius)]" />;
+    return <AdminTableSkeleton columns={8} rows={10} showStats showConfigSummary />;
   }
 
   return (

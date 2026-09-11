@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminFormSkeleton } from "@/components/shared/AdminSkeletons";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Currency, Supplier, Warehouse } from "@/features/purchase-order";
@@ -366,7 +366,7 @@ export function PurchaseOrderCreate() {
   };
 
   if (isLoading) {
-    return <Skeleton className="h-[680px] rounded-[var(--card-radius)]" />;
+    return <AdminFormSkeleton sections={3} fieldsPerSection={3} />;
   }
 
   return (

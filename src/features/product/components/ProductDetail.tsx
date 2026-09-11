@@ -36,7 +36,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminDetailSkeleton } from "@/components/shared/AdminSkeletons";
 import { textCell, numberCell, moneyCell, statusCell } from "@/components/shared/column-helpers";
 import type { PrintArea, Product, ProductStatus, Sku, SkuStatus } from "@/features/product";
 
@@ -221,7 +221,7 @@ export function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const skuStats = useMemo(() => computeSkuStats(effectiveSkus), [effectiveSkus]);
 
   if (isLoading) {
-    return <Skeleton className="h-[680px] rounded-[var(--card-radius)]" />;
+    return <AdminDetailSkeleton sections={3} withSidebar />;
   }
 
   /* 404 */

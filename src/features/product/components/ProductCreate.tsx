@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminFormSkeleton } from "@/components/shared/AdminSkeletons";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Category, ProductAttribute, ProductType, Sku, Uom } from "@/features/product";
@@ -354,7 +354,7 @@ export function ProductCreate() {
   };
 
   if (isLoading) {
-    return <Skeleton className="h-[720px] rounded-[var(--card-radius)]" />;
+    return <AdminFormSkeleton sections={4} fieldsPerSection={4} withSidebar />;
   }
 
   return (

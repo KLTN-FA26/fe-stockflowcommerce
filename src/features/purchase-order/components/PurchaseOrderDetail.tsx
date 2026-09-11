@@ -18,7 +18,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminDetailSkeleton } from "@/components/shared/AdminSkeletons";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import {
   allowedPoActions,
@@ -156,7 +156,7 @@ export function PurchaseOrderDetail({ params }: { params: Promise<{ id: string }
   );
 
   if (isLoading) {
-    return <Skeleton className="h-[680px] rounded-[var(--card-radius)]" />;
+    return <AdminDetailSkeleton sections={3} withTimeline />;
   }
 
   /* ---- Not found ---- */

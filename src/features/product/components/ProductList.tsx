@@ -38,7 +38,7 @@ import {
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminTableSkeleton } from "@/components/shared/AdminSkeletons";
 import { numberCell, moneyCell, statusCell, textCell } from "@/components/shared/column-helpers";
 import { STATUS_LABEL_VI } from "@/lib/status-map";
 import {
@@ -1027,7 +1027,7 @@ export function ProductList() {
   };
 
   if (isLoading) {
-    return <Skeleton className="h-[640px] rounded-[var(--card-radius)]" />;
+    return <AdminTableSkeleton columns={8} rows={10} showStats showConfigSummary />;
   }
 
   return (

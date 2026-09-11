@@ -21,7 +21,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminDetailSkeleton } from "@/components/shared/AdminSkeletons";
 
 import type { Sku, SkuStatus } from "@/features/product";
 
@@ -106,7 +106,7 @@ export function SkuDetail({ params }: { params: Promise<{ id: string }> }) {
   );
 
   if (isLoading) {
-    return <Skeleton className="h-[520px] rounded-[var(--card-radius)]" />;
+    return <AdminDetailSkeleton sections={2} withSidebar />;
   }
 
   /* 404 */
