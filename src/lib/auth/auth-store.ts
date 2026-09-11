@@ -15,6 +15,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { RoleName } from "./roles";
+import { setAuthCookie, removeAuthCookie } from "./auth-cookie";
 
 /* ── Types ───────────────────────────────────────────────────────────── */
 
@@ -69,17 +70,25 @@ export const useAuthStore = create<AuthState>()(
         return user.roles;
       },
 
-      login: (user, tokens) => set({ user, tokens, isAuthenticated: true, impersonatedRole: null }),
+      login: (user, tokens) => {
+        setAuthCookie(tokens.accessToken);
+        set({ user, tokens, isAuthenticated: true, impersonatedRole: null });
+      },
 
-      updateTokens: (tokens) => set({ tokens }),
+      updateTokens: (tokens) => {
+        setAuthCookie(tokens.accessToken);
+        set({ tokens });
+      },
 
-      logout: () =>
+      logout: () => {
+        removeAuthCookie();
         set({
           user: null,
           tokens: null,
           isAuthenticated: false,
           impersonatedRole: null,
-        }),
+        });
+      },
     }),
     {
       name: "stockflow-auth",

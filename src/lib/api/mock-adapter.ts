@@ -19,19 +19,13 @@ interface MockResponse<T = unknown> {
   headers: Record<string, string>;
 }
 
-type RouteHandler = (
-  config: AxiosRequestConfig,
-) => Promise<MockResponse> | MockResponse;
+type RouteHandler = (config: AxiosRequestConfig) => Promise<MockResponse> | MockResponse;
 
 /* ── Route registry ──────────────────────────────────────────────────── */
 
 const routes = new Map<string, Map<string, RouteHandler>>();
 
-export function registerMockRoute(
-  method: string,
-  pattern: string,
-  handler: RouteHandler,
-): void {
+export function registerMockRoute(method: string, pattern: string, handler: RouteHandler): void {
   const methodUpper = method.toUpperCase();
   if (!routes.has(methodUpper)) routes.set(methodUpper, new Map());
   routes.get(methodUpper)!.set(pattern, handler);
@@ -68,9 +62,7 @@ function matchRoute(
   if (!methodRoutes) return null;
 
   for (const [pattern, handler] of methodRoutes) {
-    const regex = new RegExp(
-      "^" + pattern.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$",
-    );
+    const regex = new RegExp("^" + pattern.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$");
     const match = url.replace(/\?.*$/, "").match(regex);
     if (match) return { handler, params: match.groups ?? {} };
   }
@@ -117,9 +109,12 @@ async function mockAdapter(config: AxiosRequestConfig): Promise<MockResponse> {
 export function activateMockAdapter(): void {
   if (process.env.NEXT_PUBLIC_USE_MOCK !== "true") return;
 
+  // Register all mock routes before activating the adapter
+  import("./mock-routes").then(({ registerAllMockRoutes }) => {
+    registerAllMockRoutes();
+  });
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (api.defaults as any).adapter = mockAdapter;
-  console.info(
-    "[mock-adapter] Activated — all API calls will be served from mock-data.ts",
-  );
+  console.info("[mock-adapter] Activated — all API calls will be served from mock-data.ts");
 }
