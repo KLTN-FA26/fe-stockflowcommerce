@@ -47,4 +47,16 @@ describe("HOME_FEATURES", () => {
   it("có đúng 3 thẻ để vừa một hàng trong khung hình", () => {
     expect(HOME_FEATURES).toHaveLength(3);
   });
+
+  it("description khớp nguyên văn từ src/app/page.tsx (không được sửa copy)", () => {
+    const expectedDescriptions = [
+      "Theo dõi đơn đặt nhà cung cấp, phiếu nhận, kiểm tra và cất hàng trên một luồng.",
+      "Quan sát sức chứa, điều chuyển và bổ sung hàng theo từng khu vực kho.",
+      "Điều phối lấy hàng, đóng gói và bàn giao vận chuyển với trạng thái rõ ràng.",
+    ];
+
+    HOME_FEATURES.forEach((feature, index) => {
+      expect(feature.description).toBe(expectedDescriptions[index]);
+    });
+  });
 });

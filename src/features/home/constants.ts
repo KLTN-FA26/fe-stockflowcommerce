@@ -21,16 +21,16 @@ interface HomeFeature {
   icon: LucideIcon;
 }
 
-/** Ba điểm chạm vận hành — nén từ section "Công cụ cho từng điểm chạm" của bản cũ. */
+/** Ba điểm chạm vận hành — giữ nguyên text từ page.tsx, chỉ nén layout thôi. */
 export const HOME_FEATURES: readonly HomeFeature[] = [
   {
     title: "Nhập hàng có kiểm soát",
-    description: "Đơn đặt nhà cung cấp, phiếu nhận, kiểm tra và cất hàng trên một luồng.",
+    description: "Theo dõi đơn đặt nhà cung cấp, phiếu nhận, kiểm tra và cất hàng trên một luồng.",
     icon: ClipboardCheck,
   },
   {
     title: "Tồn kho theo vị trí",
-    description: "Sức chứa, điều chuyển và bổ sung hàng theo từng khu vực kho.",
+    description: "Quan sát sức chứa, điều chuyển và bổ sung hàng theo từng khu vực kho.",
     icon: Boxes,
   },
   {
