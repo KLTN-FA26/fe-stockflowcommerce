@@ -10,5 +10,14 @@ export { Alert } from "./Alert";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { ToastProvider, toast } from "./Toast";
 export { DataTable, type ColumnDef } from "./DataTable";
-export { codeCell, textCell, subCodeCell, dateCell, moneyCell, numberCell, statusCell } from "./column-helpers";
+export {
+  codeCell,
+  textCell,
+  subCodeCell,
+  dateCell,
+  moneyCell,
+  numberCell,
+  statusCell,
+} from "./column-helpers";
 export { PageContainer } from "./PageContainer";
+export { Logo } from "./Logo";
