@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { useIsClient } from "usehooks-ts";
 
 export type DesignMode = "A" | "B";
 export type ColorTheme = "light" | "dark";
@@ -41,23 +42,25 @@ function disableTransitionsWhile(fn: () => void) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<DesignMode>("A");
-  const [theme, setThemeState] = useState<ColorTheme>("light");
-  const [mounted, setMounted] = useState(false);
+  // Đọc ngay trong render từ attribute mà THEME_INIT_SCRIPT đã set trước paint.
+  // Lazy initializer thay cho setState-trong-effect (tránh cascading render).
+  // Trên server không có `document` → dùng đúng giá trị mà inline script sẽ set,
+  // nên markup SSR và lần render client đầu tiên khớp nhau.
+  const [mode, setModeState] = useState<DesignMode>(() =>
+    typeof document === "undefined"
+      ? "A"
+      : (document.documentElement.dataset.mode as DesignMode) || "A",
+  );
+  const [theme, setThemeState] = useState<ColorTheme>(() =>
+    typeof document === "undefined"
+      ? "light"
+      : (document.documentElement.dataset.theme as ColorTheme) || "light",
+  );
+  const isClient = useIsClient();
 
-  // Detect system preference on mount (đọc từ inline script đã set)
+  // Sync DOM attributes on change — chỉ chạy trên client
   useEffect(() => {
-    const el = document.documentElement;
-    const initialTheme = (el.dataset.theme as ColorTheme) || "light";
-    const initialMode = (el.dataset.mode as DesignMode) || "A";
-    setThemeState(initialTheme);
-    setModeState(initialMode);
-    setMounted(true);
-  }, []);
-
-  // Sync DOM attributes on change — chỉ chạy sau mount
-  useEffect(() => {
-    if (!mounted) return;
+    if (!isClient) return;
     disableTransitionsWhile(() => {
       const el = document.documentElement;
       el.dataset.mode = mode;
@@ -68,10 +71,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         el.classList.remove("dark");
       }
     });
-  }, [mode, theme, mounted]);
+  }, [mode, theme, isClient]);
 
   const setMode = useCallback((m: DesignMode) => setModeState(m), []);
-  const toggleTheme = useCallback(() => setThemeState((t) => (t === "light" ? "dark" : "light")), []);
+  const toggleTheme = useCallback(
+    () => setThemeState((t) => (t === "light" ? "dark" : "light")),
+    [],
+  );
 
   return (
     <ThemeContext.Provider value={{ mode, theme, setMode, toggleTheme }}>

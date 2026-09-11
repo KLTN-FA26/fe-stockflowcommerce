@@ -24,7 +24,15 @@ import { Card } from "@/components/shared/Card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -37,7 +45,6 @@ import {
   formatVND,
   type Supplier,
   type Sku,
-  type Uom,
   type WarehouseId,
 } from "@/lib/mock-data";
 
@@ -119,22 +126,22 @@ function parseNonNegativeRate(value: string) {
 function fieldClass(hasError = false) {
   return cn(
     "w-full rounded-[var(--r-sm)] border bg-bg-surface px-3 py-1.5 text-[0.8125rem] text-ink-primary outline-none transition-colors placeholder:text-ink-tertiary disabled:bg-bg-muted disabled:text-ink-tertiary",
-    hasError ? "border-danger focus:border-danger" : "border-border-default focus:border-accent"
+    hasError ? "border-danger focus:border-danger" : "border-border-default focus:border-accent",
   );
 }
 
 function FieldError({ children }: { children?: string }) {
   if (!children) return null;
-  return <p className="mt-1 text-xs text-danger">{children}</p>;
+  return <p className="text-danger mt-1 text-xs">{children}</p>;
 }
 
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
     <div className="mb-4">
-      <h2 className="font-[family-name:var(--font-display)] text-[1rem] font-semibold text-ink-primary">
+      <h2 className="text-ink-primary font-[family-name:var(--font-display)] text-[1rem] font-semibold">
         {title}
       </h2>
-      <p className="mt-1 text-[0.8125rem] text-ink-secondary">{description}</p>
+      <p className="text-ink-secondary mt-1 text-[0.8125rem]">{description}</p>
     </div>
   );
 }
@@ -178,7 +185,7 @@ function calculateTotals(lines: PoLineDraft[]): Totals {
       acc.grandTotal += lineTotal(line);
       return acc;
     },
-    { subtotal: 0, taxTotal: 0, discountTotal: 0, grandTotal: 0 }
+    { subtotal: 0, taxTotal: 0, discountTotal: 0, grandTotal: 0 },
   );
 }
 
@@ -249,11 +256,11 @@ export default function PurchaseOrderCreatePage() {
 
   const selectedSupplier = useMemo(
     () => suppliers.find((supplier) => supplier.supplierId === form.supplierId),
-    [form.supplierId]
+    [form.supplierId],
   );
   const selectedWarehouse = useMemo(
     () => warehouses.find((warehouse) => warehouse.warehouseId === form.warehouseId),
-    [form.warehouseId]
+    [form.warehouseId],
   );
   const totals = useMemo(() => calculateTotals(form.lines), [form.lines]);
   const validationIssues = useMemo(() => validateForm(form), [form]);
@@ -305,7 +312,10 @@ export default function PurchaseOrderCreatePage() {
   };
 
   const removeLine = (lineId: string) => {
-    update("lines", form.lines.filter((line) => line.id !== lineId));
+    update(
+      "lines",
+      form.lines.filter((line) => line.id !== lineId),
+    );
   };
 
   const goNext = () => setCurrentStep(STEPS[Math.min(currentStepIndex + 1, STEPS.length - 1)]!.key);
@@ -349,7 +359,7 @@ export default function PurchaseOrderCreatePage() {
         actions={
           <Link
             href="/admin/purchase-orders"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+            className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
           >
             <ArrowLeft className="size-3.5" />
             Quay lại danh sách
@@ -359,11 +369,18 @@ export default function PurchaseOrderCreatePage() {
 
       <div className="grid gap-4 xl:grid-cols-[260px_1fr]">
         <Card className="h-fit p-0">
-          <div className="border-b border-border-default px-4 py-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Quy trình</div>
+          <div className="border-border-default border-b px-4 py-3">
+            <div className="text-ink-tertiary text-xs font-semibold tracking-[0.08em] uppercase">
+              Quy trình
+            </div>
             <div className="mt-1 flex items-center gap-2">
-              <StatusBadge domain="po" status={submitted ? "Pending Approval" : "Draft"} size="sm" withIcon />
-              <span className="text-xs text-ink-tertiary">{form.lines.length} dòng hàng</span>
+              <StatusBadge
+                domain="po"
+                status={submitted ? "Pending Approval" : "Draft"}
+                size="sm"
+                withIcon
+              />
+              <span className="text-ink-tertiary text-xs">{form.lines.length} dòng hàng</span>
             </div>
           </div>
           <div className="p-2">
@@ -378,9 +395,10 @@ export default function PurchaseOrderCreatePage() {
                   onClick={() => setCurrentStep(step.key)}
                   className={cn(
                     "mb-1 flex w-full justify-start gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
-                    status === "active" && "bg-brand font-medium text-ink-inverse",
-                    status !== "active" && "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
-                    status === "error" && "border border-danger/30 bg-danger/5 text-danger"
+                    status === "active" && "bg-brand text-ink-inverse font-medium",
+                    status !== "active" &&
+                      "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
+                    status === "error" && "border-danger/30 bg-danger/5 text-danger border",
                   )}
                 >
                   <span className="flex size-5 items-center justify-center rounded-full border border-current/20 text-[0.625rem]">
@@ -396,7 +414,7 @@ export default function PurchaseOrderCreatePage() {
 
         <div className="min-w-0 space-y-4 pb-24">
           {showErrors && currentStepIssues.length > 0 && (
-            <div className="rounded-[var(--r-sm)] border border-danger/30 bg-danger/5 px-4 py-3 text-[0.8125rem] text-danger">
+            <div className="border-danger/30 bg-danger/5 text-danger rounded-[var(--r-sm)] border px-4 py-3 text-[0.8125rem]">
               <div className="font-semibold">Cần xử lý trước khi gửi duyệt</div>
               <ul className="mt-1 list-disc space-y-0.5 pl-4">
                 {currentStepIssues.map((issue) => (
@@ -429,7 +447,9 @@ export default function PurchaseOrderCreatePage() {
               updateLine={updateLine}
             />
           )}
-          {currentStep === "totals" && <TotalsStep totals={totals} currency={displayCurrency} lines={form.lines} />}
+          {currentStep === "totals" && (
+            <TotalsStep totals={totals} currency={displayCurrency} lines={form.lines} />
+          )}
           {currentStep === "review" && (
             <ReviewStep
               form={form}
@@ -445,9 +465,9 @@ export default function PurchaseOrderCreatePage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border-default bg-bg-surface/95 px-4 py-3 backdrop-blur lg:left-[240px]">
+      <div className="border-border-default bg-bg-surface/95 fixed right-0 bottom-0 left-0 z-40 border-t px-4 py-3 backdrop-blur lg:left-[240px]">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-xs text-ink-tertiary">
+          <div className="text-ink-tertiary text-xs">
             Bước {currentStepIndex + 1}/{STEPS.length} · {STEPS[currentStepIndex]?.label}
           </div>
           <div className="flex items-center gap-2">
@@ -456,9 +476,12 @@ export default function PurchaseOrderCreatePage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                toast.success("Đã lưu nháp", "Dữ liệu PO mock được giữ trong phiên làm việc hiện tại.");
+                toast.success(
+                  "Đã lưu nháp",
+                  "Dữ liệu PO mock được giữ trong phiên làm việc hiện tại.",
+                );
               }}
-              className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
             >
               <Save className="size-3.5" />
               Lưu nháp
@@ -469,26 +492,28 @@ export default function PurchaseOrderCreatePage() {
               size="sm"
               onClick={goBack}
               disabled={currentStepIndex === 0}
-              className="rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted disabled:opacity-40"
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors disabled:opacity-40"
             >
               Quay lại
             </Button>
             {currentStep !== "review" ? (
-              <Button variant="default"
+              <Button
+                variant="default"
                 type="button"
                 size="sm"
                 onClick={goNext}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
+                className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse inline-flex items-center gap-1.5 rounded-[var(--r-sm)] px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
               >
                 Tiếp tục
                 <ArrowRight className="size-3.5" />
               </Button>
             ) : (
-              <Button variant="default"
+              <Button
+                variant="default"
                 type="button"
                 size="sm"
                 onClick={handleSubmitAttempt}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
+                className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse inline-flex items-center gap-1.5 rounded-[var(--r-sm)] px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
               >
                 <Send className="size-3.5" />
                 Gửi duyệt
@@ -530,52 +555,67 @@ function InfoStep({
 }) {
   return (
     <Card>
-      <SectionTitle title="Thông tin PO" description="Chọn nhà cung cấp, kho nhận, ngày chứng từ và điều khoản thanh toán." />
+      <SectionTitle
+        title="Thông tin PO"
+        description="Chọn nhà cung cấp, kho nhận, ngày chứng từ và điều khoản thanh toán."
+      />
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
             Nhà cung cấp <span className="text-danger">*</span>
           </label>
           <Select value={form.supplierId} onValueChange={onSupplierChange}>
-            <SelectTrigger size="default" aria-label="Nhà cung cấp" className={fieldClass(showErrors && !form.supplierId)}>
+            <SelectTrigger
+              size="default"
+              aria-label="Nhà cung cấp"
+              className={fieldClass(showErrors && !form.supplierId)}
+            >
               <SelectValue placeholder="Chọn nhà cung cấp" />
             </SelectTrigger>
             <SelectContent align="start">
               <SelectGroup>
                 <SelectLabel>Nhà cung cấp</SelectLabel>
                 {activeSuppliers.map((supplier) => (
-                <SelectItem key={supplier.supplierId} value={supplier.supplierId}>
-                  {supplier.name}
-                </SelectItem>
+                  <SelectItem key={supplier.supplierId} value={supplier.supplierId}>
+                    {supplier.name}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
           </Select>
-          <FieldError>{showErrors && !form.supplierId ? "Nhà cung cấp là bắt buộc." : undefined}</FieldError>
+          <FieldError>
+            {showErrors && !form.supplierId ? "Nhà cung cấp là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
             Kho nhận <span className="text-danger">*</span>
           </label>
           <Select value={form.warehouseId} onValueChange={(value) => update("warehouseId", value)}>
-            <SelectTrigger size="default" aria-label="Kho nhận" className={fieldClass(showErrors && !form.warehouseId)}>
+            <SelectTrigger
+              size="default"
+              aria-label="Kho nhận"
+              className={fieldClass(showErrors && !form.warehouseId)}
+            >
               <SelectValue placeholder="Chọn kho nhận" />
             </SelectTrigger>
             <SelectContent align="start">
               <SelectGroup>
                 <SelectLabel>Kho nhận</SelectLabel>
                 {activeWarehouses.map((warehouse) => (
-                <SelectItem key={warehouse.warehouseId} value={warehouse.warehouseId}>
-                  {warehouse.name}
-                </SelectItem>
+                  <SelectItem key={warehouse.warehouseId} value={warehouse.warehouseId}>
+                    {warehouse.name}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
           </Select>
-          <FieldError>{showErrors && !form.warehouseId ? "Kho nhận là bắt buộc." : undefined}</FieldError>
+          <FieldError>
+            {showErrors && !form.warehouseId ? "Kho nhận là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
             Ngày đặt <span className="text-danger">*</span>
           </label>
           <Input
@@ -584,10 +624,12 @@ function InfoStep({
             onChange={(e) => update("orderDate", e.target.value)}
             className={fieldClass(showErrors && !form.orderDate)}
           />
-          <FieldError>{showErrors && !form.orderDate ? "Ngày đặt là bắt buộc." : undefined}</FieldError>
+          <FieldError>
+            {showErrors && !form.orderDate ? "Ngày đặt là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
             Ngày giao dự kiến <span className="text-danger">*</span>
           </label>
           <Input
@@ -596,19 +638,29 @@ function InfoStep({
             onChange={(e) => update("expectedDate", e.target.value)}
             className={fieldClass(showErrors && !form.expectedDate)}
           />
-          <FieldError>{showErrors && !form.expectedDate ? "Ngày giao dự kiến là bắt buộc." : undefined}</FieldError>
+          <FieldError>
+            {showErrors && !form.expectedDate ? "Ngày giao dự kiến là bắt buộc." : undefined}
+          </FieldError>
           {isExpectedDatePast(form.expectedDate) && (
-            <div className="mt-2 rounded-[var(--r-sm)] border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <div className="border-warning/30 bg-warning/10 text-warning mt-2 rounded-[var(--r-sm)] border px-3 py-2 text-xs">
               Ngày giao dự kiến đang nằm trước ngày đặt. Cảnh báo này không chặn gửi duyệt.
             </div>
           )}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Đơn vị tiền tệ</label>
-          <Input value={form.currency || selectedSupplier?.currency || "VND"} readOnly className={fieldClass()} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Đơn vị tiền tệ
+          </label>
+          <Input
+            value={form.currency || selectedSupplier?.currency || "VND"}
+            readOnly
+            className={fieldClass()}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Điều khoản thanh toán</label>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Điều khoản thanh toán
+          </label>
           <Input
             value={form.paymentTerms}
             onChange={(e) => update("paymentTerms", e.target.value)}
@@ -617,7 +669,7 @@ function InfoStep({
           />
         </div>
         <div className="lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Ghi chú</label>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Ghi chú</label>
           <Textarea
             value={form.notes}
             onChange={(e) => update("notes", e.target.value)}
@@ -662,13 +714,16 @@ function LinesStep({
   return (
     <Card>
       <div className="mb-4 flex items-start justify-between gap-3">
-        <SectionTitle title="Dòng hàng" description="Thêm SKU Active, số lượng đặt, đơn giá, thuế và chiết khấu theo từng dòng." />
+        <SectionTitle
+          title="Dòng hàng"
+          description="Thêm SKU Active, số lượng đặt, đơn giá, thuế và chiết khấu theo từng dòng."
+        />
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={onAddLine}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+          className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
         >
           <Plus className="size-3.5" />
           Thêm dòng hàng
@@ -676,7 +731,14 @@ function LinesStep({
       </div>
 
       {form.lines.length === 0 ? (
-        <div className={cn("rounded-[var(--r-sm)] border px-4 py-8 text-center text-[0.8125rem]", showErrors ? "border-danger/30 bg-danger/5 text-danger" : "border-border-default bg-bg-subtle text-ink-tertiary")}>
+        <div
+          className={cn(
+            "rounded-[var(--r-sm)] border px-4 py-8 text-center text-[0.8125rem]",
+            showErrors
+              ? "border-danger/30 bg-danger/5 text-danger"
+              : "border-border-default bg-bg-subtle text-ink-tertiary",
+          )}
+        >
           Chưa có dòng hàng. Cần ít nhất một dòng trước khi gửi duyệt.
         </div>
       ) : (
@@ -685,13 +747,25 @@ function LinesStep({
             const selectedSku = skus.find((sku) => sku.skuId === line.skuId);
             const hasDuplicate = line.skuId !== "" && duplicateSkuIds.has(line.skuId);
             return (
-              <div key={line.id} className={cn("rounded-[var(--r-sm)] border bg-bg-subtle p-3", hasDuplicate ? "border-danger/30" : "border-border-default")}>
+              <div
+                key={line.id}
+                className={cn(
+                  "bg-bg-subtle rounded-[var(--r-sm)] border p-3",
+                  hasDuplicate ? "border-danger/30" : "border-border-default",
+                )}
+              >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-brand text-xs font-medium text-ink-inverse">{index + 1}</span>
+                    <span className="bg-brand text-ink-inverse flex size-6 items-center justify-center rounded-full text-xs font-medium">
+                      {index + 1}
+                    </span>
                     <div>
-                      <div className="text-[0.8125rem] font-medium text-ink-primary">Dòng hàng {index + 1}</div>
-                      <div className="text-xs text-ink-tertiary">{selectedSku?.variantLabel ?? "Chưa chọn SKU"}</div>
+                      <div className="text-ink-primary text-[0.8125rem] font-medium">
+                        Dòng hàng {index + 1}
+                      </div>
+                      <div className="text-ink-tertiary text-xs">
+                        {selectedSku?.variantLabel ?? "Chưa chọn SKU"}
+                      </div>
                     </div>
                   </div>
                   <Button
@@ -699,7 +773,7 @@ function LinesStep({
                     variant="outline"
                     size="icon"
                     onClick={() => onRemoveLine(line.id)}
-                    className="flex size-8 items-center justify-center rounded-[var(--r-sm)] border border-danger/30 text-danger transition-colors hover:bg-danger/10"
+                    className="border-danger/30 text-danger hover:bg-danger/10 flex size-8 items-center justify-center rounded-[var(--r-sm)] border transition-colors"
                     aria-label="Xóa dòng hàng"
                   >
                     <Trash2 className="size-3.5" />
@@ -707,20 +781,27 @@ function LinesStep({
                 </div>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.4fr)_100px_130px_100px_120px_80px_140px]">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">
                       SKU <span className="text-danger">*</span>
                     </label>
-                    <Select value={line.skuId} onValueChange={(value) => onSkuChange(line.id, value)}>
-                      <SelectTrigger size="default" aria-label={`SKU dòng ${index + 1}`} className={fieldClass(showErrors && (!line.skuId || hasDuplicate))}>
+                    <Select
+                      value={line.skuId}
+                      onValueChange={(value) => onSkuChange(line.id, value)}
+                    >
+                      <SelectTrigger
+                        size="default"
+                        aria-label={`SKU dòng ${index + 1}`}
+                        className={fieldClass(showErrors && (!line.skuId || hasDuplicate))}
+                      >
                         <SelectValue placeholder="Chọn SKU" />
                       </SelectTrigger>
                       <SelectContent align="start">
                         <SelectGroup>
                           <SelectLabel>SKU dòng {index + 1}</SelectLabel>
                           {activeSkus.map((sku) => (
-                          <SelectItem key={sku.skuId} value={sku.skuId}>
-                            {sku.skuId} — {sku.variantLabel}
-                          </SelectItem>
+                            <SelectItem key={sku.skuId} value={sku.skuId}>
+                              {sku.skuId} — {sku.variantLabel}
+                            </SelectItem>
                           ))}
                         </SelectGroup>
                       </SelectContent>
@@ -728,7 +809,7 @@ function LinesStep({
                     {hasDuplicate && <FieldError>SKU bị trùng trong PO.</FieldError>}
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">
                       SL đặt <span className="text-danger">*</span>
                     </label>
                     <Input
@@ -737,11 +818,14 @@ function LinesStep({
                       type="number"
                       min={1}
                       inputMode="numeric"
-                      className={cn(fieldClass(showErrors && !parsePositiveNumber(line.orderedQty)), "text-right tabular-nums")}
+                      className={cn(
+                        fieldClass(showErrors && !parsePositiveNumber(line.orderedQty)),
+                        "text-right tabular-nums",
+                      )}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">
                       Đơn giá <span className="text-danger">*</span>
                     </label>
                     <Input
@@ -750,38 +834,65 @@ function LinesStep({
                       type="number"
                       min={1}
                       inputMode="decimal"
-                      className={cn(fieldClass(showErrors && !parsePositiveNumber(line.unitPrice)), "text-right tabular-nums")}
+                      className={cn(
+                        fieldClass(showErrors && !parsePositiveNumber(line.unitPrice)),
+                        "text-right tabular-nums",
+                      )}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">Thuế (%)</label>
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">
+                      Thuế (%)
+                    </label>
                     <Input
                       value={String((Number(line.taxRate) || 0) * 100)}
-                      onChange={(e) => updateLine(line.id, { taxRate: String((Number(e.target.value) || 0) / 100) })}
+                      onChange={(e) =>
+                        updateLine(line.id, {
+                          taxRate: String((Number(e.target.value) || 0) / 100),
+                        })
+                      }
                       type="number"
                       min={0}
                       inputMode="decimal"
-                      className={cn(fieldClass(!parseNonNegativeRate(line.taxRate)), "text-right tabular-nums")}
+                      className={cn(
+                        fieldClass(!parseNonNegativeRate(line.taxRate)),
+                        "text-right tabular-nums",
+                      )}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">Chiết khấu (%)</label>
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">
+                      Chiết khấu (%)
+                    </label>
                     <Input
                       value={String((Number(line.discountRate) || 0) * 100)}
-                      onChange={(e) => updateLine(line.id, { discountRate: String((Number(e.target.value) || 0) / 100) })}
+                      onChange={(e) =>
+                        updateLine(line.id, {
+                          discountRate: String((Number(e.target.value) || 0) / 100),
+                        })
+                      }
                       type="number"
                       min={0}
                       inputMode="decimal"
-                      className={cn(fieldClass(!parseNonNegativeRate(line.discountRate)), "text-right tabular-nums")}
+                      className={cn(
+                        fieldClass(!parseNonNegativeRate(line.discountRate)),
+                        "text-right tabular-nums",
+                      )}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">UoM</label>
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">UoM</label>
                     <Input value={line.uom} readOnly className={fieldClass()} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-ink-secondary">Thành tiền</label>
-                    <Input value={formatMoney(lineTotal(line), currency)} readOnly className={cn(fieldClass(), "text-right tabular-nums")} />
+                    <label className="text-ink-secondary mb-1 block text-xs font-medium">
+                      Thành tiền
+                    </label>
+                    <Input
+                      value={formatMoney(lineTotal(line), currency)}
+                      readOnly
+                      className={cn(fieldClass(), "text-right tabular-nums")}
+                    />
                   </div>
                 </div>
               </div>
@@ -790,7 +901,7 @@ function LinesStep({
         </div>
       )}
 
-      <div className="mt-4 grid gap-3 border-t border-border-default pt-4 sm:grid-cols-3">
+      <div className="border-border-default mt-4 grid gap-3 border-t pt-4 sm:grid-cols-3">
         <SummaryItem label="Số dòng" value={String(form.lines.length)} mono />
         <SummaryItem label="Tạm tính" value={formatMoney(totals.subtotal, currency)} mono />
         <SummaryItem label="Tổng dòng hàng" value={formatMoney(totals.grandTotal, currency)} mono />
@@ -799,34 +910,65 @@ function LinesStep({
   );
 }
 
-function TotalsStep({ totals, currency, lines }: { totals: Totals; currency: string; lines: PoLineDraft[] }) {
+function TotalsStep({
+  totals,
+  currency,
+  lines,
+}: {
+  totals: Totals;
+  currency: string;
+  lines: PoLineDraft[];
+}) {
   return (
     <Card>
-      <SectionTitle title="Tổng cộng" description="Tổng giá trị PO được tính từ số lượng, đơn giá, thuế và chiết khấu của các dòng hàng." />
+      <SectionTitle
+        title="Tổng cộng"
+        description="Tổng giá trị PO được tính từ số lượng, đơn giá, thuế và chiết khấu của các dòng hàng."
+      />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryItem label="Tạm tính (Subtotal)" value={formatMoney(totals.subtotal, currency)} mono />
+        <SummaryItem
+          label="Tạm tính (Subtotal)"
+          value={formatMoney(totals.subtotal, currency)}
+          mono
+        />
         <SummaryItem label="Thuế" value={formatMoney(totals.taxTotal, currency)} mono />
         <SummaryItem label="Chiết khấu" value={formatMoney(totals.discountTotal, currency)} mono />
-        <div className="rounded-[var(--r-sm)] border border-accent/40 bg-accent/5 px-3 py-2">
-          <div className="text-xs text-ink-tertiary">Tổng giá trị PO</div>
-          <div className="mt-1 truncate font-[family-name:var(--font-mono)] text-[1rem] font-semibold tabular-nums text-accent">
+        <div className="border-accent/40 bg-accent/5 rounded-[var(--r-sm)] border px-3 py-2">
+          <div className="text-ink-tertiary text-xs">Tổng giá trị PO</div>
+          <div className="text-accent mt-1 truncate font-[family-name:var(--font-mono)] text-[1rem] font-semibold tabular-nums">
             {formatMoney(totals.grandTotal, currency)}
           </div>
         </div>
       </div>
-      <div className="mt-5 rounded-[var(--r-sm)] border border-border-default">
+      <div className="border-border-default mt-5 rounded-[var(--r-sm)] border">
         {lines.length === 0 ? (
-          <div className="px-3 py-6 text-center text-[0.8125rem] text-ink-tertiary">Chưa có dòng hàng để tính tổng.</div>
+          <div className="text-ink-tertiary px-3 py-6 text-center text-[0.8125rem]">
+            Chưa có dòng hàng để tính tổng.
+          </div>
         ) : (
           lines.map((line) => (
-            <div key={line.id} className="grid gap-2 border-b border-border-default px-3 py-2 text-[0.8125rem] last:border-b-0 md:grid-cols-[1fr_90px_120px_120px]">
+            <div
+              key={line.id}
+              className="border-border-default grid gap-2 border-b px-3 py-2 text-[0.8125rem] last:border-b-0 md:grid-cols-[1fr_90px_120px_120px]"
+            >
               <div className="min-w-0">
-                <div className="truncate font-medium text-ink-primary">{line.skuId || "Chưa chọn SKU"}</div>
-                <div className="text-xs text-ink-tertiary">Thuế {(Number(line.taxRate) * 100).toFixed(0)}% · CK {(Number(line.discountRate) * 100).toFixed(0)}%</div>
+                <div className="text-ink-primary truncate font-medium">
+                  {line.skuId || "Chưa chọn SKU"}
+                </div>
+                <div className="text-ink-tertiary text-xs">
+                  Thuế {(Number(line.taxRate) * 100).toFixed(0)}% · CK{" "}
+                  {(Number(line.discountRate) * 100).toFixed(0)}%
+                </div>
               </div>
-              <div className="text-right font-[family-name:var(--font-mono)] tabular-nums text-ink-secondary">{line.orderedQty || "0"} {line.uom}</div>
-              <div className="text-right font-[family-name:var(--font-mono)] tabular-nums text-ink-secondary">{formatMoney(Number(line.unitPrice) || 0, currency)}</div>
-              <div className="text-right font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">{formatMoney(lineTotal(line), currency)}</div>
+              <div className="text-ink-secondary text-right font-[family-name:var(--font-mono)] tabular-nums">
+                {line.orderedQty || "0"} {line.uom}
+              </div>
+              <div className="text-ink-secondary text-right font-[family-name:var(--font-mono)] tabular-nums">
+                {formatMoney(Number(line.unitPrice) || 0, currency)}
+              </div>
+              <div className="text-ink-primary text-right font-[family-name:var(--font-mono)] font-medium tabular-nums">
+                {formatMoney(lineTotal(line), currency)}
+              </div>
             </div>
           ))
         )}
@@ -859,7 +1001,10 @@ function ReviewStep({
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
       <Card>
-        <SectionTitle title="Rà soát trước khi gửi duyệt" description="Tổng hợp PO và checklist validation trước khi chuyển sang Pending Approval." />
+        <SectionTitle
+          title="Rà soát trước khi gửi duyệt"
+          description="Tổng hợp PO và checklist validation trước khi chuyển sang Pending Approval."
+        />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <SummaryItem label="Nhà cung cấp" value={selectedSupplier?.name ?? "—"} />
           <SummaryItem label="Kho nhận" value={selectedWarehouse?.name ?? "—"} />
@@ -869,20 +1014,36 @@ function ReviewStep({
           <SummaryItem label="Số dòng" value={String(form.lines.length)} mono />
           <SummaryItem label="Tiền tệ" value={currency} mono />
           <SummaryItem label="Tổng PO" value={formatMoney(totals.grandTotal, currency)} mono />
-          <SummaryItem label="PO number preview" value={duplicatePoNumber ? "PO-NEW-DRAFT trùng" : "PO-NEW-DRAFT"} mono />
+          <SummaryItem
+            label="PO number preview"
+            value={duplicatePoNumber ? "PO-NEW-DRAFT trùng" : "PO-NEW-DRAFT"}
+            mono
+          />
         </div>
 
-        <div className="mt-5 rounded-[var(--r-sm)] border border-border-default">
+        <div className="border-border-default mt-5 rounded-[var(--r-sm)] border">
           {STEPS.map((step) => {
             const issues = issuesByStep.get(step.key) ?? [];
             return (
-              <div key={step.key} className="flex items-start gap-3 border-b border-border-default px-3 py-2 last:border-b-0">
-                <div className={cn("mt-0.5 flex size-5 items-center justify-center rounded-full", issues.length ? "bg-danger/10 text-danger" : "bg-positive/10 text-positive")}>
+              <div
+                key={step.key}
+                className="border-border-default flex items-start gap-3 border-b px-3 py-2 last:border-b-0"
+              >
+                <div
+                  className={cn(
+                    "mt-0.5 flex size-5 items-center justify-center rounded-full",
+                    issues.length ? "bg-danger/10 text-danger" : "bg-positive/10 text-positive",
+                  )}
+                >
                   {issues.length ? <X className="size-3" /> : <CheckCircle className="size-3" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[0.8125rem] font-medium text-ink-primary">{step.label}</div>
-                  {issues.length ? <div className="mt-0.5 text-xs text-danger">{issues.join(" · ")}</div> : <div className="mt-0.5 text-xs text-ink-tertiary">Sẵn sàng</div>}
+                  <div className="text-ink-primary text-[0.8125rem] font-medium">{step.label}</div>
+                  {issues.length ? (
+                    <div className="text-danger mt-0.5 text-xs">{issues.join(" · ")}</div>
+                  ) : (
+                    <div className="text-ink-tertiary mt-0.5 text-xs">Sẵn sàng</div>
+                  )}
                 </div>
               </div>
             );
@@ -893,21 +1054,30 @@ function ReviewStep({
       <Card className="h-fit">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="text-xs font-medium uppercase tracking-[0.08em] text-ink-tertiary">Lifecycle</div>
+            <div className="text-ink-tertiary text-xs font-medium tracking-[0.08em] uppercase">
+              Lifecycle
+            </div>
             <div className="mt-1 flex items-center gap-2">
               <StatusBadge domain="po" status={submitted ? "Pending Approval" : "Draft"} withIcon />
             </div>
           </div>
-          <Settings2 className="size-5 text-accent" />
+          <Settings2 className="text-accent size-5" />
         </div>
-        <div className="rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-3 py-2 text-[0.8125rem] text-ink-secondary">
-          <div className="mb-1 flex items-center gap-2 font-medium text-ink-primary">
-            <ShoppingCart className="size-3.5 text-accent" />
+        <div className="border-border-default bg-bg-subtle text-ink-secondary rounded-[var(--r-sm)] border px-3 py-2 text-[0.8125rem]">
+          <div className="text-ink-primary mb-1 flex items-center gap-2 font-medium">
+            <ShoppingCart className="text-accent size-3.5" />
             Draft → Pending Approval
           </div>
-          `Gửi duyệt` chỉ cập nhật trạng thái preview trong UI. Không có API call và không thêm record vào mock data.
+          `Gửi duyệt` chỉ cập nhật trạng thái preview trong UI. Không có API call và không thêm
+          record vào mock data.
         </div>
-        <Button variant="default" type="button" size="sm" onClick={onSubmit} className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse">
+        <Button
+          variant="default"
+          type="button"
+          size="sm"
+          onClick={onSubmit}
+          className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] px-3 py-2 text-[0.8125rem] font-medium transition-colors"
+        >
           <Send className="size-3.5" />
           Gửi duyệt
         </Button>
@@ -918,9 +1088,16 @@ function ReviewStep({
 
 function SummaryItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-3 py-2">
-      <div className="text-xs text-ink-tertiary">{label}</div>
-      <div className={cn("mt-1 truncate text-[0.8125rem] font-medium text-ink-primary", mono && "font-[family-name:var(--font-mono)] tabular-nums")}>{value}</div>
+    <div className="border-border-default bg-bg-subtle rounded-[var(--r-sm)] border px-3 py-2">
+      <div className="text-ink-tertiary text-xs">{label}</div>
+      <div
+        className={cn(
+          "text-ink-primary mt-1 truncate text-[0.8125rem] font-medium",
+          mono && "font-[family-name:var(--font-mono)] tabular-nums",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }

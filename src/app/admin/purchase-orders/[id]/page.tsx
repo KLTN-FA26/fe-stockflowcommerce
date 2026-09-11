@@ -23,7 +23,6 @@ import {
   warehouses,
   skus,
   formatVND,
-  type PurchaseOrder,
   type PoLine,
   type PoStatus,
   type Currency,
@@ -94,16 +93,16 @@ function InfoRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-baseline justify-between border-b border-border-default py-2 last:border-b-0">
-      <span className="text-xs font-medium text-ink-tertiary">{label}</span>
+    <div className="border-border-default flex items-baseline justify-between border-b py-2 last:border-b-0">
+      <span className="text-ink-tertiary text-xs font-medium">{label}</span>
       {children ? (
-        <span className="text-[0.8125rem] text-ink-primary">{children}</span>
+        <span className="text-ink-primary text-[0.8125rem]">{children}</span>
       ) : (
         <span
           className={cn(
             "text-[0.8125rem]",
-            danger ? "font-medium text-danger" : "text-ink-primary",
-            mono && "font-[family-name:var(--font-mono)] tabular-nums"
+            danger ? "text-danger font-medium" : "text-ink-primary",
+            mono && "font-[family-name:var(--font-mono)] tabular-nums",
           )}
         >
           {value}
@@ -147,56 +146,39 @@ const STATUS_ACTIONS: Partial<Record<PoStatus, ActionBtn[]>> = {
 };
 
 const VARIANT_CLASSES: Record<string, string> = {
-  brand:
-    "bg-[var(--brand)] text-white hover:bg-[var(--brand)]/90",
-  danger:
-    "border-danger text-danger hover:bg-danger/10 bg-transparent",
-  warning:
-    "border-warning text-warning hover:bg-warning/10 bg-transparent",
-  outline:
-    "border-border-default text-ink-secondary hover:bg-bg-muted bg-transparent",
+  brand: "bg-[var(--brand)] text-white hover:bg-[var(--brand)]/90",
+  danger: "border-danger text-danger hover:bg-danger/10 bg-transparent",
+  warning: "border-warning text-warning hover:bg-warning/10 bg-transparent",
+  outline: "border-border-default text-ink-secondary hover:bg-bg-muted bg-transparent",
 };
 
 /* -------------------------------------------------------------------------- */
 /*  Page                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export default function PurchaseOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
 
-  const po = useMemo(
-    () => purchaseOrders.find((p) => p.poId === id) ?? null,
-    [id]
-  );
+  const po = useMemo(() => purchaseOrders.find((p) => p.poId === id) ?? null, [id]);
 
   const supplier = useMemo(
     () => (po ? suppliers.find((s) => s.supplierId === po.supplierId) : null),
-    [po]
+    [po],
   );
 
   const warehouse = useMemo(
     () => (po ? warehouses.find((w) => w.warehouseId === po.warehouseId) : null),
-    [po]
+    [po],
   );
 
-  const lifecycleSteps = useMemo(
-    () => (po ? getLifecycleSteps(po.status) : []),
-    [po]
-  );
+  const lifecycleSteps = useMemo(() => (po ? getLifecycleSteps(po.status) : []), [po]);
 
-  const actions = po ? STATUS_ACTIONS[po.status] ?? [] : [];
+  const actions = po ? (STATUS_ACTIONS[po.status] ?? []) : [];
 
   /** Find revision PO (if another PO has revisionOf === po.poId) */
   const revisionPo = useMemo(
-    () =>
-      po
-        ? purchaseOrders.find((p) => p.revisionOf === po.poId) ?? null
-        : null,
-    [po]
+    () => (po ? (purchaseOrders.find((p) => p.revisionOf === po.poId) ?? null) : null),
+    [po],
   );
 
   /* ---- Not found ---- */
@@ -211,18 +193,16 @@ export default function PurchaseOrderDetailPage({
             { label: id },
           ]}
         />
-        <div className="flex flex-col items-center justify-center py-20 text-ink-tertiary">
+        <div className="text-ink-tertiary flex flex-col items-center justify-center py-20">
           <FileText className="mb-3 size-12 opacity-40" />
           <p className="text-[0.9375rem]">
             Đơn đặt hàng{" "}
-            <code className="font-[family-name:var(--font-mono)] text-accent">
-              {id}
-            </code>{" "}
-            không tồn tại.
+            <code className="text-accent font-[family-name:var(--font-mono)]">{id}</code> không tồn
+            tại.
           </p>
           <Link
             href="/admin/purchase-orders"
-            className="mt-4 text-[0.8125rem] text-accent hover:underline"
+            className="text-accent mt-4 text-[0.8125rem] hover:underline"
           >
             Quay lại danh sách
           </Link>
@@ -239,7 +219,7 @@ export default function PurchaseOrderDetailPage({
       sortable: true,
       compare: (a, b) => a.skuId.localeCompare(b.skuId),
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent">
+        <span className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium">
           {row.skuId}
         </span>
       ),
@@ -248,7 +228,7 @@ export default function PurchaseOrderDetailPage({
       key: "skuName",
       header: "Tên SKU",
       cell: (row) => (
-        <span className="text-[0.8125rem] text-ink-primary">
+        <span className="text-ink-primary text-[0.8125rem]">
           {skus.find((s) => s.skuId === row.skuId)?.variantLabel ?? row.skuId}
         </span>
       ),
@@ -260,7 +240,7 @@ export default function PurchaseOrderDetailPage({
       sortable: true,
       compare: (a, b) => a.orderedQty - b.orderedQty,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
           {row.orderedQty.toLocaleString("vi-VN")}
         </span>
       ),
@@ -272,7 +252,7 @@ export default function PurchaseOrderDetailPage({
       sortable: true,
       compare: (a, b) => a.unitPrice - b.unitPrice,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
           {formatMoney(row.unitPrice, row.currency)}
         </span>
       ),
@@ -284,7 +264,7 @@ export default function PurchaseOrderDetailPage({
       sortable: true,
       compare: (a, b) => a.receivedQty - b.receivedQty,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
           {row.receivedQty.toLocaleString("vi-VN")}
         </span>
       ),
@@ -294,15 +274,14 @@ export default function PurchaseOrderDetailPage({
       header: "Open qty",
       align: "right",
       sortable: true,
-      compare: (a, b) =>
-        a.orderedQty - a.receivedQty - (b.orderedQty - b.receivedQty),
+      compare: (a, b) => a.orderedQty - a.receivedQty - (b.orderedQty - b.receivedQty),
       cell: (row) => {
         const open = row.orderedQty - row.receivedQty;
         return (
           <span
             className={cn(
-              "font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium",
-              open > 0 ? "text-warning" : "text-ink-primary"
+              "font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums",
+              open > 0 ? "text-warning" : "text-ink-primary",
             )}
           >
             {open.toLocaleString("vi-VN")}
@@ -317,7 +296,7 @@ export default function PurchaseOrderDetailPage({
       sortable: true,
       compare: (a, b) => a.lineTotal - b.lineTotal,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
           {formatMoney(row.lineTotal, row.currency)}
         </span>
       ),
@@ -341,7 +320,7 @@ export default function PurchaseOrderDetailPage({
         actions={
           <Link
             href="/admin/purchase-orders"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+            className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
           >
             <ArrowLeft className="size-3.5" />
             Quay lại
@@ -357,9 +336,9 @@ export default function PurchaseOrderDetailPage({
           {/* ---- Header info: 2-column grid ---- */}
           <div className="grid gap-5 md:grid-cols-2">
             {/* Card 1: Thông tin chung */}
-            <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-              <h2 className="mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-                <FileText className="size-4 text-accent" />
+            <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold">
+                <FileText className="text-accent size-4" />
                 Thông tin chung
               </h2>
               <div>
@@ -370,51 +349,35 @@ export default function PurchaseOrderDetailPage({
                 <InfoRow label="Ngày đặt" value={po.orderDate} mono />
                 <InfoRow label="Ngày giao DK" value={po.expectedDate} mono />
                 <InfoRow label="Người tạo" value={po.createdBy} />
-                <InfoRow
-                  label="Người duyệt"
-                  value={po.approvedBy ?? "—"}
-                />
+                <InfoRow label="Người duyệt" value={po.approvedBy ?? "—"} />
                 {po.notes && <InfoRow label="Ghi chú" value={po.notes} />}
                 {po.rejectionReason && (
-                  <InfoRow
-                    label="Lý do từ chối"
-                    value={po.rejectionReason}
-                    danger
-                  />
+                  <InfoRow label="Lý do từ chối" value={po.rejectionReason} danger />
                 )}
               </div>
             </section>
 
             {/* Card 2: Nhà cung cấp & Kho */}
-            <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-              <h2 className="mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-                <Truck className="size-4 text-accent" />
+            <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold">
+                <Truck className="text-accent size-4" />
                 Nhà cung cấp &amp; Kho
               </h2>
               <div>
-                <InfoRow
-                  label="NCC"
-                  value={supplier?.name ?? po.supplierId}
-                />
+                <InfoRow label="NCC" value={supplier?.name ?? po.supplierId} />
                 <InfoRow label="Mã NCC" value={po.supplierId} mono />
-                <InfoRow
-                  label="Điều khoản"
-                  value={supplier?.paymentTerms ?? "—"}
-                />
+                <InfoRow label="Điều khoản" value={supplier?.paymentTerms ?? "—"} />
                 <InfoRow label="Đơn vị tiền tệ" value={po.currency} />
-                <InfoRow
-                  label="Kho nhận"
-                  value={warehouse?.name ?? po.warehouseId}
-                />
+                <InfoRow label="Kho nhận" value={warehouse?.name ?? po.warehouseId} />
                 <InfoRow label="Mã kho" value={po.warehouseId} mono />
               </div>
             </section>
           </div>
 
           {/* ---- PO Lines DataTable ---- */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-              <Package className="size-4 text-accent" />
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold">
+              <Package className="text-accent size-4" />
               Dòng hàng (PO Lines)
             </h2>
             <DataTable
@@ -427,29 +390,27 @@ export default function PurchaseOrderDetailPage({
           </section>
 
           {/* ---- Totals Card ---- */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-              <ClipboardCheck className="size-4 text-accent" />
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold">
+              <ClipboardCheck className="text-accent size-4" />
               Tổng cộng
             </h2>
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Tạm tính</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">
+                <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium tabular-nums">
                   {formatMoney(po.subtotal, po.currency)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Thuế</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">
+                <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium tabular-nums">
                   {formatMoney(po.taxTotal, po.currency)}
                 </span>
               </div>
-              <div className="flex items-baseline justify-between border-t border-border-default pt-2 text-[0.9375rem]">
-                <span className="font-semibold text-ink-primary">
-                  Tổng giá trị
-                </span>
-                <span className="font-[family-name:var(--font-mono)] text-base font-bold tabular-nums text-ink-primary">
+              <div className="border-border-default flex items-baseline justify-between border-t pt-2 text-[0.9375rem]">
+                <span className="text-ink-primary font-semibold">Tổng giá trị</span>
+                <span className="text-ink-primary font-[family-name:var(--font-mono)] text-base font-bold tabular-nums">
                   {formatMoney(po.grandTotal, po.currency)}
                 </span>
               </div>
@@ -457,23 +418,23 @@ export default function PurchaseOrderDetailPage({
           </section>
 
           {/* ---- PO Timeline ---- */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="mb-4 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-              <CircleDot className="size-4 text-accent" />
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary mb-4 flex items-center gap-2 text-[0.9375rem] font-semibold">
+              <CircleDot className="text-accent size-4" />
               Vòng đời PO
             </h2>
             <div className="relative pl-6">
-              <div className="absolute left-[6px] top-1 bottom-1 w-0.5 bg-border-default" />
+              <div className="bg-border-default absolute top-1 bottom-1 left-[6px] w-0.5" />
               {lifecycleSteps.map((step) => (
                 <div key={step.label} className="relative pb-5 last:pb-0">
                   <div
                     className={cn(
-                      "absolute -left-[22.5px] top-[4px] size-[11px] rounded-full border-2 border-bg-surface",
+                      "border-bg-surface absolute top-[4px] -left-[22.5px] size-[11px] rounded-full border-2",
                       step.current
-                        ? "bg-accent ring-2 ring-accent/30"
+                        ? "bg-accent ring-accent/30 ring-2"
                         : step.done
                           ? "bg-positive"
-                          : "bg-bg-muted"
+                          : "bg-bg-muted",
                     )}
                   />
                   <div className="flex items-center gap-2">
@@ -484,13 +445,13 @@ export default function PurchaseOrderDetailPage({
                           ? "text-accent"
                           : step.done
                             ? "text-ink-primary"
-                            : "text-ink-tertiary"
+                            : "text-ink-tertiary",
                       )}
                     >
                       {step.label}
                     </span>
                     {step.current && (
-                      <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[0.625rem] font-semibold text-accent">
+                      <span className="bg-accent/10 text-accent rounded-full px-2 py-0.5 text-[0.625rem] font-semibold">
                         Hiện tại
                       </span>
                     )}
@@ -501,12 +462,10 @@ export default function PurchaseOrderDetailPage({
               {/* Show Cancelled as separate terminal step if applicable */}
               {po.status === "Cancelled" && (
                 <div className="relative pb-0">
-                  <div className="absolute -left-[22.5px] top-[4px] size-[11px] rounded-full border-2 border-bg-surface bg-danger ring-2 ring-danger/30" />
+                  <div className="border-bg-surface bg-danger ring-danger/30 absolute top-[4px] -left-[22.5px] size-[11px] rounded-full border-2 ring-2" />
                   <div className="flex items-center gap-2">
-                    <span className="text-[0.8125rem] font-medium text-danger">
-                      Cancelled
-                    </span>
-                    <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[0.625rem] font-semibold text-danger">
+                    <span className="text-danger text-[0.8125rem] font-medium">Cancelled</span>
+                    <span className="bg-danger/10 text-danger rounded-full px-2 py-0.5 text-[0.625rem] font-semibold">
                       Hiện tại
                     </span>
                   </div>
@@ -517,16 +476,16 @@ export default function PurchaseOrderDetailPage({
 
           {/* ---- PO Revision (conditional) ---- */}
           {po.revisionOf && (
-            <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-              <h2 className="mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-                <RefreshCw className="size-4 text-accent" />
+            <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold">
+                <RefreshCw className="text-accent size-4" />
                 PO Revision
               </h2>
-              <p className="text-[0.8125rem] text-ink-secondary">
+              <p className="text-ink-secondary text-[0.8125rem]">
                 Đây là bản sửa đổi của PO{" "}
                 <Link
                   href={`/admin/purchase-orders/${po.revisionOf}`}
-                  className="font-[family-name:var(--font-mono)] font-medium text-accent hover:underline"
+                  className="text-accent font-[family-name:var(--font-mono)] font-medium hover:underline"
                 >
                   {po.revisionOf}
                 </Link>
@@ -536,16 +495,16 @@ export default function PurchaseOrderDetailPage({
           )}
 
           {revisionPo && (
-            <section className="rounded-[var(--card-radius)] border border-warning/30 bg-warning/5 p-[var(--card-pad)]">
-              <h2 className="mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-                <RefreshCw className="size-4 text-warning" />
+            <section className="border-warning/30 bg-warning/5 rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary mb-3 flex items-center gap-2 text-[0.9375rem] font-semibold">
+                <RefreshCw className="text-warning size-4" />
                 Đã thay thế
               </h2>
-              <p className="text-[0.8125rem] text-ink-secondary">
+              <p className="text-ink-secondary text-[0.8125rem]">
                 PO này đã được thay thế bởi PO{" "}
                 <Link
                   href={`/admin/purchase-orders/${revisionPo.poId}`}
-                  className="font-[family-name:var(--font-mono)] font-medium text-accent hover:underline"
+                  className="text-accent font-[family-name:var(--font-mono)] font-medium hover:underline"
                 >
                   {revisionPo.poNumber}
                 </Link>
@@ -560,14 +519,9 @@ export default function PurchaseOrderDetailPage({
         {/* ================================================================ */}
         <div className="space-y-5">
           {/* ---- Action Card ---- */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
             <div className="mb-4 flex justify-center">
-              <StatusBadge
-                domain="po"
-                status={po.status}
-                size="md"
-                withIcon
-              />
+              <StatusBadge domain="po" status={po.status} size="md" withIcon />
             </div>
 
             {actions.length > 0 && (
@@ -581,7 +535,7 @@ export default function PurchaseOrderDetailPage({
                     onClick={handleAction}
                     className={cn(
                       "w-full rounded-[var(--r-sm)] border px-3 py-2 text-[0.8125rem] font-medium transition-colors",
-                      VARIANT_CLASSES[act.variant]
+                      VARIANT_CLASSES[act.variant],
                     )}
                   >
                     {act.label}
@@ -591,7 +545,7 @@ export default function PurchaseOrderDetailPage({
             )}
 
             {(po.status === "Closed" || po.status === "Cancelled") && (
-              <p className="text-center text-xs text-ink-tertiary">
+              <p className="text-ink-tertiary text-center text-xs">
                 Trạng thái kết thúc — không có hành động khả dụng.
               </p>
             )}
@@ -599,15 +553,13 @@ export default function PurchaseOrderDetailPage({
 
           {/* ---- From Proposal (conditional) ---- */}
           {po.fromProposalId && (
-            <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-              <h2 className="mb-2 text-[0.9375rem] font-semibold text-ink-primary">
-                Nguồn gốc
-              </h2>
-              <p className="text-[0.8125rem] text-ink-secondary">
+            <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary mb-2 text-[0.9375rem] font-semibold">Nguồn gốc</h2>
+              <p className="text-ink-secondary text-[0.8125rem]">
                 Từ đề xuất nhập hàng:{" "}
                 <Link
                   href="/admin/replenishment"
-                  className="font-[family-name:var(--font-mono)] font-medium text-accent hover:underline"
+                  className="text-accent font-[family-name:var(--font-mono)] font-medium hover:underline"
                 >
                   {po.fromProposalId}
                 </Link>
@@ -616,31 +568,25 @@ export default function PurchaseOrderDetailPage({
           )}
 
           {/* ---- Quick stats ---- */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="mb-3 text-[0.9375rem] font-semibold text-ink-primary">
-              Tổng quan
-            </h2>
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary mb-3 text-[0.9375rem] font-semibold">Tổng quan</h2>
             <div className="space-y-2">
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Dòng hàng</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-ink-primary">
+                <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium">
                   {po.lines.length}
                 </span>
               </div>
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Tổng SL đặt</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-ink-primary">
-                  {po.lines
-                    .reduce((s, l) => s + l.orderedQty, 0)
-                    .toLocaleString("vi-VN")}
+                <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium">
+                  {po.lines.reduce((s, l) => s + l.orderedQty, 0).toLocaleString("vi-VN")}
                 </span>
               </div>
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Tổng SL đã nhận</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-positive">
-                  {po.lines
-                    .reduce((s, l) => s + l.receivedQty, 0)
-                    .toLocaleString("vi-VN")}
+                <span className="text-positive font-[family-name:var(--font-mono)] font-medium">
+                  {po.lines.reduce((s, l) => s + l.receivedQty, 0).toLocaleString("vi-VN")}
                 </span>
               </div>
               <div className="flex justify-between text-[0.8125rem]">
@@ -648,34 +594,26 @@ export default function PurchaseOrderDetailPage({
                 <span
                   className={cn(
                     "font-[family-name:var(--font-mono)] font-medium",
-                    po.lines.reduce(
-                      (s, l) => s + (l.orderedQty - l.receivedQty),
-                      0
-                    ) > 0
+                    po.lines.reduce((s, l) => s + (l.orderedQty - l.receivedQty), 0) > 0
                       ? "text-warning"
-                      : "text-ink-primary"
+                      : "text-ink-primary",
                   )}
                 >
                   {po.lines
-                    .reduce(
-                      (s, l) => s + (l.orderedQty - l.receivedQty),
-                      0
-                    )
+                    .reduce((s, l) => s + (l.orderedQty - l.receivedQty), 0)
                     .toLocaleString("vi-VN")}
                 </span>
               </div>
-              <div className="border-t border-border-default pt-2">
+              <div className="border-border-default border-t pt-2">
                 <div className="flex justify-between text-[0.8125rem]">
                   <span className="text-ink-secondary">Tiền tệ</span>
-                  <span className="font-[family-name:var(--font-mono)] font-medium text-ink-primary">
+                  <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium">
                     {po.currency}
                   </span>
                 </div>
                 <div className="mt-1 flex justify-between text-[0.8125rem]">
-                  <span className="font-medium text-ink-primary">
-                    Tổng giá trị
-                  </span>
-                  <span className="font-[family-name:var(--font-mono)] font-bold text-ink-primary">
+                  <span className="text-ink-primary font-medium">Tổng giá trị</span>
+                  <span className="text-ink-primary font-[family-name:var(--font-mono)] font-bold">
                     {formatMoney(po.grandTotal, po.currency)}
                   </span>
                 </div>

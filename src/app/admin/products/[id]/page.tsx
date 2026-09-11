@@ -25,13 +25,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { toast } from "@/components/shared/Toast";
 import { SkuDetailPanel } from "@/components/backoffice/SkuDetailPanel";
-import {
-  codeCell,
-  textCell,
-  numberCell,
-  moneyCell,
-  statusCell,
-} from "@/components/shared/column-helpers";
+import { textCell, numberCell, moneyCell, statusCell } from "@/components/shared/column-helpers";
 import {
   products,
   skus,
@@ -50,7 +44,7 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const categoryMap = new Map<string, string>(
-  categories.map((c: Category) => [c.categoryId, c.name.vi])
+  categories.map((c: Category) => [c.categoryId, c.name.vi]),
 );
 
 const LIFECYCLE_ORDER: ProductStatus[] = [
@@ -112,20 +106,20 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
+    <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
       <div className="mb-3 flex items-center gap-2">
         <Button
           type="button"
           variant="ghost"
           onClick={() => setOpen((o) => !o)}
-          className="h-auto flex-1 justify-start gap-2 bg-transparent p-0 text-left text-[0.9375rem] font-semibold text-ink-primary hover:bg-transparent hover:text-accent"
+          className="text-ink-primary hover:text-accent h-auto flex-1 justify-start gap-2 bg-transparent p-0 text-left text-[0.9375rem] font-semibold hover:bg-transparent"
         >
-          {Icon && <Icon className="size-4 text-accent" />}
+          {Icon && <Icon className="text-accent size-4" />}
           {title}
           {open ? (
-            <ChevronDown className="size-3.5 text-ink-tertiary" />
+            <ChevronDown className="text-ink-tertiary size-3.5" />
           ) : (
-            <ChevronRight className="size-3.5 text-ink-tertiary" />
+            <ChevronRight className="text-ink-tertiary size-3.5" />
           )}
         </Button>
         {actions && open && <div className="flex items-center gap-2">{actions}</div>}
@@ -154,8 +148,8 @@ function Section({
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 py-2">
-      <span className="w-[140px] shrink-0 text-xs font-medium text-ink-tertiary">{label}</span>
-      <span className="text-[0.8125rem] text-ink-primary">{children}</span>
+      <span className="text-ink-tertiary w-[140px] shrink-0 text-xs font-medium">{label}</span>
+      <span className="text-ink-primary text-[0.8125rem]">{children}</span>
     </div>
   );
 }
@@ -173,17 +167,18 @@ export default function ProductDetailPage() {
 
   const baseProduct = useMemo(
     () => products.find((p) => p.productId === productId) ?? null,
-    [productId]
+    [productId],
   );
 
   const product: Product | null = useMemo(
-    () => (baseProduct && statusOverride ? { ...baseProduct, status: statusOverride } : baseProduct),
-    [baseProduct, statusOverride]
+    () =>
+      baseProduct && statusOverride ? { ...baseProduct, status: statusOverride } : baseProduct,
+    [baseProduct, statusOverride],
   );
 
   const productSkus = useMemo(
     () => (product ? skus.filter((s) => s.productId === product.productId) : []),
-    [product]
+    [product],
   );
 
   const lifecycleSteps = useMemo(() => {
@@ -196,14 +191,14 @@ export default function ProductDetailPage() {
     }));
   }, [product]);
 
-  const actions = product ? STATUS_ACTIONS[product.status] ?? [] : [];
+  const actions = product ? (STATUS_ACTIONS[product.status] ?? []) : [];
 
   const handleStatusChange = useCallback(
     (newStatus: ProductStatus) => {
       setStatusOverride(newStatus);
       toast.success("Cập nhật trạng thái", `${productId} chuyển sang ${newStatus}.`);
     },
-    [productId]
+    [productId],
   );
 
   /* SKU panel state */
@@ -211,29 +206,31 @@ export default function ProductDetailPage() {
   const [skuPanelOpen, setSkuPanelOpen] = useState(false);
   const [skuOverrides, setSkuOverrides] = useState<Map<string, SkuStatus>>(new Map());
 
-  const openSkuPanel = useCallback((sku: Sku) => {
-    // Apply override if exists
-    const override = skuOverrides.get(sku.skuId);
-    setSelectedSku(override ? { ...sku, status: override } : sku);
-    setSkuPanelOpen(true);
-  }, [skuOverrides]);
+  const openSkuPanel = useCallback(
+    (sku: Sku) => {
+      // Apply override if exists
+      const override = skuOverrides.get(sku.skuId);
+      setSelectedSku(override ? { ...sku, status: override } : sku);
+      setSkuPanelOpen(true);
+    },
+    [skuOverrides],
+  );
 
   const closeSkuPanel = useCallback(() => {
     setSkuPanelOpen(false);
   }, []);
 
-  const handleSkuStatusChange = useCallback(
-    (skuId: string, newStatus: SkuStatus) => {
-      setSkuOverrides((prev) => {
-        const next = new Map(prev);
-        next.set(skuId, newStatus);
-        return next;
-      });
-      setSelectedSku((prev) => (prev && prev.skuId === skuId ? { ...prev, status: newStatus } : prev));
-      toast.success("Cập nhật SKU", `${skuId} chuyển sang ${newStatus}.`);
-    },
-    []
-  );
+  const handleSkuStatusChange = useCallback((skuId: string, newStatus: SkuStatus) => {
+    setSkuOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(skuId, newStatus);
+      return next;
+    });
+    setSelectedSku((prev) =>
+      prev && prev.skuId === skuId ? { ...prev, status: newStatus } : prev,
+    );
+    toast.success("Cập nhật SKU", `${skuId} chuyển sang ${newStatus}.`);
+  }, []);
 
   /** SKUs with status overrides applied */
   const effectiveSkus = useMemo(() => {
@@ -256,14 +253,17 @@ export default function ProductDetailPage() {
             { label: productId },
           ]}
         />
-        <div className="flex flex-col items-center justify-center py-20 text-ink-tertiary">
+        <div className="text-ink-tertiary flex flex-col items-center justify-center py-20">
           <Box className="mb-3 size-12 opacity-40" />
           <p className="text-[0.9375rem]">
             Sản phẩm{" "}
-            <code className="font-[family-name:var(--font-mono)] text-accent">{productId}</code>{" "}
+            <code className="text-accent font-[family-name:var(--font-mono)]">{productId}</code>{" "}
             không tồn tại.
           </p>
-          <Link href="/admin/products" className="mt-4 text-[0.8125rem] text-accent hover:underline">
+          <Link
+            href="/admin/products"
+            className="text-accent mt-4 text-[0.8125rem] hover:underline"
+          >
             Quay lại danh sách
           </Link>
         </div>
@@ -286,7 +286,7 @@ export default function ProductDetailPage() {
             e.stopPropagation();
             openSkuPanel(row);
           }}
-          className="h-auto p-0 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
+          className="text-accent h-auto p-0 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium hover:underline"
         >
           {row.skuId}
         </Button>
@@ -305,7 +305,7 @@ export default function ProductDetailPage() {
       sortable: true,
       compare: (a, b) => a.weightKg - b.weightKg,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] tabular-nums text-ink-secondary">
+        <span className="text-ink-secondary font-[family-name:var(--font-mono)] text-[0.8125rem] tabular-nums">
           {row.weightKg} kg
         </span>
       ),
@@ -345,17 +345,18 @@ export default function ProductDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="ghost"
+            <Button
+              variant="ghost"
               type="button"
               onClick={() => toast.info("Chỉnh sửa sản phẩm", "Chức năng đang phát triển.")}
-              className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
             >
               <Pencil className="size-3.5" />
               Chỉnh sửa
             </Button>
             <Link
               href="/admin/products"
-              className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
             >
               <ArrowLeft className="size-3.5" />
               Quay lại
@@ -366,17 +367,19 @@ export default function ProductDetailPage() {
 
       {/* Status action bar */}
       {actions.length > 0 && (
-        <div className="mb-5 flex flex-wrap items-center gap-3 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-4 py-3">
+        <div className="border-border-default bg-bg-subtle mb-5 flex flex-wrap items-center gap-3 rounded-[var(--r-sm)] border px-4 py-3">
           <StatusBadge domain="product" status={product.status} size="md" withIcon />
-          <span className="text-xs text-ink-tertiary">→</span>
+          <span className="text-ink-tertiary text-xs">→</span>
           {actions.map((act) => (
-            <Button variant="ghost"
+            <Button
+              variant="ghost"
               key={act.next}
               type="button"
               onClick={() => handleStatusChange(act.next)}
               className={cn(
                 "rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors",
-                ACTION_TONE_CLASSES[act.tone] ?? "border-border-default text-ink-secondary hover:bg-bg-muted"
+                ACTION_TONE_CLASSES[act.tone] ??
+                  "border-border-default text-ink-secondary hover:bg-bg-muted",
               )}
             >
               {act.label}
@@ -395,21 +398,28 @@ export default function ProductDetailPage() {
             title="Thông tin chung"
             icon={Layers}
             actions={
-              <Button variant="ghost"
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => toast.info("Chỉnh sửa thông tin", "Chức năng đang phát triển.")}
-                className="rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+                className="border-border-default text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)] border px-2 py-0.5 text-xs"
               >
                 <Pencil className="inline size-3" />
               </Button>
             }
           >
-            <div className="divide-y divide-border-default">
+            <div className="divide-border-default divide-y">
               <InfoRow label="Mã sản phẩm">
-                <span className="font-[family-name:var(--font-mono)] font-medium text-accent">{product.productId}</span>
+                <span className="text-accent font-[family-name:var(--font-mono)] font-medium">
+                  {product.productId}
+                </span>
               </InfoRow>
-              <InfoRow label="Loại">{product.type === "Customizable" ? "Tùy chỉnh / In ấn" : "Tiêu chuẩn"}</InfoRow>
-              <InfoRow label="Danh mục">{categoryMap.get(product.categoryId) ?? product.categoryId}</InfoRow>
+              <InfoRow label="Loại">
+                {product.type === "Customizable" ? "Tùy chỉnh / In ấn" : "Tiêu chuẩn"}
+              </InfoRow>
+              <InfoRow label="Danh mục">
+                {categoryMap.get(product.categoryId) ?? product.categoryId}
+              </InfoRow>
               <InfoRow label="Thương hiệu">{product.brand}</InfoRow>
               <InfoRow label="Đơn vị tính">{product.uom}</InfoRow>
               <InfoRow label="Thuế">{product.taxClass}</InfoRow>
@@ -418,14 +428,16 @@ export default function ProductDetailPage() {
               </InfoRow>
               <InfoRow label="Người tạo">{product.createdBy}</InfoRow>
               <InfoRow label="Ngày tạo">
-                <span className="tabular-nums">{new Date(product.createdAt).toLocaleDateString("vi-VN")}</span>
+                <span className="tabular-nums">
+                  {new Date(product.createdAt).toLocaleDateString("vi-VN")}
+                </span>
               </InfoRow>
-              {product.approvedBy && (
-                <InfoRow label="Người duyệt">{product.approvedBy}</InfoRow>
-              )}
+              {product.approvedBy && <InfoRow label="Người duyệt">{product.approvedBy}</InfoRow>}
               {product.approvedAt && (
                 <InfoRow label="Ngày duyệt">
-                  <span className="tabular-nums">{new Date(product.approvedAt).toLocaleDateString("vi-VN")}</span>
+                  <span className="tabular-nums">
+                    {new Date(product.approvedAt).toLocaleDateString("vi-VN")}
+                  </span>
                 </InfoRow>
               )}
             </div>
@@ -433,8 +445,10 @@ export default function ProductDetailPage() {
 
           {/* Mô tả */}
           <Section title="Mô tả" defaultOpen={false}>
-            <p className="text-[0.8125rem] leading-relaxed text-ink-secondary">{product.description}</p>
-            <p className="mt-1.5 text-xs italic text-ink-tertiary">{product.descriptionEn}</p>
+            <p className="text-ink-secondary text-[0.8125rem] leading-relaxed">
+              {product.description}
+            </p>
+            <p className="text-ink-tertiary mt-1.5 text-xs italic">{product.descriptionEn}</p>
           </Section>
 
           {/* Thuộc tính biến thể */}
@@ -445,7 +459,7 @@ export default function ProductDetailPage() {
               actions={
                 <Link
                   href="/admin/variants"
-                  className="inline-flex items-center gap-1 rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+                  className="border-border-default text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1 rounded-[var(--r-sm)] border px-2 py-0.5 text-xs"
                 >
                   Quản lý biến thể →
                 </Link>
@@ -454,18 +468,18 @@ export default function ProductDetailPage() {
               <div className="space-y-3">
                 {product.attributes.map((attr) => (
                   <div key={attr.attributeId}>
-                    <div className="mb-1.5 text-xs font-medium text-ink-tertiary">
+                    <div className="text-ink-tertiary mb-1.5 text-xs font-medium">
                       {attr.name.vi} <span className="opacity-60">({attr.name.en})</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {attr.values.map((val) => (
                         <span
                           key={val}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-border-default bg-bg-subtle px-2.5 py-0.5 text-xs font-medium text-ink-secondary"
+                          className="border-border-default bg-bg-subtle text-ink-secondary inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
                         >
                           {attr.swatch?.[val] && (
                             <span
-                              className="size-3 rounded-full border border-border-default"
+                              className="border-border-default size-3 rounded-full border"
                               style={{ backgroundColor: attr.swatch[val] }}
                             />
                           )}
@@ -486,7 +500,7 @@ export default function ProductDetailPage() {
             actions={
               <Link
                 href="/admin/products?tab=skus"
-                className="inline-flex items-center gap-1 rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+                className="border-border-default text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1 rounded-[var(--r-sm)] border px-2 py-0.5 text-xs"
               >
                 Quản lý SKU →
               </Link>
@@ -502,95 +516,111 @@ export default function ProductDetailPage() {
                 pageSize={10}
               />
             ) : (
-              <div className="rounded-[var(--r-sm)] border border-border-default py-10 text-center text-[0.8125rem] text-ink-tertiary">
+              <div className="border-border-default text-ink-tertiary rounded-[var(--r-sm)] border py-10 text-center text-[0.8125rem]">
                 Chưa có SKU nào
               </div>
             )}
           </Section>
 
           {/* Cấu hình tùy chỉnh */}
-          {product.type === "Customizable" && product.printAreas && product.printAreas.length > 0 && (
-            <Section title="Cấu hình tùy chỉnh (Print Areas)" icon={Printer}>
-              <div className="space-y-3">
-                {product.printAreas.map((area: PrintArea) => (
-                  <div
-                    key={area.printAreaId}
-                    className="rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3"
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-[0.8125rem] font-semibold text-ink-primary">
-                        {area.name.vi}
-                        <span className="ml-1.5 text-xs font-normal text-ink-tertiary">({area.name.en})</span>
-                      </span>
-                      <span className="rounded-full border border-border-default bg-bg-surface px-2 py-0.5 text-xs font-medium text-ink-secondary">
-                        {area.position}
-                      </span>
+          {product.type === "Customizable" &&
+            product.printAreas &&
+            product.printAreas.length > 0 && (
+              <Section title="Cấu hình tùy chỉnh (Print Areas)" icon={Printer}>
+                <div className="space-y-3">
+                  {product.printAreas.map((area: PrintArea) => (
+                    <div
+                      key={area.printAreaId}
+                      className="border-border-default bg-bg-subtle rounded-[var(--r-sm)] border p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-ink-primary text-[0.8125rem] font-semibold">
+                          {area.name.vi}
+                          <span className="text-ink-tertiary ml-1.5 text-xs font-normal">
+                            ({area.name.en})
+                          </span>
+                        </span>
+                        <span className="border-border-default bg-bg-surface text-ink-secondary rounded-full border px-2 py-0.5 text-xs font-medium">
+                          {area.position}
+                        </span>
+                      </div>
+                      <div className="text-ink-secondary grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+                        <div>
+                          <span className="text-ink-tertiary">Kích thước: </span>
+                          <span className="font-medium tabular-nums">
+                            {area.widthMm}×{area.heightMm} mm
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-ink-tertiary">Min DPI: </span>
+                          <span className="font-medium tabular-nums">{area.minDpi}</span>
+                        </div>
+                        <div>
+                          <span className="text-ink-tertiary">Bleed: </span>
+                          <span className="font-medium tabular-nums">{area.bleedMm} mm</span>
+                        </div>
+                        <div>
+                          <span className="text-ink-tertiary">Safe margin: </span>
+                          <span className="font-medium tabular-nums">{area.safeMarginMm} mm</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-ink-tertiary">Kỹ thuật: </span>
+                          <span className="font-medium">{area.allowedTechniques.join(", ")}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-ink-secondary sm:grid-cols-3">
-                      <div>
-                        <span className="text-ink-tertiary">Kích thước: </span>
-                        <span className="font-medium tabular-nums">{area.widthMm}×{area.heightMm} mm</span>
-                      </div>
-                      <div>
-                        <span className="text-ink-tertiary">Min DPI: </span>
-                        <span className="font-medium tabular-nums">{area.minDpi}</span>
-                      </div>
-                      <div>
-                        <span className="text-ink-tertiary">Bleed: </span>
-                        <span className="font-medium tabular-nums">{area.bleedMm} mm</span>
-                      </div>
-                      <div>
-                        <span className="text-ink-tertiary">Safe margin: </span>
-                        <span className="font-medium tabular-nums">{area.safeMarginMm} mm</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-ink-tertiary">Kỹ thuật: </span>
-                        <span className="font-medium">{area.allowedTechniques.join(", ")}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {product.model3dUrl && (
-                <div className="mt-3 flex items-center gap-2 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3">
-                  <Cube className="size-4 text-accent" />
-                  <div>
-                    <div className="text-xs font-medium text-ink-secondary">3D Preview Model</div>
-                    <div className="font-[family-name:var(--font-mono)] text-xs text-ink-tertiary">{product.model3dUrl}</div>
-                  </div>
+                  ))}
                 </div>
-              )}
 
-              {product.pricingFormula && (
-                <div className="mt-3 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3">
-                  <div className="mb-2 text-xs font-medium text-ink-secondary">Công thức giá in</div>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-ink-secondary sm:grid-cols-3">
+                {product.model3dUrl && (
+                  <div className="border-border-default bg-bg-subtle mt-3 flex items-center gap-2 rounded-[var(--r-sm)] border p-3">
+                    <Cube className="text-accent size-4" />
                     <div>
-                      <span className="text-ink-tertiary">Giá in cơ bản: </span>
-                      <span className="font-[family-name:var(--font-mono)] font-medium">{formatVND(product.pricingFormula.basePrintPrice)}</span>
-                    </div>
-                    <div>
-                      <span className="text-ink-tertiary">Giá/cm²: </span>
-                      <span className="font-[family-name:var(--font-mono)] font-medium">{product.pricingFormula.perSquareCmPrice}đ</span>
-                    </div>
-                    <div>
-                      <span className="text-ink-tertiary">Phụ thu màu: </span>
-                      <span className="font-[family-name:var(--font-mono)] font-medium">{formatVND(product.pricingFormula.colorCountSurcharge)}</span>
+                      <div className="text-ink-secondary text-xs font-medium">3D Preview Model</div>
+                      <div className="text-ink-tertiary font-[family-name:var(--font-mono)] text-xs">
+                        {product.model3dUrl}
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <span className="text-xs text-ink-tertiary">Hệ số kỹ thuật: </span>
-                    <span className="text-xs text-ink-secondary">
-                      {Object.entries(product.pricingFormula.techniqueMultiplier)
-                        .map(([tech, mult]) => `${tech} ×${mult}`)
-                        .join(" · ")}
-                    </span>
+                )}
+
+                {product.pricingFormula && (
+                  <div className="border-border-default bg-bg-subtle mt-3 rounded-[var(--r-sm)] border p-3">
+                    <div className="text-ink-secondary mb-2 text-xs font-medium">
+                      Công thức giá in
+                    </div>
+                    <div className="text-ink-secondary grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+                      <div>
+                        <span className="text-ink-tertiary">Giá in cơ bản: </span>
+                        <span className="font-[family-name:var(--font-mono)] font-medium">
+                          {formatVND(product.pricingFormula.basePrintPrice)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-ink-tertiary">Giá/cm²: </span>
+                        <span className="font-[family-name:var(--font-mono)] font-medium">
+                          {product.pricingFormula.perSquareCmPrice}đ
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-ink-tertiary">Phụ thu màu: </span>
+                        <span className="font-[family-name:var(--font-mono)] font-medium">
+                          {formatVND(product.pricingFormula.colorCountSurcharge)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="text-ink-tertiary text-xs">Hệ số kỹ thuật: </span>
+                      <span className="text-ink-secondary text-xs">
+                        {Object.entries(product.pricingFormula.techniqueMultiplier)
+                          .map(([tech, mult]) => `${tech} ×${mult}`)
+                          .join(" · ")}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </Section>
-          )}
+                )}
+              </Section>
+            )}
         </div>
 
         {/* ============================================================== */}
@@ -598,23 +628,23 @@ export default function ProductDetailPage() {
         {/* ============================================================== */}
         <div className="space-y-5">
           {/* Lifecycle timeline */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="mb-4 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-primary">
-              <Ruler className="size-4 text-accent" />
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary mb-4 flex items-center gap-2 text-[0.9375rem] font-semibold">
+              <Ruler className="text-accent size-4" />
               Vòng đời sản phẩm
             </h2>
             <div className="relative pl-6">
-              <div className="absolute left-[6px] top-1 bottom-1 w-0.5 bg-border-default" />
+              <div className="bg-border-default absolute top-1 bottom-1 left-[6px] w-0.5" />
               {lifecycleSteps.map((step) => (
                 <div key={step.label} className="relative pb-5 last:pb-0">
                   <div
                     className={cn(
-                      "absolute -left-[22.5px] top-[4px] size-[11px] rounded-full border-2 border-bg-surface",
+                      "border-bg-surface absolute top-[4px] -left-[22.5px] size-[11px] rounded-full border-2",
                       step.current
-                        ? "bg-accent ring-2 ring-accent/30"
+                        ? "bg-accent ring-accent/30 ring-2"
                         : step.done
                           ? "bg-positive"
-                          : "bg-bg-muted"
+                          : "bg-bg-muted",
                     )}
                   />
                   <div className="flex items-center gap-2">
@@ -625,13 +655,13 @@ export default function ProductDetailPage() {
                           ? "text-accent"
                           : step.done
                             ? "text-ink-primary"
-                            : "text-ink-tertiary"
+                            : "text-ink-tertiary",
                       )}
                     >
                       {step.label}
                     </span>
                     {step.current && (
-                      <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[0.625rem] font-semibold text-accent">
+                      <span className="bg-accent/10 text-accent rounded-full px-2 py-0.5 text-[0.625rem] font-semibold">
                         Hiện tại
                       </span>
                     )}
@@ -642,13 +672,16 @@ export default function ProductDetailPage() {
           </section>
 
           {/* Hình ảnh */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[0.9375rem] font-semibold text-ink-primary">Hình ảnh ({product.images.length})</h2>
-              <Button variant="ghost"
+              <h2 className="text-ink-primary text-[0.9375rem] font-semibold">
+                Hình ảnh ({product.images.length})
+              </h2>
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => toast.info("Thêm hình ảnh", "Chức năng đang phát triển.")}
-                className="inline-flex items-center gap-1 rounded-[var(--r-sm)] border border-border-default px-2 py-0.5 text-xs text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+                className="border-border-default text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1 rounded-[var(--r-sm)] border px-2 py-0.5 text-xs"
               >
                 <Plus className="size-3" />
                 Thêm
@@ -658,7 +691,7 @@ export default function ProductDetailPage() {
               {product.images.map((img, i) => (
                 <div
                   key={i}
-                  className="group relative flex aspect-square cursor-pointer items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-subtle text-xs text-ink-tertiary transition-colors hover:border-accent/40 hover:bg-accent/5"
+                  className="group border-border-default bg-bg-subtle text-ink-tertiary hover:border-accent/40 hover:bg-accent/5 relative flex aspect-square cursor-pointer items-center justify-center rounded-[var(--r-sm)] border text-xs transition-colors"
                 >
                   {img.split("/").pop()}
                 </div>
@@ -667,42 +700,46 @@ export default function ProductDetailPage() {
           </section>
 
           {/* Quick stats */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="mb-3 text-[0.9375rem] font-semibold text-ink-primary">Tổng quan SKU</h2>
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary mb-3 text-[0.9375rem] font-semibold">Tổng quan SKU</h2>
             <div className="space-y-2">
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Tổng SKU</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-ink-primary">{effectiveSkus.length}</span>
+                <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium">
+                  {effectiveSkus.length}
+                </span>
               </div>
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Active</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-positive">
+                <span className="text-positive font-[family-name:var(--font-mono)] font-medium">
                   {effectiveSkus.filter((s) => s.status === "Active").length}
                 </span>
               </div>
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Blocked</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-warning">
+                <span className="text-warning font-[family-name:var(--font-mono)] font-medium">
                   {effectiveSkus.filter((s) => s.status === "Blocked").length}
                 </span>
               </div>
               <div className="flex justify-between text-[0.8125rem]">
                 <span className="text-ink-secondary">Obsolete</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium text-danger">
+                <span className="text-danger font-[family-name:var(--font-mono)] font-medium">
                   {effectiveSkus.filter((s) => s.status === "Obsolete").length}
                 </span>
               </div>
-              <div className="border-t border-border-default pt-2">
+              <div className="border-border-default border-t pt-2">
                 <div className="flex justify-between text-[0.8125rem]">
                   <span className="text-ink-secondary">Tổng tồn kho</span>
-                  <span className="font-[family-name:var(--font-mono)] font-medium text-ink-primary">
+                  <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium">
                     {effectiveSkus.reduce((s, sk) => s + sk.stockOnHand, 0).toLocaleString("vi-VN")}
                   </span>
                 </div>
                 <div className="flex justify-between text-[0.8125rem]">
                   <span className="text-ink-secondary">Khả dụng</span>
-                  <span className="font-[family-name:var(--font-mono)] font-medium text-positive">
-                    {effectiveSkus.reduce((s, sk) => s + sk.stockAvailable, 0).toLocaleString("vi-VN")}
+                  <span className="text-positive font-[family-name:var(--font-mono)] font-medium">
+                    {effectiveSkus
+                      .reduce((s, sk) => s + sk.stockAvailable, 0)
+                      .toLocaleString("vi-VN")}
                   </span>
                 </div>
               </div>

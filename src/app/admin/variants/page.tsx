@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "cn";
 import {
@@ -21,14 +21,18 @@ import { ListToolbar, type ListSummaryItem } from "@/components/shared/ListToolb
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import {
-  products,
-  type Product,
-  type ProductAttribute,
-} from "@/lib/mock-data";
+import { products, type Product, type ProductAttribute } from "@/lib/mock-data";
+import { usePageConfig } from "@/hooks/use-page-config";
 
 /* -------------------------------------------------------------------------- */
 /*  Aggregate unique attributes from all products                             */
@@ -62,7 +66,22 @@ const DEFAULT_CONFIG: VariantsPageConfig = {
   },
 };
 
-const SEARCH_FIELDS: { label: string; value: VariantSearchField; getValue: (attr: AggregatedAttribute) => string }[] = [
+function mergeStoredConfig(
+  stored: Partial<VariantsPageConfig>,
+  fallback: VariantsPageConfig,
+): VariantsPageConfig {
+  return {
+    ...fallback,
+    ...stored,
+    globalSearch: { ...fallback.globalSearch, ...stored.globalSearch },
+  };
+}
+
+const SEARCH_FIELDS: {
+  label: string;
+  value: VariantSearchField;
+  getValue: (attr: AggregatedAttribute) => string;
+}[] = [
   { label: "Mã thuộc tính", value: "attributeId", getValue: (attr) => attr.attributeId },
   { label: "Tên VI", value: "nameVi", getValue: (attr) => attr.name.vi },
   { label: "Tên EN", value: "nameEn", getValue: (attr) => attr.name.en },
@@ -121,8 +140,11 @@ export default function VariantAttributesPage() {
   const [addedValues, setAddedValues] = useState<Map<string, string[]>>(new Map());
   const [removedValues, setRemovedValues] = useState<Map<string, Set<string>>>(new Map());
 
-  const [config, setConfig] = useState<VariantsPageConfig>(DEFAULT_CONFIG);
-  const [mounted, setMounted] = useState(false);
+  const { config, setConfig, updateConfig } = usePageConfig<VariantsPageConfig>(
+    STORAGE_KEY,
+    DEFAULT_CONFIG,
+    mergeStoredConfig,
+  );
 
   /* Create dialog */
   const [createOpen, setCreateOpen] = useState(false);
@@ -133,30 +155,6 @@ export default function VariantAttributesPage() {
 
   /* Delete dialog */
   const [deleteTarget, setDeleteTarget] = useState<AggregatedAttribute | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const stored = JSON.parse(raw) as Partial<VariantsPageConfig>;
-        setConfig({
-          ...DEFAULT_CONFIG,
-          ...stored,
-          globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
-        });
-      }
-    } catch {
-      setConfig(DEFAULT_CONFIG);
-    }
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  }, [config, mounted]);
-
-  const updateConfig = (updater: (current: VariantsPageConfig) => VariantsPageConfig) => setConfig((current) => updater(current));
 
   const toggleSearchField = (field: VariantSearchField) => {
     updateConfig((current) => {
@@ -187,7 +185,9 @@ export default function VariantAttributesPage() {
     if (!q || config.globalSearch.fields.length === 0) return effectiveAttributes;
     const fieldMap = new Map(SEARCH_FIELDS.map((field) => [field.value, field.getValue]));
     return effectiveAttributes.filter((attr) =>
-      config.globalSearch.fields.some((field) => (fieldMap.get(field)?.(attr) ?? "").toLowerCase().includes(q))
+      config.globalSearch.fields.some((field) =>
+        (fieldMap.get(field)?.(attr) ?? "").toLowerCase().includes(q),
+      ),
     );
   }, [effectiveAttributes, config.globalSearch]);
 
@@ -261,13 +261,35 @@ export default function VariantAttributesPage() {
   }, []);
 
   const hasGlobalSearch = Boolean(config.globalSearch.query.trim());
-  const hasFieldConfig = config.globalSearch.fields.length !== DEFAULT_CONFIG.globalSearch.fields.length ||
+  const hasFieldConfig =
+    config.globalSearch.fields.length !== DEFAULT_CONFIG.globalSearch.fields.length ||
     config.globalSearch.fields.some((field) => !DEFAULT_CONFIG.globalSearch.fields.includes(field));
   const hasAnyConfig = config.showStats || hasGlobalSearch || hasFieldConfig;
   const summaryItems: ListSummaryItem[] = [
     { label: "Stats", value: config.showStats ? "Đang hiện" : "Đang ẩn" },
-    { label: "Search chính", value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng", active: hasGlobalSearch, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: "" } })) },
-    { label: "Trường search", value: config.globalSearch.fields.map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field).join(", ") || "Chưa chọn", active: hasFieldConfig, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } })) },
+    {
+      label: "Search chính",
+      value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng",
+      active: hasGlobalSearch,
+      onClear: () =>
+        updateConfig((current) => ({
+          ...current,
+          globalSearch: { ...current.globalSearch, query: "" },
+        })),
+    },
+    {
+      label: "Trường search",
+      value:
+        config.globalSearch.fields
+          .map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field)
+          .join(", ") || "Chưa chọn",
+      active: hasFieldConfig,
+      onClear: () =>
+        updateConfig((current) => ({
+          ...current,
+          globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields },
+        })),
+    },
   ];
 
   /* Inline add value */
@@ -287,7 +309,7 @@ export default function VariantAttributesPage() {
       setInlineValue("");
       setAddingValueFor(null);
     },
-    [inlineValue]
+    [inlineValue],
   );
 
   return (
@@ -305,13 +327,25 @@ export default function VariantAttributesPage() {
               type="button"
               variant={config.showStats ? "secondary" : "outline"}
               size="sm"
-              onClick={() => updateConfig((current) => ({ ...current, showStats: !current.showStats }))}
-              className={cn("rounded-[var(--r-sm)]", config.showStats && "border border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent")}
+              onClick={() =>
+                updateConfig((current) => ({ ...current, showStats: !current.showStats }))
+              }
+              className={cn(
+                "rounded-[var(--r-sm)]",
+                config.showStats &&
+                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+              )}
             >
               <BarChart3 className="size-3.5" />
               {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
             </Button>
-            <Button variant="default" type="button" size="sm" onClick={() => setCreateOpen(true)} className="rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse">
+            <Button
+              variant="default"
+              type="button"
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+              className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse rounded-[var(--r-sm)]"
+            >
               <Plus className="size-3.5" />
               Tạo thuộc tính
             </Button>
@@ -323,16 +357,39 @@ export default function VariantAttributesPage() {
 
       <ListToolbar
         search={config.globalSearch.query}
-        onSearchChange={(value) => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: value } }))}
+        onSearchChange={(value) =>
+          updateConfig((current) => ({
+            ...current,
+            globalSearch: { ...current.globalSearch, query: value },
+          }))
+        }
         searchPlaceholder="Tìm thuộc tính theo mã, tên, giá trị..."
         fieldOptions={SEARCH_FIELDS}
         selectedFields={config.globalSearch.fields}
         defaultFields={DEFAULT_CONFIG.globalSearch.fields}
         onToggleField={toggleSearchField}
-        onResetFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))}
-        onSelectAllFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: SEARCH_FIELDS.map((field) => field.value) } }))}
+        onResetFields={() =>
+          updateConfig((current) => ({
+            ...current,
+            globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields },
+          }))
+        }
+        onSelectAllFields={() =>
+          updateConfig((current) => ({
+            ...current,
+            globalSearch: {
+              ...current.globalSearch,
+              fields: SEARCH_FIELDS.map((field) => field.value),
+            },
+          }))
+        }
         hasFieldConfig={hasFieldConfig}
-        onExport={() => toast.success("Xuất file mock", `Sẵn sàng xuất ${filtered.length} thuộc tính đang hiển thị.`)}
+        onExport={() =>
+          toast.success(
+            "Xuất file mock",
+            `Sẵn sàng xuất ${filtered.length} thuộc tính đang hiển thị.`,
+          )
+        }
         summaryItems={summaryItems}
         onResetAll={() => setConfig(DEFAULT_CONFIG)}
         resetDisabled={!hasAnyConfig}
@@ -340,7 +397,7 @@ export default function VariantAttributesPage() {
 
       {/* Attribute cards */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[var(--card-radius)] border border-border-default bg-bg-surface py-16 text-ink-tertiary">
+        <div className="border-border-default bg-bg-surface text-ink-tertiary flex flex-col items-center justify-center rounded-[var(--card-radius)] border py-16">
           <Palette className="mb-3 size-10 opacity-40" />
           <p className="text-[0.9375rem]">Không tìm thấy thuộc tính nào.</p>
         </div>
@@ -349,25 +406,26 @@ export default function VariantAttributesPage() {
           {filtered.map((attr) => (
             <div
               key={attr.attributeId}
-              className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)] transition-shadow hover:shadow-[var(--sh-sm)]"
+              className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)] transition-shadow hover:shadow-[var(--sh-sm)]"
             >
               {/* Card header */}
               <div className="mb-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <Link
                     href={`/admin/variants/${attr.attributeId}`}
-                    className="text-[0.9375rem] font-semibold text-ink-primary hover:text-accent"
+                    className="text-ink-primary hover:text-accent text-[0.9375rem] font-semibold"
                   >
                     {attr.name.vi}
                   </Link>
-                  <p className="text-xs text-ink-tertiary">
-                    {attr.name.en} · <span className="font-[family-name:var(--font-mono)]">{attr.attributeId}</span>
+                  <p className="text-ink-tertiary text-xs">
+                    {attr.name.en} ·{" "}
+                    <span className="font-[family-name:var(--font-mono)]">{attr.attributeId}</span>
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <Link
                     href={`/admin/variants/${attr.attributeId}`}
-                    className="flex size-7 items-center justify-center rounded-[var(--r-sm)] border border-border-default bg-bg-surface text-ink-tertiary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+                    className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary flex size-7 items-center justify-center rounded-[var(--r-sm)] border transition-colors"
                     aria-label="Xem chi tiết"
                   >
                     <Eye className="size-3.5" />
@@ -377,7 +435,7 @@ export default function VariantAttributesPage() {
                     variant="outline"
                     size="icon-sm"
                     onClick={() => toast.info("Chỉnh sửa", "Chức năng đang phát triển.")}
-                    className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+                    className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)]"
                     aria-label="Chỉnh sửa"
                   >
                     <Pencil className="size-3.5" />
@@ -387,7 +445,7 @@ export default function VariantAttributesPage() {
                     variant="outline"
                     size="icon-sm"
                     onClick={() => setDeleteTarget(attr)}
-                    className="rounded-[var(--r-sm)] border-danger/30 bg-bg-surface text-danger/70 hover:bg-danger/10 hover:text-danger"
+                    className="border-danger/30 bg-bg-surface text-danger/70 hover:bg-danger/10 hover:text-danger rounded-[var(--r-sm)]"
                     aria-label="Xoá"
                   >
                     <Trash2 className="size-3.5" />
@@ -400,11 +458,11 @@ export default function VariantAttributesPage() {
                 {attr.values.map((val) => (
                   <span
                     key={val}
-                    className="group inline-flex items-center gap-1 rounded-full border border-border-default bg-bg-subtle px-2 py-0.5 text-xs font-medium text-ink-secondary"
+                    className="group border-border-default bg-bg-subtle text-ink-secondary inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium"
                   >
                     {attr.swatch?.[val] && (
                       <span
-                        className="size-3 rounded-full border border-border-default"
+                        className="border-border-default size-3 rounded-full border"
                         style={{ backgroundColor: attr.swatch[val] }}
                       />
                     )}
@@ -414,7 +472,7 @@ export default function VariantAttributesPage() {
                       variant="ghost"
                       size="icon-xs"
                       onClick={() => handleRemoveValue(attr.attributeId, val)}
-                      className="ml-0.5 hidden size-3.5 rounded-full p-0 text-ink-tertiary hover:bg-danger/10 hover:text-danger group-hover:inline-flex"
+                      className="text-ink-tertiary hover:bg-danger/10 hover:text-danger ml-0.5 hidden size-3.5 rounded-full p-0 group-hover:inline-flex"
                       aria-label={`Xoá ${val}`}
                     >
                       <X className="size-2.5" />
@@ -424,7 +482,7 @@ export default function VariantAttributesPage() {
 
                 {/* Inline add value */}
                 {addingValueFor === attr.attributeId ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/5 px-1.5 py-0.5">
+                  <span className="border-accent/40 bg-accent/5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5">
                     <Input
                       type="text"
                       value={inlineValue}
@@ -437,7 +495,7 @@ export default function VariantAttributesPage() {
                         }
                       }}
                       placeholder="Giá trị..."
-                      className="h-6 w-20 border-none bg-transparent px-1 text-xs text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:ring-0"
+                      className="text-ink-primary placeholder:text-ink-tertiary h-6 w-20 border-none bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
                       autoFocus
                     />
                     <Button
@@ -445,7 +503,7 @@ export default function VariantAttributesPage() {
                       variant="ghost"
                       size="xs"
                       onClick={() => handleAddValue(attr.attributeId)}
-                      className="h-6 px-1 text-xs font-medium text-accent hover:bg-transparent hover:text-accent hover:underline"
+                      className="text-accent hover:text-accent h-6 px-1 text-xs font-medium hover:bg-transparent hover:underline"
                     >
                       OK
                     </Button>
@@ -457,7 +515,7 @@ export default function VariantAttributesPage() {
                         setAddingValueFor(null);
                         setInlineValue("");
                       }}
-                      className="size-5 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+                      className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-5"
                     >
                       <X className="size-3" />
                     </Button>
@@ -471,7 +529,7 @@ export default function VariantAttributesPage() {
                       setAddingValueFor(attr.attributeId);
                       setInlineValue("");
                     }}
-                    className="rounded-full border-dashed border-border-strong px-2 py-0.5 text-xs text-ink-tertiary hover:border-accent hover:bg-bg-surface hover:text-accent"
+                    className="border-border-strong text-ink-tertiary hover:border-accent hover:bg-bg-surface hover:text-accent rounded-full border-dashed px-2 py-0.5 text-xs"
                   >
                     <Plus className="size-3" />
                     Thêm
@@ -480,7 +538,7 @@ export default function VariantAttributesPage() {
               </div>
 
               {/* Meta */}
-              <div className="flex items-center gap-3 text-xs text-ink-tertiary">
+              <div className="text-ink-tertiary flex items-center gap-3 text-xs">
                 <span>{attr.values.length} giá trị</span>
                 <span>·</span>
                 <span>{attr.productCount} SP sử dụng</span>
@@ -503,17 +561,19 @@ export default function VariantAttributesPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent
           showCloseButton={false}
-          className="gap-0 sm:max-w-[440px] rounded-[var(--r-xl)] border border-border-default bg-bg-surface p-0 shadow-[var(--sh-lg)] ring-0"
+          className="border-border-default bg-bg-surface gap-0 rounded-[var(--r-xl)] border p-0 shadow-[var(--sh-lg)] ring-0 sm:max-w-[440px]"
         >
-          <DialogHeader className="border-b border-border-default px-[18px] py-4">
-            <DialogTitle className="font-[family-name:var(--font-display)] text-[1.05rem] font-semibold leading-tight text-ink-primary">Tạo thuộc tính mới</DialogTitle>
+          <DialogHeader className="border-border-default border-b px-[18px] py-4">
+            <DialogTitle className="text-ink-primary font-[family-name:var(--font-display)] text-[1.05rem] leading-tight font-semibold">
+              Tạo thuộc tính mới
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 px-[18px] py-[18px]">
-            <DialogDescription className="text-[0.875rem] leading-relaxed text-ink-secondary">
+            <DialogDescription className="text-ink-secondary text-[0.875rem] leading-relaxed">
               Khai báo thuộc tính biến thể UI-only từ dữ liệu mock hiện có.
             </DialogDescription>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-secondary">
+              <label className="text-ink-secondary mb-1 block text-xs font-medium">
                 Tên tiếng Việt <span className="text-danger">*</span>
               </label>
               <Input
@@ -521,11 +581,11 @@ export default function VariantAttributesPage() {
                 value={newNameVi}
                 onChange={(e) => setNewNameVi(e.target.value)}
                 placeholder="Chất liệu"
-                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20"
+                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-secondary">
+              <label className="text-ink-secondary mb-1 block text-xs font-medium">
                 Tên tiếng Anh <span className="text-danger">*</span>
               </label>
               <Input
@@ -533,11 +593,11 @@ export default function VariantAttributesPage() {
                 value={newNameEn}
                 onChange={(e) => setNewNameEn(e.target.value)}
                 placeholder="Material"
-                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20"
+                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-secondary">
+              <label className="text-ink-secondary mb-1 block text-xs font-medium">
                 Giá trị (cách nhau dấu phẩy) <span className="text-danger">*</span>
               </label>
               <Input
@@ -545,29 +605,33 @@ export default function VariantAttributesPage() {
                 value={newValues}
                 onChange={(e) => setNewValues(e.target.value)}
                 placeholder="Cotton, Polyester, Linen"
-                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20"
+                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
               />
             </div>
-            <label className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
-              <Checkbox checked={newHasSwatch} onCheckedChange={(checked) => setNewHasSwatch(checked === true)} />
+            <label className="text-ink-secondary flex items-center gap-2 text-[0.8125rem]">
+              <Checkbox
+                checked={newHasSwatch}
+                onCheckedChange={(checked) => setNewHasSwatch(checked === true)}
+              />
               Có mẫu màu (swatch)
             </label>
           </div>
-          <DialogFooter className="mx-0 mb-0 rounded-b-[var(--r-xl)] border-t border-border-default bg-bg-subtle px-[18px] py-[14px]">
+          <DialogFooter className="border-border-default bg-bg-subtle mx-0 mb-0 rounded-b-[var(--r-xl)] border-t px-[18px] py-[14px]">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setCreateOpen(false)}
-              className="rounded-[var(--r-sm)] border-border-strong bg-bg-surface text-ink-primary hover:bg-bg-muted"
+              className="border-border-strong bg-bg-surface text-ink-primary hover:bg-bg-muted rounded-[var(--r-sm)]"
             >
               Huỷ
             </Button>
-            <Button variant="default"
+            <Button
+              variant="default"
               type="button"
               size="sm"
               onClick={handleCreate}
-              className="rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse"
+              className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse rounded-[var(--r-sm)]"
             >
               Tạo thuộc tính
             </Button>
@@ -578,7 +642,9 @@ export default function VariantAttributesPage() {
       {/* Delete confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null);
+        }}
         onConfirm={handleDelete}
         title="Xoá thuộc tính"
         description={

@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "cn";
 import {
   BarChart3,
   Building2,
-  Check,
   CheckCircle,
   Clock,
   Columns3,
@@ -49,9 +48,11 @@ import {
 } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { suppliers, type Supplier } from "@/lib/mock-data";
+import { usePageConfig } from "@/hooks/use-page-config";
 
 type SupplierStatusFilter = "all" | "active" | "inactive";
-type SupplierSearchField = "supplierId" | "name" | "taxCode" | "contactName" | "contactEmail" | "contactPhone";
+type SupplierSearchField =
+  "supplierId" | "name" | "taxCode" | "contactName" | "contactEmail" | "contactPhone";
 type SupplierColumnSearchKey = "supplierId" | "name" | "contact" | "email";
 type SupplierTableColumnKey =
   | "supplierId"
@@ -102,13 +103,30 @@ const DEFAULT_CONFIG: SupplierPageConfig = {
   visibleColumns: DEFAULT_VISIBLE_COLUMNS,
 };
 
+function mergeStoredConfig(
+  stored: Partial<SupplierPageConfig>,
+  fallback: SupplierPageConfig,
+): SupplierPageConfig {
+  return {
+    ...fallback,
+    ...stored,
+    globalSearch: { ...fallback.globalSearch, ...stored.globalSearch },
+    columnSearch: stored.columnSearch ?? {},
+    visibleColumns: stored.visibleColumns?.length ? stored.visibleColumns : DEFAULT_VISIBLE_COLUMNS,
+  };
+}
+
 const STATUS_OPTIONS: { label: string; value: SupplierStatusFilter }[] = [
   { label: "Tất cả", value: "all" },
   { label: "Đang hoạt động", value: "active" },
   { label: "Tạm ngưng", value: "inactive" },
 ];
 
-const SEARCH_FIELDS: { label: string; value: SupplierSearchField; getValue: (supplier: Supplier) => string }[] = [
+const SEARCH_FIELDS: {
+  label: string;
+  value: SupplierSearchField;
+  getValue: (supplier: Supplier) => string;
+}[] = [
   { label: "Mã NCC", value: "supplierId", getValue: (supplier) => supplier.supplierId },
   { label: "Nhà cung cấp", value: "name", getValue: (supplier) => supplier.name },
   { label: "MST", value: "taxCode", getValue: (supplier) => supplier.taxCode },
@@ -173,6 +191,8 @@ function fieldLabel(field: SupplierSearchField) {
   return SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field;
 }
 
+// Giữ lại cho toolbar sắp dùng — chưa reference nhưng không xoá.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ToolbarButton({
   label,
   active = false,
@@ -194,8 +214,8 @@ function ToolbarButton({
           onClick={onClick}
           aria-label={label}
           className={cn(
-            "rounded-[var(--r-sm)] border-positive/20 bg-positive/5 text-positive hover:bg-positive/10 hover:text-positive",
-            active && "border-positive bg-positive/10"
+            "border-positive/20 bg-positive/5 text-positive hover:bg-positive/10 hover:text-positive rounded-[var(--r-sm)]",
+            active && "border-positive bg-positive/10",
           )}
         >
           {children}
@@ -228,23 +248,29 @@ function ColumnFilterButton({
           size="icon-xs"
           aria-label={`Lọc ${label}`}
           className={cn(
-            "size-6 rounded-[var(--r-sm)] text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary focus-visible:ring-0",
-            active && "bg-info/10 text-info hover:bg-info/10 hover:text-info"
+            "text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-6 rounded-[var(--r-sm)] focus-visible:ring-0",
+            active && "bg-info/10 text-info hover:bg-info/10 hover:text-info",
           )}
         >
           <Filter className="size-3.5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-3">
-        <div className="mb-2 text-xs font-medium text-ink-primary">Lọc {label}</div>
+        <div className="text-ink-primary mb-2 text-xs font-medium">Lọc {label}</div>
         <Input
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className="h-8 rounded-[var(--r-sm)] bg-bg-surface text-[0.75rem]"
+          className="bg-bg-surface h-8 rounded-[var(--r-sm)] text-[0.75rem]"
         />
         <div className="mt-2 flex justify-end">
-          <Button type="button" variant="outline" size="xs" onClick={() => onChange("")} disabled={!active}>
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => onChange("")}
+            disabled={!active}
+          >
             Xoá
           </Button>
         </div>
@@ -255,40 +281,15 @@ function ColumnFilterButton({
 
 export default function SuppliersPage() {
   const router = useRouter();
-  const [config, setConfig] = useState<SupplierPageConfig>(DEFAULT_CONFIG);
-  const [mounted, setMounted] = useState(false);
+  const { config, setConfig, updateConfig } = usePageConfig<SupplierPageConfig>(
+    STORAGE_KEY,
+    DEFAULT_CONFIG,
+    mergeStoredConfig,
+  );
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const [searchPopoverOpen, setSearchPopoverOpen] = useState(false);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [selectedSupplierKeys, setSelectedSupplierKeys] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const stored = JSON.parse(raw) as Partial<SupplierPageConfig>;
-        setConfig({
-          ...DEFAULT_CONFIG,
-          ...stored,
-          globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
-          columnSearch: stored.columnSearch ?? {},
-          visibleColumns: stored.visibleColumns?.length ? stored.visibleColumns : DEFAULT_VISIBLE_COLUMNS,
-        });
-      }
-    } catch {
-      setConfig(DEFAULT_CONFIG);
-    }
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  }, [config, mounted]);
-
-  const updateConfig = (updater: (current: SupplierPageConfig) => SupplierPageConfig) => {
-    setConfig((current) => updater(current));
-  };
 
   const toggleStatus = (status: SupplierStatusFilter) => {
     updateConfig((current) => {
@@ -330,7 +331,12 @@ export default function SuppliersPage() {
       const visibleColumns = current.visibleColumns.includes(column)
         ? current.visibleColumns.filter((item) => item !== column)
         : [...current.visibleColumns, column];
-      return { ...current, visibleColumns: visibleColumns.includes("actions") ? visibleColumns : [...visibleColumns, "actions"] };
+      return {
+        ...current,
+        visibleColumns: visibleColumns.includes("actions")
+          ? visibleColumns
+          : [...visibleColumns, "actions"],
+      };
     });
   };
 
@@ -340,7 +346,10 @@ export default function SuppliersPage() {
     let list = suppliers;
 
     const statuses = config.statuses;
-    if (!statuses.includes("all") && !(statuses.includes("active") && statuses.includes("inactive"))) {
+    if (
+      !statuses.includes("all") &&
+      !(statuses.includes("active") && statuses.includes("inactive"))
+    ) {
       if (statuses.includes("active")) list = list.filter((supplier) => supplier.active);
       if (statuses.includes("inactive")) list = list.filter((supplier) => !supplier.active);
     }
@@ -349,7 +358,9 @@ export default function SuppliersPage() {
     if (globalQuery && config.globalSearch.fields.length > 0) {
       const fieldMap = new Map(SEARCH_FIELDS.map((field) => [field.value, field.getValue]));
       list = list.filter((supplier) =>
-        config.globalSearch.fields.some((field) => normalize(fieldMap.get(field)?.(supplier) ?? "").includes(globalQuery))
+        config.globalSearch.fields.some((field) =>
+          normalize(fieldMap.get(field)?.(supplier) ?? "").includes(globalQuery),
+        ),
       );
     }
 
@@ -360,11 +371,15 @@ export default function SuppliersPage() {
     }
     if (normalize(columnSearch.name ?? "")) {
       const q = normalize(columnSearch.name ?? "");
-      list = list.filter((supplier) => normalize(`${supplier.name} ${supplier.taxCode}`).includes(q));
+      list = list.filter((supplier) =>
+        normalize(`${supplier.name} ${supplier.taxCode}`).includes(q),
+      );
     }
     if (normalize(columnSearch.contact ?? "")) {
       const q = normalize(columnSearch.contact ?? "");
-      list = list.filter((supplier) => normalize(`${supplier.contactName} ${supplier.contactPhone}`).includes(q));
+      list = list.filter((supplier) =>
+        normalize(`${supplier.contactName} ${supplier.contactPhone}`).includes(q),
+      );
     }
     if (normalize(columnSearch.email ?? "")) {
       const q = normalize(columnSearch.email ?? "");
@@ -377,13 +392,22 @@ export default function SuppliersPage() {
   const stats = useMemo(() => computeStats(filtered), [filtered]);
   const hasStatusFilter = !config.statuses.includes("all");
   const hasGlobalSearch = Boolean(config.globalSearch.query.trim());
-  const activeColumnSearch = Object.entries(config.columnSearch).filter(([, value]) => value?.trim());
+  const activeColumnSearch = Object.entries(config.columnSearch).filter(([, value]) =>
+    value?.trim(),
+  );
   const defaultSearchFields = DEFAULT_CONFIG.globalSearch.fields;
-  const hasFieldConfig = config.globalSearch.fields.length !== defaultSearchFields.length ||
+  const hasFieldConfig =
+    config.globalSearch.fields.length !== defaultSearchFields.length ||
     config.globalSearch.fields.some((field) => !defaultSearchFields.includes(field));
   const visibleColumnCount = config.visibleColumns.filter((column) => column !== "actions").length;
   const hasColumnConfig = visibleColumnCount !== DEFAULT_VISIBLE_COLUMNS.length - 1;
-  const hasAnyConfig = hasStatusFilter || hasGlobalSearch || hasFieldConfig || activeColumnSearch.length > 0 || config.showStats || hasColumnConfig;
+  const hasAnyConfig =
+    hasStatusFilter ||
+    hasGlobalSearch ||
+    hasFieldConfig ||
+    activeColumnSearch.length > 0 ||
+    config.showStats ||
+    hasColumnConfig;
 
   const columns: (ColumnDef<Supplier> & { key: SupplierTableColumnKey })[] = [
     {
@@ -401,7 +425,7 @@ export default function SuppliersPage() {
         />
       ),
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent">
+        <span className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium">
           {row.supplierId}
         </span>
       ),
@@ -422,8 +446,8 @@ export default function SuppliersPage() {
       ),
       cell: (row) => (
         <div className="min-w-[220px]">
-          <div className="font-medium text-ink-primary">{row.name}</div>
-          <div className="mt-0.5 text-xs text-ink-tertiary">MST {row.taxCode}</div>
+          <div className="text-ink-primary font-medium">{row.name}</div>
+          <div className="text-ink-tertiary mt-0.5 text-xs">MST {row.taxCode}</div>
         </div>
       ),
     },
@@ -440,9 +464,9 @@ export default function SuppliersPage() {
         />
       ),
       cell: (row) => (
-        <div className="min-w-[190px] text-[0.8125rem] text-ink-secondary">
+        <div className="text-ink-secondary min-w-[190px] text-[0.8125rem]">
           <div>{row.contactName}</div>
-          <div className="mt-0.5 text-xs text-ink-tertiary">{row.contactPhone}</div>
+          <div className="text-ink-tertiary mt-0.5 text-xs">{row.contactPhone}</div>
         </div>
       ),
     },
@@ -458,19 +482,29 @@ export default function SuppliersPage() {
           onChange={(value) => updateColumnSearch("email", value)}
         />
       ),
-      cell: (row) => <span className="text-[0.8125rem] text-ink-secondary">{row.contactEmail}</span>,
+      cell: (row) => (
+        <span className="text-ink-secondary text-[0.8125rem]">{row.contactEmail}</span>
+      ),
     },
     {
       key: "terms",
       header: "Terms",
       sortable: true,
       compare: (a, b) => a.paymentTerms.localeCompare(b.paymentTerms),
-      cell: (row) => <span className="font-[family-name:var(--font-mono)] text-xs text-ink-secondary">{row.paymentTerms}</span>,
+      cell: (row) => (
+        <span className="text-ink-secondary font-[family-name:var(--font-mono)] text-xs">
+          {row.paymentTerms}
+        </span>
+      ),
     },
     {
       key: "currency",
       header: "Tiền tệ",
-      cell: (row) => <span className="font-[family-name:var(--font-mono)] text-xs text-ink-secondary">{row.currency}</span>,
+      cell: (row) => (
+        <span className="text-ink-secondary font-[family-name:var(--font-mono)] text-xs">
+          {row.currency}
+        </span>
+      ),
     },
     {
       key: "leadTimeDays",
@@ -479,7 +513,7 @@ export default function SuppliersPage() {
       sortable: true,
       compare: (a, b) => a.leadTimeDays - b.leadTimeDays,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums text-ink-primary">
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
           {row.leadTimeDays} ngày
         </span>
       ),
@@ -491,8 +525,8 @@ export default function SuppliersPage() {
       sortable: true,
       compare: (a, b) => a.rating - b.rating,
       cell: (row) => (
-        <span className="inline-flex items-center justify-end gap-1 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums text-ink-primary">
-          <Star className="size-3 text-warning" />
+        <span className="text-ink-primary inline-flex items-center justify-end gap-1 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
+          <Star className="text-warning size-3" />
           {row.rating.toFixed(1)}
         </span>
       ),
@@ -503,7 +537,13 @@ export default function SuppliersPage() {
       sortable: true,
       compare: (a, b) => Number(a.active) - Number(b.active),
       cell: (row) => (
-        <span className={row.active ? "inline-flex items-center gap-1.5 rounded-full border border-positive/25 bg-positive/10 px-2.5 py-0.5 text-xs font-medium text-positive" : "inline-flex items-center gap-1.5 rounded-full border border-muted-tone/25 bg-muted-tone/10 px-2.5 py-0.5 text-xs font-medium text-muted-tone"}>
+        <span
+          className={
+            row.active
+              ? "border-positive/25 bg-positive/10 text-positive inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+              : "border-muted-tone/25 bg-muted-tone/10 text-muted-tone inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+          }
+        >
           <span className="size-1.5 rounded-full bg-current" />
           {row.active ? "Đang hoạt động" : "Tạm ngưng"}
         </span>
@@ -518,7 +558,7 @@ export default function SuppliersPage() {
           variant="outline"
           size="icon-sm"
           onClick={() => router.push(`/admin/suppliers/${row.supplierId}`)}
-          className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+          className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)] transition-colors"
           aria-label="Xem chi tiết NCC"
         >
           <Eye className="size-3.5" />
@@ -534,26 +574,27 @@ export default function SuppliersPage() {
       <PageHeader
         title="Nhà cung cấp"
         subtitle="Quản lý hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice."
-        breadcrumbs={[
-          { label: "Back-office", href: "/admin" },
-          { label: "Nhà cung cấp" },
-        ]}
+        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Nhà cung cấp" }]}
         actions={
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant={config.showStats ? "secondary" : "outline"}
               size="sm"
-              onClick={() => updateConfig((current) => ({ ...current, showStats: !current.showStats }))}
+              onClick={() =>
+                updateConfig((current) => ({ ...current, showStats: !current.showStats }))
+              }
               className={cn(
                 "rounded-[var(--r-sm)]",
-                config.showStats && "border border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
+                config.showStats &&
+                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
               )}
             >
               <BarChart3 className="size-3.5" />
               {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
             </Button>
-            <Button variant="ghost"
+            <Button
+              variant="ghost"
               type="button"
               size="sm"
               onClick={() => router.push("/admin/suppliers/create")}
@@ -568,7 +609,10 @@ export default function SuppliersPage() {
 
       <motion.div
         initial={false}
-        animate={{ gridTemplateRows: config.showStats ? "1fr" : "0fr", opacity: config.showStats ? 1 : 0 }}
+        animate={{
+          gridTemplateRows: config.showStats ? "1fr" : "0fr",
+          opacity: config.showStats ? 1 : 0,
+        }}
         transition={{ duration: 0.22, ease: "easeInOut" }}
         className="grid overflow-hidden"
       >
@@ -582,181 +626,253 @@ export default function SuppliersPage() {
       </motion.div>
 
       <TooltipProvider>
-        <div className="mb-3 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-2 shadow-[var(--card-shadow)]">
+        <div className="border-border-default bg-bg-surface mb-3 rounded-[var(--r-sm)] border px-3 py-2 shadow-[var(--card-shadow)]">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-[280px] flex-1 lg:max-w-xl">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent" />
+              <Search className="text-accent pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={config.globalSearch.query}
-                onChange={(event) => updateConfig((current) => ({
-                  ...current,
-                  globalSearch: { ...current.globalSearch, query: event.target.value },
-                }))}
+                onChange={(event) =>
+                  updateConfig((current) => ({
+                    ...current,
+                    globalSearch: { ...current.globalSearch, query: event.target.value },
+                  }))
+                }
                 placeholder="Tìm nhà cung cấp theo mã, tên, MST..."
-                className="h-9 rounded-[var(--r-sm)] border-border-default bg-bg-surface pl-9 text-[0.8125rem] shadow-none focus-visible:border-accent focus-visible:ring-accent/20"
+                className="border-border-default bg-bg-surface focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] pl-9 text-[0.8125rem] shadow-none"
               />
             </div>
             <div className="flex items-center gap-2">
-            <Popover open={statusPopoverOpen} onOpenChange={setStatusPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Lọc trạng thái"
-                  className={cn(
-                    "rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary focus-visible:ring-0",
-                    hasStatusFilter && "border-info bg-info/10 text-info hover:bg-info/10 hover:text-info"
-                  )}
-                >
-                  <Filter className={cn("size-4 text-info", hasStatusFilter && "text-current")} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-0">
-                <PopoverHeader className="border-b border-border-default p-3">
-                  <PopoverTitle>Lọc trạng thái NCC</PopoverTitle>
-                  <PopoverDescription>Search và chọn một hoặc nhiều trạng thái.</PopoverDescription>
-                </PopoverHeader>
-                <Command>
-                  <CommandInput placeholder="Tìm trạng thái..." />
-                  <CommandList>
-                    <CommandEmpty>Không có trạng thái phù hợp.</CommandEmpty>
-                    <CommandGroup>
-                      {STATUS_OPTIONS.map((option) => (
-                        <CommandItem
-                          key={option.value}
-                          value={option.label}
-                          onSelect={() => toggleStatus(option.value)}
-                          className="data-selected:bg-transparent data-selected:text-ink-secondary hover:bg-bg-muted/60 hover:text-ink-primary"
-                        >
-                          <Checkbox checked={config.statuses.includes(option.value)} />
-                          <span>{option.label}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-                <div className="flex justify-between gap-2 border-t border-border-default p-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateConfig((current) => ({ ...current, statuses: ["all"] }))}>
-                    Xoá lọc
+              <Popover open={statusPopoverOpen} onOpenChange={setStatusPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Lọc trạng thái"
+                    className={cn(
+                      "border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)] focus-visible:ring-0",
+                      hasStatusFilter &&
+                        "border-info bg-info/10 text-info hover:bg-info/10 hover:text-info",
+                    )}
+                  >
+                    <Filter className={cn("text-info size-4", hasStatusFilter && "text-current")} />
                   </Button>
-                  <Button variant="ghost" type="button" size="sm" onClick={() => setStatusPopoverOpen(false)}>
-                    Áp dụng
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0">
+                  <PopoverHeader className="border-border-default border-b p-3">
+                    <PopoverTitle>Lọc trạng thái NCC</PopoverTitle>
+                    <PopoverDescription>
+                      Search và chọn một hoặc nhiều trạng thái.
+                    </PopoverDescription>
+                  </PopoverHeader>
+                  <Command>
+                    <CommandInput placeholder="Tìm trạng thái..." />
+                    <CommandList>
+                      <CommandEmpty>Không có trạng thái phù hợp.</CommandEmpty>
+                      <CommandGroup>
+                        {STATUS_OPTIONS.map((option) => (
+                          <CommandItem
+                            key={option.value}
+                            value={option.label}
+                            onSelect={() => toggleStatus(option.value)}
+                            className="data-selected:text-ink-secondary hover:bg-bg-muted/60 hover:text-ink-primary data-selected:bg-transparent"
+                          >
+                            <Checkbox checked={config.statuses.includes(option.value)} />
+                            <span>{option.label}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                  <div className="border-border-default flex justify-between gap-2 border-t p-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateConfig((current) => ({ ...current, statuses: ["all"] }))}
+                    >
+                      Xoá lọc
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      size="sm"
+                      onClick={() => setStatusPopoverOpen(false)}
+                    >
+                      Áp dụng
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-            <Popover open={searchPopoverOpen} onOpenChange={setSearchPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Chọn trường search"
-                  className={cn(
-                    "rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-special/5 hover:text-special focus-visible:border-border-default focus-visible:ring-0 data-[state=open]:border-border-default data-[state=open]:bg-bg-surface data-[state=open]:text-ink-tertiary",
-                    hasFieldConfig && "border-special bg-special/10 text-special hover:border-special hover:bg-special/10 hover:text-special data-[state=open]:border-special data-[state=open]:bg-special/10 data-[state=open]:text-special"
-                  )}
-                >
-                  <ListFilter className={cn("size-4 text-special", hasFieldConfig && "text-current")} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-[25rem] p-0">
-                <PopoverHeader className="border-b border-border-default p-3">
-                  <PopoverTitle>Trường tìm kiếm</PopoverTitle>
-                  <PopoverDescription>Chọn một hoặc nhiều fields cho thanh search chính.</PopoverDescription>
-                </PopoverHeader>
-                <Command>
-                  <CommandInput placeholder="Tìm field..." />
-                  <CommandList>
-                    <CommandEmpty>Không có field phù hợp.</CommandEmpty>
-                    <CommandGroup>
-                      {SEARCH_FIELDS.map((field) => (
-                        <CommandItem
-                          key={field.value}
-                          value={field.label}
-                          onSelect={() => toggleSearchField(field.value)}
-                          className="data-selected:bg-transparent data-selected:text-ink-secondary hover:bg-bg-muted/60 hover:text-ink-primary"
-                        >
-                          <Checkbox checked={config.globalSearch.fields.includes(field.value)} />
-                          <span>{field.label}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-                <div className="flex justify-between gap-2 border-t border-border-default p-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))}>
-                    Mặc định
+              <Popover open={searchPopoverOpen} onOpenChange={setSearchPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Chọn trường search"
+                    className={cn(
+                      "border-border-default bg-bg-surface text-ink-tertiary hover:bg-special/5 hover:text-special focus-visible:border-border-default data-[state=open]:border-border-default data-[state=open]:bg-bg-surface data-[state=open]:text-ink-tertiary rounded-[var(--r-sm)] focus-visible:ring-0",
+                      hasFieldConfig &&
+                        "border-special bg-special/10 text-special hover:border-special hover:bg-special/10 hover:text-special data-[state=open]:border-special data-[state=open]:bg-special/10 data-[state=open]:text-special",
+                    )}
+                  >
+                    <ListFilter
+                      className={cn("text-special size-4", hasFieldConfig && "text-current")}
+                    />
                   </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateConfig((current) => ({
-                    ...current,
-                    globalSearch: { ...current.globalSearch, fields: SEARCH_FIELDS.map((field) => field.value) },
-                  }))}>
-                    Chọn tất cả
-                  </Button>
-                  <Button variant="ghost" type="button" size="sm" disabled={config.globalSearch.fields.length === 0} onClick={() => setSearchPopoverOpen(false)}>
-                    Áp dụng
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-[25rem] p-0">
+                  <PopoverHeader className="border-border-default border-b p-3">
+                    <PopoverTitle>Trường tìm kiếm</PopoverTitle>
+                    <PopoverDescription>
+                      Chọn một hoặc nhiều fields cho thanh search chính.
+                    </PopoverDescription>
+                  </PopoverHeader>
+                  <Command>
+                    <CommandInput placeholder="Tìm field..." />
+                    <CommandList>
+                      <CommandEmpty>Không có field phù hợp.</CommandEmpty>
+                      <CommandGroup>
+                        {SEARCH_FIELDS.map((field) => (
+                          <CommandItem
+                            key={field.value}
+                            value={field.label}
+                            onSelect={() => toggleSearchField(field.value)}
+                            className="data-selected:text-ink-secondary hover:bg-bg-muted/60 hover:text-ink-primary data-selected:bg-transparent"
+                          >
+                            <Checkbox checked={config.globalSearch.fields.includes(field.value)} />
+                            <span>{field.label}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                  <div className="border-border-default flex justify-between gap-2 border-t p-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        updateConfig((current) => ({
+                          ...current,
+                          globalSearch: {
+                            ...current.globalSearch,
+                            fields: DEFAULT_CONFIG.globalSearch.fields,
+                          },
+                        }))
+                      }
+                    >
+                      Mặc định
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        updateConfig((current) => ({
+                          ...current,
+                          globalSearch: {
+                            ...current.globalSearch,
+                            fields: SEARCH_FIELDS.map((field) => field.value),
+                          },
+                        }))
+                      }
+                    >
+                      Chọn tất cả
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      size="sm"
+                      disabled={config.globalSearch.fields.length === 0}
+                      onClick={() => setSearchPopoverOpen(false)}
+                    >
+                      Áp dụng
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-            <Popover open={columnsPopoverOpen} onOpenChange={setColumnsPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Ẩn hiện cột"
-                  className={cn(
-                    "rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary focus-visible:ring-0",
-                    hasColumnConfig && "border-warning bg-warning/10 text-warning hover:bg-warning/10 hover:text-warning"
-                  )}
-                >
-                  <Columns3 className={cn("size-4 text-warning", hasColumnConfig && "text-current")} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-0">
-                <PopoverHeader className="border-b border-border-default p-3">
-                  <PopoverTitle>Ẩn hiện cột</PopoverTitle>
-                  <PopoverDescription>Chọn các cột muốn thấy trên table.</PopoverDescription>
-                </PopoverHeader>
-                <Command>
-                  <CommandInput placeholder="Tìm cột..." />
-                  <CommandList>
-                    <CommandEmpty>Không có cột phù hợp.</CommandEmpty>
-                    <CommandGroup>
-                      {DEFAULT_VISIBLE_COLUMNS.map((column) => (
-                        <CommandItem
-                          key={column}
-                          value={TABLE_COLUMN_LABELS[column]}
-                          disabled={column === "actions" || (config.visibleColumns.includes(column) && visibleColumnCount <= 1)}
-                          onSelect={() => toggleTableColumn(column)}
-                          className="data-selected:bg-transparent data-selected:text-ink-secondary hover:bg-bg-muted/60 hover:text-ink-primary"
-                        >
-                          <Checkbox
-                            checked={config.visibleColumns.includes(column)}
-                            disabled={column === "actions" || (config.visibleColumns.includes(column) && visibleColumnCount <= 1)}
-                          />
-                          <span>{TABLE_COLUMN_LABELS[column]}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-                <div className="flex justify-between gap-2 border-t border-border-default p-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS }))}>
-                    Hiện tất cả
+              <Popover open={columnsPopoverOpen} onOpenChange={setColumnsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Ẩn hiện cột"
+                    className={cn(
+                      "border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)] focus-visible:ring-0",
+                      hasColumnConfig &&
+                        "border-warning bg-warning/10 text-warning hover:bg-warning/10 hover:text-warning",
+                    )}
+                  >
+                    <Columns3
+                      className={cn("text-warning size-4", hasColumnConfig && "text-current")}
+                    />
                   </Button>
-                  <Button variant="ghost" type="button" size="sm" onClick={() => setColumnsPopoverOpen(false)}>
-                    Áp dụng
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0">
+                  <PopoverHeader className="border-border-default border-b p-3">
+                    <PopoverTitle>Ẩn hiện cột</PopoverTitle>
+                    <PopoverDescription>Chọn các cột muốn thấy trên table.</PopoverDescription>
+                  </PopoverHeader>
+                  <Command>
+                    <CommandInput placeholder="Tìm cột..." />
+                    <CommandList>
+                      <CommandEmpty>Không có cột phù hợp.</CommandEmpty>
+                      <CommandGroup>
+                        {DEFAULT_VISIBLE_COLUMNS.map((column) => (
+                          <CommandItem
+                            key={column}
+                            value={TABLE_COLUMN_LABELS[column]}
+                            disabled={
+                              column === "actions" ||
+                              (config.visibleColumns.includes(column) && visibleColumnCount <= 1)
+                            }
+                            onSelect={() => toggleTableColumn(column)}
+                            className="data-selected:text-ink-secondary hover:bg-bg-muted/60 hover:text-ink-primary data-selected:bg-transparent"
+                          >
+                            <Checkbox
+                              checked={config.visibleColumns.includes(column)}
+                              disabled={
+                                column === "actions" ||
+                                (config.visibleColumns.includes(column) && visibleColumnCount <= 1)
+                              }
+                            />
+                            <span>{TABLE_COLUMN_LABELS[column]}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                  <div className="border-border-default flex justify-between gap-2 border-t p-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        updateConfig((current) => ({
+                          ...current,
+                          visibleColumns: DEFAULT_VISIBLE_COLUMNS,
+                        }))
+                      }
+                    >
+                      Hiện tất cả
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      size="sm"
+                      onClick={() => setColumnsPopoverOpen(false)}
+                    >
+                      Áp dụng
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="ml-auto flex items-center gap-2">
               {selectedSupplierKeys.size > 0 && (
@@ -765,10 +881,13 @@ export default function SuppliersPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    toast.info("Xoá nhà cung cấp", `Đã chọn ${selectedSupplierKeys.size} nhà cung cấp. Chức năng này đang ở UI-only.`);
+                    toast.info(
+                      "Xoá nhà cung cấp",
+                      `Đã chọn ${selectedSupplierKeys.size} nhà cung cấp. Chức năng này đang ở UI-only.`,
+                    );
                     setSelectedSupplierKeys(new Set());
                   }}
-                  className="rounded-[var(--r-sm)] border-danger/20 bg-danger/5 text-danger hover:bg-danger/10 hover:text-danger"
+                  className="border-danger/20 bg-danger/5 text-danger hover:bg-danger/10 hover:text-danger rounded-[var(--r-sm)]"
                 >
                   <X className="size-4" />
                   Xoá đã chọn
@@ -778,8 +897,13 @@ export default function SuppliersPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => toast.success("Xuất file mock", `Sẵn sàng xuất ${filtered.length} nhà cung cấp đang hiển thị.`)}
-                className="rounded-[var(--r-sm)] border-positive/20 bg-positive/5 text-positive hover:bg-positive/10 hover:text-positive"
+                onClick={() =>
+                  toast.success(
+                    "Xuất file mock",
+                    `Sẵn sàng xuất ${filtered.length} nhà cung cấp đang hiển thị.`,
+                  )
+                }
+                className="border-positive/20 bg-positive/5 text-positive hover:bg-positive/10 hover:text-positive rounded-[var(--r-sm)]"
               >
                 <FileDown className="size-4" />
                 Xuất Excel
@@ -789,51 +913,112 @@ export default function SuppliersPage() {
         </div>
       </TooltipProvider>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle/70 px-3 py-2 text-[0.8125rem]">
-        <div className="mr-1 flex items-center gap-2 font-medium text-ink-primary">
-          <Settings2 className="size-3.5 text-accent" />
+      <div className="border-border-default bg-bg-subtle/70 mb-4 flex flex-wrap items-center gap-2 rounded-[var(--r-sm)] border px-3 py-2 text-[0.8125rem]">
+        <div className="text-ink-primary mr-1 flex items-center gap-2 font-medium">
+          <Settings2 className="text-accent size-3.5" />
           Cấu hình
         </div>
         <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-          <Badge variant="outline" className="gap-1 bg-bg-subtle text-ink-secondary">
+          <Badge variant="outline" className="bg-bg-subtle text-ink-secondary gap-1">
             Stats: {config.showStats ? "Đang hiện" : "Đang ẩn"}
           </Badge>
-          <Badge variant="outline" className="gap-1 bg-bg-subtle text-ink-secondary">
+          <Badge variant="outline" className="bg-bg-subtle text-ink-secondary gap-1">
             Trạng thái: {config.statuses.map(statusLabel).join(", ")}
             {hasStatusFilter && (
-              <Button type="button" variant="ghost" size="icon-xs" onClick={() => updateConfig((current) => ({ ...current, statuses: ["all"] }))} className="size-4 rounded-full bg-transparent p-0 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary" aria-label="Xoá lọc trạng thái">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => updateConfig((current) => ({ ...current, statuses: ["all"] }))}
+                className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-4 rounded-full bg-transparent p-0"
+                aria-label="Xoá lọc trạng thái"
+              >
                 <X className="size-3" />
               </Button>
             )}
           </Badge>
-          <Badge variant="outline" className="gap-1 bg-bg-subtle text-ink-secondary">
+          <Badge variant="outline" className="bg-bg-subtle text-ink-secondary gap-1">
             Search chính: {hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng"}
             {hasGlobalSearch && (
-              <Button type="button" variant="ghost" size="icon-xs" onClick={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: "" } }))} className="size-4 rounded-full bg-transparent p-0 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary" aria-label="Xoá search chính">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() =>
+                  updateConfig((current) => ({
+                    ...current,
+                    globalSearch: { ...current.globalSearch, query: "" },
+                  }))
+                }
+                className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-4 rounded-full bg-transparent p-0"
+                aria-label="Xoá search chính"
+              >
                 <X className="size-3" />
               </Button>
             )}
           </Badge>
-          <Badge variant="outline" className="gap-1 bg-bg-subtle text-ink-secondary">
+          <Badge variant="outline" className="bg-bg-subtle text-ink-secondary gap-1">
             Trường search: {config.globalSearch.fields.map(fieldLabel).join(", ") || "Chưa chọn"}
             {hasFieldConfig && (
-              <Button type="button" variant="ghost" size="icon-xs" onClick={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))} className="size-4 rounded-full bg-transparent p-0 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary" aria-label="Reset trường search">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() =>
+                  updateConfig((current) => ({
+                    ...current,
+                    globalSearch: {
+                      ...current.globalSearch,
+                      fields: DEFAULT_CONFIG.globalSearch.fields,
+                    },
+                  }))
+                }
+                className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-4 rounded-full bg-transparent p-0"
+                aria-label="Reset trường search"
+              >
                 <X className="size-3" />
               </Button>
             )}
           </Badge>
-          <Badge variant="outline" className="gap-1 bg-bg-subtle text-ink-secondary">
-            Search trong cột: {activeColumnSearch.length ? activeColumnSearch.map(([key, value]) => `${COLUMN_SEARCH_LABELS[key as SupplierColumnSearchKey]} “${value}”`).join(", ") : "Chưa dùng"}
+          <Badge variant="outline" className="bg-bg-subtle text-ink-secondary gap-1">
+            Search trong cột:{" "}
+            {activeColumnSearch.length
+              ? activeColumnSearch
+                  .map(
+                    ([key, value]) =>
+                      `${COLUMN_SEARCH_LABELS[key as SupplierColumnSearchKey]} “${value}”`,
+                  )
+                  .join(", ")
+              : "Chưa dùng"}
             {activeColumnSearch.length > 0 && (
-              <Button type="button" variant="ghost" size="icon-xs" onClick={clearColumnSearch} className="size-4 rounded-full bg-transparent p-0 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary" aria-label="Xoá search trong cột">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={clearColumnSearch}
+                className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-4 rounded-full bg-transparent p-0"
+                aria-label="Xoá search trong cột"
+              >
                 <X className="size-3" />
               </Button>
             )}
           </Badge>
-          <Badge variant="outline" className="gap-1 bg-bg-subtle text-ink-secondary">
+          <Badge variant="outline" className="bg-bg-subtle text-ink-secondary gap-1">
             Cột hiển thị: {visibleColumnCount}/{DEFAULT_VISIBLE_COLUMNS.length - 1}
             {hasColumnConfig && (
-              <Button type="button" variant="ghost" size="icon-xs" onClick={() => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS }))} className="size-4 rounded-full bg-transparent p-0 text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary" aria-label="Reset cột hiển thị">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() =>
+                  updateConfig((current) => ({
+                    ...current,
+                    visibleColumns: DEFAULT_VISIBLE_COLUMNS,
+                  }))
+                }
+                className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary size-4 rounded-full bg-transparent p-0"
+                aria-label="Reset cột hiển thị"
+              >
                 <X className="size-3" />
               </Button>
             )}
@@ -845,7 +1030,7 @@ export default function SuppliersPage() {
           size="xs"
           onClick={resetAll}
           disabled={!hasAnyConfig}
-          className="ml-auto rounded-[var(--r-sm)] text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+          className="text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary ml-auto rounded-[var(--r-sm)]"
         >
           <RotateCcw className="size-3" />
           Đặt lại
@@ -865,13 +1050,20 @@ export default function SuppliersPage() {
       />
 
       {filtered.length > 0 && (
-        <div className="mt-4 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-4 py-3 text-[0.8125rem] text-ink-secondary">
-          <div className="font-medium text-ink-primary">Địa chỉ NCC đang hiển thị</div>
+        <div className="border-border-default bg-bg-surface text-ink-secondary mt-4 rounded-[var(--r-sm)] border px-4 py-3 text-[0.8125rem]">
+          <div className="text-ink-primary font-medium">Địa chỉ NCC đang hiển thị</div>
           <div className="mt-2 grid gap-2 lg:grid-cols-2">
             {filtered.map((supplier) => (
-              <div key={supplier.supplierId} className="rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-2">
-                <div className="font-[family-name:var(--font-mono)] text-xs text-accent">{supplier.supplierId}</div>
-                <div className="mt-1 line-clamp-1 text-xs text-ink-secondary">{fullAddress(supplier)}</div>
+              <div
+                key={supplier.supplierId}
+                className="border-border-default bg-bg-surface rounded-[var(--r-sm)] border px-3 py-2"
+              >
+                <div className="text-accent font-[family-name:var(--font-mono)] text-xs">
+                  {supplier.supplierId}
+                </div>
+                <div className="text-ink-secondary mt-1 line-clamp-1 text-xs">
+                  {fullAddress(supplier)}
+                </div>
               </div>
             ))}
           </div>

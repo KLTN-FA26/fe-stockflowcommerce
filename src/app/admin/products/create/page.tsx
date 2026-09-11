@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn } from "cn";
 import {
   ArrowLeft,
@@ -30,7 +29,15 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -38,7 +45,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "@/components/shared/Toast";
 import {
   categories,
-  formatVND,
   products,
   skus,
   type Category,
@@ -52,14 +58,7 @@ import {
 /* -------------------------------------------------------------------------- */
 
 type StepKey =
-  | "draft"
-  | "variants"
-  | "sku"
-  | "logistics"
-  | "inventory"
-  | "customization"
-  | "catalog"
-  | "review";
+  "draft" | "variants" | "sku" | "logistics" | "inventory" | "customization" | "catalog" | "review";
 
 type TaxClass = "standard" | "reduced" | "exempt";
 
@@ -239,9 +238,9 @@ function cartesianProduct(entries: { attr: ProductAttribute; values: string[] }[
         entry.values.map((value) => ({
           key: `${row.key}|${entry.attr.attributeId}:${value}`,
           attributes: { ...row.attributes, [entry.attr.name.en]: value },
-        }))
+        })),
       ),
-    [{ key: "", attributes: {} as Record<string, string> }]
+    [{ key: "", attributes: {} as Record<string, string> }],
   );
 }
 
@@ -259,22 +258,22 @@ function parseNonNegativeNumber(value: string) {
 function fieldClass(hasError = false) {
   return cn(
     "w-full rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20",
-    hasError && "border-danger focus-visible:border-danger focus-visible:ring-danger/20"
+    hasError && "border-danger focus-visible:border-danger focus-visible:ring-danger/20",
   );
 }
 
 function FieldError({ children }: { children?: string }) {
   if (!children) return null;
-  return <p className="mt-1 text-xs text-danger">{children}</p>;
+  return <p className="text-danger mt-1 text-xs">{children}</p>;
 }
 
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
     <div className="mb-4">
-      <h2 className="font-[family-name:var(--font-display)] text-[1rem] font-semibold text-ink-primary">
+      <h2 className="text-ink-primary font-[family-name:var(--font-display)] text-[1rem] font-semibold">
         {title}
       </h2>
-      <p className="mt-1 text-[0.8125rem] text-ink-secondary">{description}</p>
+      <p className="text-ink-secondary mt-1 text-[0.8125rem]">{description}</p>
     </div>
   );
 }
@@ -284,7 +283,6 @@ function SectionTitle({ title, description }: { title: string; description: stri
 /* -------------------------------------------------------------------------- */
 
 export default function ProductCreatePage() {
-  const router = useRouter();
   const attributes = useMemo(() => aggregateAttributes(), []);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [currentStep, setCurrentStep] = useState<StepKey>("draft");
@@ -305,11 +303,13 @@ export default function ProductCreatePage() {
           return { attr, values: form.selectedValues[id] ?? [] };
         })
         .filter((entry): entry is { attr: ProductAttribute; values: string[] } => !!entry),
-    [attributes, form.selectedAttributeIds, form.selectedValues]
+    [attributes, form.selectedAttributeIds, form.selectedValues],
   );
 
   const skuRows = useMemo<SkuPreviewRow[]>(() => {
-    const combinations = cartesianProduct(selectedEntries.filter((entry) => entry.values.length > 0));
+    const combinations = cartesianProduct(
+      selectedEntries.filter((entry) => entry.values.length > 0),
+    );
     const productCode = normalizeCode(form.productCode) || "NEW-PRODUCT";
     return combinations.map((combo, index) => {
       const parts = Object.values(combo.attributes).map(valueCode);
@@ -329,7 +329,10 @@ export default function ProductCreatePage() {
   }, [form.disabledSkuKeys, form.productCode, form.skuOverrides, selectedEntries]);
 
   const enabledSkuRows = skuRows.filter((row) => row.enabled);
-  const validationIssues = useMemo(() => validateForm(form, selectedEntries, skuRows), [form, selectedEntries, skuRows]);
+  const validationIssues = useMemo(
+    () => validateForm(form, selectedEntries, skuRows),
+    [form, selectedEntries, skuRows],
+  );
   const issuesByStep = useMemo(() => {
     const map = new Map<StepKey, string[]>();
     for (const issue of validationIssues) {
@@ -383,7 +386,7 @@ export default function ProductCreatePage() {
         actions={
           <Link
             href="/admin/products"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+            className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
           >
             <ArrowLeft className="size-3.5" />
             Quay lại danh sách
@@ -393,11 +396,18 @@ export default function ProductCreatePage() {
 
       <div className="grid gap-4 xl:grid-cols-[260px_1fr]">
         <Card className="h-fit p-0">
-          <div className="border-b border-border-default px-4 py-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Quy trình</div>
+          <div className="border-border-default border-b px-4 py-3">
+            <div className="text-ink-tertiary text-xs font-semibold tracking-[0.08em] uppercase">
+              Quy trình
+            </div>
             <div className="mt-1 flex items-center gap-2">
-              <StatusBadge domain="product" status={submitted ? "Pending Approval" : "Draft"} size="sm" withIcon />
-              <span className="text-xs text-ink-tertiary">{enabledSkuRows.length} SKU preview</span>
+              <StatusBadge
+                domain="product"
+                status={submitted ? "Pending Approval" : "Draft"}
+                size="sm"
+                withIcon
+              />
+              <span className="text-ink-tertiary text-xs">{enabledSkuRows.length} SKU preview</span>
             </div>
           </div>
           <div className="p-2">
@@ -413,10 +423,11 @@ export default function ProductCreatePage() {
                   onClick={() => setCurrentStep(step.key)}
                   className={cn(
                     "mb-1 flex w-full justify-start gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
-                    status === "active" && "bg-brand font-medium text-ink-inverse",
-                    status !== "active" && "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
-                    status === "error" && "border border-danger/30 bg-danger/5 text-danger",
-                    isSkipped && "opacity-55"
+                    status === "active" && "bg-brand text-ink-inverse font-medium",
+                    status !== "active" &&
+                      "text-ink-secondary hover:bg-bg-muted hover:text-ink-primary",
+                    status === "error" && "border-danger/30 bg-danger/5 text-danger border",
+                    isSkipped && "opacity-55",
                   )}
                 >
                   <span className="flex size-5 items-center justify-center rounded-full border border-current/20 text-[0.625rem]">
@@ -433,7 +444,7 @@ export default function ProductCreatePage() {
 
         <div className="min-w-0 space-y-4 pb-24">
           {showErrors && currentStepIssues.length > 0 && (
-            <div className="rounded-[var(--r-sm)] border border-danger/30 bg-danger/5 px-4 py-3 text-[0.8125rem] text-danger">
+            <div className="border-danger/30 bg-danger/5 text-danger rounded-[var(--r-sm)] border px-4 py-3 text-[0.8125rem]">
               <div className="font-semibold">Cần xử lý trước khi gửi duyệt</div>
               <ul className="mt-1 list-disc space-y-0.5 pl-4">
                 {currentStepIssues.map((issue) => (
@@ -449,21 +460,20 @@ export default function ProductCreatePage() {
           {currentStep === "variants" && (
             <VariantStep attributes={attributes} form={form} update={update} />
           )}
-          {currentStep === "sku" && (
-            <SkuStep form={form} update={update} skuRows={skuRows} />
-          )}
+          {currentStep === "sku" && <SkuStep form={form} update={update} skuRows={skuRows} />}
           {currentStep === "logistics" && (
-            <LogisticsStep form={form} update={update} showErrors={showErrors} skuCount={enabledSkuRows.length} />
+            <LogisticsStep
+              form={form}
+              update={update}
+              showErrors={showErrors}
+              skuCount={enabledSkuRows.length}
+            />
           )}
-          {currentStep === "inventory" && (
-            <InventoryStep form={form} update={update} />
-          )}
+          {currentStep === "inventory" && <InventoryStep form={form} update={update} />}
           {currentStep === "customization" && (
             <CustomizationStep form={form} update={update} showErrors={showErrors} />
           )}
-          {currentStep === "catalog" && (
-            <CatalogStep form={form} update={update} />
-          )}
+          {currentStep === "catalog" && <CatalogStep form={form} update={update} />}
           {currentStep === "review" && (
             <ReviewStep
               form={form}
@@ -476,9 +486,9 @@ export default function ProductCreatePage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border-default bg-bg-surface/95 px-4 py-3 backdrop-blur lg:left-[240px]">
+      <div className="border-border-default bg-bg-surface/95 fixed right-0 bottom-0 left-0 z-40 border-t px-4 py-3 backdrop-blur lg:left-[240px]">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-xs text-ink-tertiary">
+          <div className="text-ink-tertiary text-xs">
             Bước {currentStepIndex + 1}/{STEPS.length} · {STEPS[currentStepIndex]?.label}
           </div>
           <div className="flex items-center gap-2">
@@ -487,9 +497,12 @@ export default function ProductCreatePage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                toast.success("Đã lưu nháp", "Dữ liệu mock được giữ trong phiên làm việc hiện tại.");
+                toast.success(
+                  "Đã lưu nháp",
+                  "Dữ liệu mock được giữ trong phiên làm việc hiện tại.",
+                );
               }}
-              className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
             >
               <Save className="size-3.5" />
               Lưu nháp
@@ -500,26 +513,28 @@ export default function ProductCreatePage() {
               size="sm"
               onClick={goBack}
               disabled={currentStepIndex === 0}
-              className="rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted disabled:opacity-40"
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors disabled:opacity-40"
             >
               Quay lại
             </Button>
             {currentStep !== "review" ? (
-              <Button variant="default"
+              <Button
+                variant="default"
                 type="button"
                 size="sm"
                 onClick={goNext}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
+                className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse inline-flex items-center gap-1.5 rounded-[var(--r-sm)] px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
               >
                 Tiếp tục
                 <ArrowRight className="size-3.5" />
               </Button>
             ) : (
-              <Button variant="default"
+              <Button
+                variant="default"
                 type="button"
                 size="sm"
                 onClick={handleSubmitAttempt}
-                className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-brand px-3 py-1.5 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
+                className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse inline-flex items-center gap-1.5 rounded-[var(--r-sm)] px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
               >
                 <Send className="size-3.5" />
                 Gửi duyệt
@@ -542,51 +557,103 @@ export default function ProductCreatePage() {
   );
 }
 
-function DraftStep({ form, update, showErrors }: { form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void; showErrors: boolean }) {
+function DraftStep({
+  form,
+  update,
+  showErrors,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  showErrors: boolean;
+}) {
   return (
     <Card>
-      <SectionTitle title="Thông tin bản nháp" description="Các trường định danh bắt buộc để khởi tạo Product record ở trạng thái Draft." />
+      <SectionTitle
+        title="Thông tin bản nháp"
+        description="Các trường định danh bắt buộc để khởi tạo Product record ở trạng thái Draft."
+      />
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Tên sản phẩm <span className="text-danger">*</span></label>
-          <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Áo thun cotton cao cấp" className={fieldClass(showErrors && !form.name.trim())} />
-          <FieldError>{showErrors && !form.name.trim() ? "Tên sản phẩm là bắt buộc." : undefined}</FieldError>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Tên sản phẩm <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+            placeholder="Áo thun cotton cao cấp"
+            className={fieldClass(showErrors && !form.name.trim())}
+          />
+          <FieldError>
+            {showErrors && !form.name.trim() ? "Tên sản phẩm là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Tên tiếng Anh</label>
-          <Input value={form.nameEn} onChange={(e) => update("nameEn", e.target.value)} placeholder="Premium Cotton T-Shirt" className={fieldClass()} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Tên tiếng Anh</label>
+          <Input
+            value={form.nameEn}
+            onChange={(e) => update("nameEn", e.target.value)}
+            placeholder="Premium Cotton T-Shirt"
+            className={fieldClass()}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Mã sản phẩm nội bộ <span className="text-danger">*</span></label>
-          <Input value={form.productCode} onChange={(e) => update("productCode", normalizeCode(e.target.value))} placeholder="TEE-COTTON" className={fieldClass(showErrors && !form.productCode.trim())} />
-          <FieldError>{showErrors && !form.productCode.trim() ? "Mã sản phẩm là bắt buộc." : undefined}</FieldError>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Mã sản phẩm nội bộ <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.productCode}
+            onChange={(e) => update("productCode", normalizeCode(e.target.value))}
+            placeholder="TEE-COTTON"
+            className={fieldClass(showErrors && !form.productCode.trim())}
+          />
+          <FieldError>
+            {showErrors && !form.productCode.trim() ? "Mã sản phẩm là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Danh mục <span className="text-danger">*</span></label>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Danh mục <span className="text-danger">*</span>
+          </label>
           <Select value={form.categoryId} onValueChange={(value) => update("categoryId", value)}>
-            <SelectTrigger size="default" aria-label="Danh mục" className={fieldClass(showErrors && !form.categoryId)}>
+            <SelectTrigger
+              size="default"
+              aria-label="Danh mục"
+              className={fieldClass(showErrors && !form.categoryId)}
+            >
               <SelectValue placeholder="Chọn danh mục" />
             </SelectTrigger>
             <SelectContent align="start">
               <SelectGroup>
                 <SelectLabel>Danh mục</SelectLabel>
                 {categories.map((category: Category) => (
-                <SelectItem key={category.categoryId} value={category.categoryId}>
-                  {"— ".repeat(category.level - 1)}{category.name.vi} · {category.categoryId}
-                </SelectItem>
+                  <SelectItem key={category.categoryId} value={category.categoryId}>
+                    {"— ".repeat(category.level - 1)}
+                    {category.name.vi} · {category.categoryId}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
           </Select>
-          <FieldError>{showErrors && !form.categoryId ? "Danh mục là bắt buộc." : undefined}</FieldError>
+          <FieldError>
+            {showErrors && !form.categoryId ? "Danh mục là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Thương hiệu <span className="text-danger">*</span></label>
-          <Input value={form.brand} onChange={(e) => update("brand", e.target.value)} placeholder="StockFlow Basics" className={fieldClass(showErrors && !form.brand.trim())} />
-          <FieldError>{showErrors && !form.brand.trim() ? "Thương hiệu là bắt buộc." : undefined}</FieldError>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Thương hiệu <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.brand}
+            onChange={(e) => update("brand", e.target.value)}
+            placeholder="StockFlow Basics"
+            className={fieldClass(showErrors && !form.brand.trim())}
+          />
+          <FieldError>
+            {showErrors && !form.brand.trim() ? "Thương hiệu là bắt buộc." : undefined}
+          </FieldError>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Loại sản phẩm</label>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Loại sản phẩm</label>
           <Select value={form.type} onValueChange={(value) => update("type", value as ProductType)}>
             <SelectTrigger size="default" aria-label="Loại sản phẩm" className={fieldClass()}>
               <SelectValue />
@@ -601,8 +668,11 @@ function DraftStep({ form, update, showErrors }: { form: FormState; update: <K e
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Tax class</label>
-          <Select value={form.taxClass} onValueChange={(value) => update("taxClass", value as TaxClass)}>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Tax class</label>
+          <Select
+            value={form.taxClass}
+            onValueChange={(value) => update("taxClass", value as TaxClass)}
+          >
             <SelectTrigger size="default" aria-label="Tax class" className={fieldClass()}>
               <SelectValue />
             </SelectTrigger>
@@ -617,7 +687,7 @@ function DraftStep({ form, update, showErrors }: { form: FormState; update: <K e
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">UoM</label>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">UoM</label>
           <Select value={form.uom} onValueChange={(value) => update("uom", value as Uom)}>
             <SelectTrigger size="default" aria-label="UoM" className={fieldClass()}>
               <SelectValue />
@@ -625,28 +695,59 @@ function DraftStep({ form, update, showErrors }: { form: FormState; update: <K e
             <SelectContent align="start">
               <SelectGroup>
                 <SelectLabel>UoM</SelectLabel>
-                {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => <SelectItem key={uom} value={uom}>{uom}</SelectItem>)}
+                {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => (
+                  <SelectItem key={uom} value={uom}>
+                    {uom}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
         </div>
         <div className="lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Mô tả</label>
-          <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={3} placeholder="Mô tả nội bộ / catalog..." className={fieldClass()} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Mô tả</label>
+          <Textarea
+            value={form.description}
+            onChange={(e) => update("description", e.target.value)}
+            rows={3}
+            placeholder="Mô tả nội bộ / catalog..."
+            className={fieldClass()}
+          />
         </div>
         <div className="lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Mô tả tiếng Anh</label>
-          <Textarea value={form.descriptionEn} onChange={(e) => update("descriptionEn", e.target.value)} rows={3} placeholder="English description..." className={fieldClass()} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Mô tả tiếng Anh
+          </label>
+          <Textarea
+            value={form.descriptionEn}
+            onChange={(e) => update("descriptionEn", e.target.value)}
+            rows={3}
+            placeholder="English description..."
+            className={fieldClass()}
+          />
         </div>
       </div>
     </Card>
   );
 }
 
-function VariantStep({ attributes, form, update }: { attributes: ProductAttribute[]; form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void }) {
+function VariantStep({
+  attributes,
+  form,
+  update,
+}: {
+  attributes: ProductAttribute[];
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+}) {
   const toggleAttribute = (attributeId: string) => {
     const selected = form.selectedAttributeIds.includes(attributeId);
-    update("selectedAttributeIds", selected ? form.selectedAttributeIds.filter((id) => id !== attributeId) : [...form.selectedAttributeIds, attributeId]);
+    update(
+      "selectedAttributeIds",
+      selected
+        ? form.selectedAttributeIds.filter((id) => id !== attributeId)
+        : [...form.selectedAttributeIds, attributeId],
+    );
     if (selected) {
       const nextValues = { ...form.selectedValues };
       delete nextValues[attributeId];
@@ -658,15 +759,23 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
     const current = form.selectedValues[attributeId] ?? [];
     update("selectedValues", {
       ...form.selectedValues,
-      [attributeId]: current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
+      [attributeId]: current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value],
     });
   };
 
   return (
     <Card>
-      <SectionTitle title="Thuộc tính biến thể" description="Chọn các trục biến thể từ master data; hệ thống sẽ sinh ma trận SKU từ tổ hợp value." />
+      <SectionTitle
+        title="Thuộc tính biến thể"
+        description="Chọn các trục biến thể từ master data; hệ thống sẽ sinh ma trận SKU từ tổ hợp value."
+      />
       <div className="mb-3 flex justify-end">
-        <Link href="/admin/variants" className="text-[0.8125rem] font-medium text-accent hover:underline">
+        <Link
+          href="/admin/variants"
+          className="text-accent text-[0.8125rem] font-medium hover:underline"
+        >
           Quản lý thuộc tính biến thể →
         </Link>
       </div>
@@ -675,12 +784,24 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
           const active = form.selectedAttributeIds.includes(attr.attributeId);
           const values = form.selectedValues[attr.attributeId] ?? [];
           return (
-            <div key={attr.attributeId} className={cn("rounded-[var(--r-sm)] border p-3", active ? "border-accent/40 bg-accent/5" : "border-border-default bg-bg-surface")}>
+            <div
+              key={attr.attributeId}
+              className={cn(
+                "rounded-[var(--r-sm)] border p-3",
+                active ? "border-accent/40 bg-accent/5" : "border-border-default bg-bg-surface",
+              )}
+            >
               <label className="flex items-start gap-2">
-                <Checkbox checked={active} onCheckedChange={() => toggleAttribute(attr.attributeId)} className="mt-1" />
+                <Checkbox
+                  checked={active}
+                  onCheckedChange={() => toggleAttribute(attr.attributeId)}
+                  className="mt-1"
+                />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-ink-primary">{attr.name.vi}</span>
-                  <span className="block text-xs text-ink-tertiary">{attr.name.en} · {attr.attributeId}</span>
+                  <span className="text-ink-primary block font-medium">{attr.name.vi}</span>
+                  <span className="text-ink-tertiary block text-xs">
+                    {attr.name.en} · {attr.attributeId}
+                  </span>
                 </span>
               </label>
               {active && (
@@ -696,10 +817,17 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
                         onClick={() => toggleValue(attr.attributeId, value)}
                         className={cn(
                           "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors",
-                          checked ? "border-accent bg-accent/10 text-accent" : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted"
+                          checked
+                            ? "border-accent bg-accent/10 text-accent"
+                            : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted",
                         )}
                       >
-                        {attr.swatch?.[value] && <span className="size-2.5 rounded-full border border-border-default" style={{ backgroundColor: attr.swatch[value] }} />}
+                        {attr.swatch?.[value] && (
+                          <span
+                            className="border-border-default size-2.5 rounded-full border"
+                            style={{ backgroundColor: attr.swatch[value] }}
+                          />
+                        )}
                         {value}
                       </Button>
                     );
@@ -714,7 +842,15 @@ function VariantStep({ attributes, form, update }: { attributes: ProductAttribut
   );
 }
 
-function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void; skuRows: SkuPreviewRow[] }) {
+function SkuStep({
+  form,
+  update,
+  skuRows,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  skuRows: SkuPreviewRow[];
+}) {
   const existingSkuIds = new Set(skus.map((sku) => sku.skuId));
   const duplicates = new Set<string>();
   const seen = new Set<string>();
@@ -730,7 +866,14 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
       cell: (row) => (
         <Checkbox
           checked={row.enabled}
-          onCheckedChange={() => update("disabledSkuKeys", row.enabled ? [...form.disabledSkuKeys, row.key] : form.disabledSkuKeys.filter((key) => key !== row.key))}
+          onCheckedChange={() =>
+            update(
+              "disabledSkuKeys",
+              row.enabled
+                ? [...form.disabledSkuKeys, row.key]
+                : form.disabledSkuKeys.filter((key) => key !== row.key),
+            )
+          }
         />
       ),
     },
@@ -741,17 +884,36 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
         <div>
           <Input
             value={row.skuCode}
-            onChange={(e) => update("skuOverrides", { ...form.skuOverrides, [row.key]: normalizeCode(e.target.value) })}
-            className={cn(fieldClass(duplicates.has(row.skuCode)), "font-[family-name:var(--font-mono)]")}
+            onChange={(e) =>
+              update("skuOverrides", {
+                ...form.skuOverrides,
+                [row.key]: normalizeCode(e.target.value),
+              })
+            }
+            className={cn(
+              fieldClass(duplicates.has(row.skuCode)),
+              "font-[family-name:var(--font-mono)]",
+            )}
           />
-          {duplicates.has(row.skuCode) && <div className="mt-1 text-xs text-danger">SKU trùng trong matrix hoặc mock data.</div>}
+          {duplicates.has(row.skuCode) && (
+            <div className="text-danger mt-1 text-xs">SKU trùng trong matrix hoặc mock data.</div>
+          )}
         </div>
       ),
     },
     {
       key: "variantLabel",
       header: "Tổ hợp",
-      cell: (row) => <span className={cn("text-[0.8125rem]", row.enabled ? "text-ink-primary" : "text-ink-tertiary line-through")}>{row.variantLabel}</span>,
+      cell: (row) => (
+        <span
+          className={cn(
+            "text-[0.8125rem]",
+            row.enabled ? "text-ink-primary" : "text-ink-tertiary line-through",
+          )}
+        >
+          {row.variantLabel}
+        </span>
+      ),
     },
     {
       key: "status",
@@ -768,7 +930,10 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
           onChange={(e) => update("skuCosts", { ...form.skuCosts, [row.key]: e.target.value })}
           inputMode="numeric"
           placeholder="85000"
-          className={cn(fieldClass(), "w-[100px] text-right font-[family-name:var(--font-mono)] tabular-nums")}
+          className={cn(
+            fieldClass(),
+            "w-[100px] text-right font-[family-name:var(--font-mono)] tabular-nums",
+          )}
           disabled={!row.enabled}
         />
       ),
@@ -777,7 +942,10 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
 
   return (
     <Card>
-      <SectionTitle title="Ma trận SKU" description="SKU được sinh tự động từ tổ hợp biến thể; người dùng chỉ bật/tắt tổ hợp hợp lệ và kiểm tra mã duy nhất." />
+      <SectionTitle
+        title="Ma trận SKU"
+        description="SKU được sinh tự động từ tổ hợp biến thể; người dùng chỉ bật/tắt tổ hợp hợp lệ và kiểm tra mã duy nhất."
+      />
       <DataTable
         data={skuRows}
         columns={columns}
@@ -790,33 +958,86 @@ function SkuStep({ form, update, skuRows }: { form: FormState; update: <K extend
   );
 }
 
-function LogisticsStep({ form, update, showErrors, skuCount }: { form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void; showErrors: boolean; skuCount: number }) {
+function LogisticsStep({
+  form,
+  update,
+  showErrors,
+  skuCount,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  showErrors: boolean;
+  skuCount: number;
+}) {
   return (
     <Card>
-      <SectionTitle title="Thông số logistics" description={`Áp dụng làm default cho ${skuCount} SKU preview; dữ liệu này phục vụ Receipt, Slotting và Packing.`} />
+      <SectionTitle
+        title="Thông số logistics"
+        description={`Áp dụng làm default cho ${skuCount} SKU preview; dữ liệu này phục vụ Receipt, Slotting và Packing.`}
+      />
       <div className="grid gap-4 lg:grid-cols-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Khối lượng (kg) <span className="text-danger">*</span></label>
-          <Input value={form.weightKg} onChange={(e) => update("weightKg", e.target.value)} inputMode="decimal" placeholder="0.25" className={fieldClass(showErrors && !parsePositiveNumber(form.weightKg))} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Khối lượng (kg) <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.weightKg}
+            onChange={(e) => update("weightKg", e.target.value)}
+            inputMode="decimal"
+            placeholder="0.25"
+            className={fieldClass(showErrors && !parsePositiveNumber(form.weightKg))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Dài (cm) <span className="text-danger">*</span></label>
-          <Input value={form.lengthCm} onChange={(e) => update("lengthCm", e.target.value)} inputMode="decimal" placeholder="30" className={fieldClass(showErrors && !parsePositiveNumber(form.lengthCm))} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Dài (cm) <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.lengthCm}
+            onChange={(e) => update("lengthCm", e.target.value)}
+            inputMode="decimal"
+            placeholder="30"
+            className={fieldClass(showErrors && !parsePositiveNumber(form.lengthCm))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Rộng (cm) <span className="text-danger">*</span></label>
-          <Input value={form.widthCm} onChange={(e) => update("widthCm", e.target.value)} inputMode="decimal" placeholder="22" className={fieldClass(showErrors && !parsePositiveNumber(form.widthCm))} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Rộng (cm) <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.widthCm}
+            onChange={(e) => update("widthCm", e.target.value)}
+            inputMode="decimal"
+            placeholder="22"
+            className={fieldClass(showErrors && !parsePositiveNumber(form.widthCm))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Cao (cm) <span className="text-danger">*</span></label>
-          <Input value={form.heightCm} onChange={(e) => update("heightCm", e.target.value)} inputMode="decimal" placeholder="2" className={fieldClass(showErrors && !parsePositiveNumber(form.heightCm))} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Cao (cm) <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.heightCm}
+            onChange={(e) => update("heightCm", e.target.value)}
+            inputMode="decimal"
+            placeholder="2"
+            className={fieldClass(showErrors && !parsePositiveNumber(form.heightCm))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Pack size <span className="text-danger">*</span></label>
-          <Input value={form.packSize} onChange={(e) => update("packSize", e.target.value)} inputMode="numeric" placeholder="1" className={fieldClass(showErrors && !parsePositiveNumber(form.packSize))} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            Pack size <span className="text-danger">*</span>
+          </label>
+          <Input
+            value={form.packSize}
+            onChange={(e) => update("packSize", e.target.value)}
+            inputMode="numeric"
+            placeholder="1"
+            className={fieldClass(showErrors && !parsePositiveNumber(form.packSize))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">UoM</label>
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">UoM</label>
           <Select value={form.uom} onValueChange={(value) => update("uom", value as Uom)}>
             <SelectTrigger size="default" aria-label="UoM" className={fieldClass()}>
               <SelectValue />
@@ -824,7 +1045,11 @@ function LogisticsStep({ form, update, showErrors, skuCount }: { form: FormState
             <SelectContent align="start">
               <SelectGroup>
                 <SelectLabel>UoM</SelectLabel>
-                {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => <SelectItem key={uom} value={uom}>{uom}</SelectItem>)}
+                {(["pcs", "box", "kg", "m", "ream", "set"] satisfies Uom[]).map((uom) => (
+                  <SelectItem key={uom} value={uom}>
+                    {uom}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -834,36 +1059,67 @@ function LogisticsStep({ form, update, showErrors, skuCount }: { form: FormState
   );
 }
 
-function InventoryStep({ form, update }: { form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void }) {
+function InventoryStep({
+  form,
+  update,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+}) {
   return (
     <Card>
-      <SectionTitle title="Kiểm soát tồn kho" description="Cấu hình batch/lot, hạn dùng, serial và ngưỡng bổ sung tồn cho SKU mới." />
+      <SectionTitle
+        title="Kiểm soát tồn kho"
+        description="Cấu hình batch/lot, hạn dùng, serial và ngưỡng bổ sung tồn cho SKU mới."
+      />
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-2 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3">
+        <div className="border-border-default bg-bg-subtle space-y-2 rounded-[var(--r-sm)] border p-3">
           {[
             ["lotTracking", "Theo dõi lô / batch"],
             ["serialTracking", "Theo dõi serial"],
             ["expiryTracking", "Theo dõi hạn dùng"],
           ].map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
-              <Checkbox checked={Boolean(form[key as keyof FormState])} onCheckedChange={(checked) => update(key as keyof FormState, (checked === true) as never)} />
+            <label
+              key={key}
+              className="text-ink-secondary flex items-center gap-2 text-[0.8125rem]"
+            >
+              <Checkbox
+                checked={Boolean(form[key as keyof FormState])}
+                onCheckedChange={(checked) =>
+                  update(key as keyof FormState, (checked === true) as never)
+                }
+              />
               {label}
             </label>
           ))}
           {form.expiryTracking && !form.lotTracking && (
-            <div className="rounded-[var(--r-sm)] border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <div className="border-warning/30 bg-warning/10 text-warning rounded-[var(--r-sm)] border px-3 py-2 text-xs">
               Hàng có hạn dùng thường nên bật theo dõi lô để truy xuất nguồn gốc.
             </div>
           )}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-secondary">Reorder point</label>
-            <Input value={form.reorderPoint} onChange={(e) => update("reorderPoint", e.target.value)} inputMode="numeric" placeholder="20" className={fieldClass(!parseNonNegativeNumber(form.reorderPoint))} />
+            <label className="text-ink-secondary mb-1 block text-xs font-medium">
+              Reorder point
+            </label>
+            <Input
+              value={form.reorderPoint}
+              onChange={(e) => update("reorderPoint", e.target.value)}
+              inputMode="numeric"
+              placeholder="20"
+              className={fieldClass(!parseNonNegativeNumber(form.reorderPoint))}
+            />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-secondary">Tồn tối đa</label>
-            <Input value={form.maxStock} onChange={(e) => update("maxStock", e.target.value)} inputMode="numeric" placeholder="200" className={fieldClass(!parseNonNegativeNumber(form.maxStock))} />
+            <label className="text-ink-secondary mb-1 block text-xs font-medium">Tồn tối đa</label>
+            <Input
+              value={form.maxStock}
+              onChange={(e) => update("maxStock", e.target.value)}
+              inputMode="numeric"
+              placeholder="200"
+              className={fieldClass(!parseNonNegativeNumber(form.maxStock))}
+            />
           </div>
         </div>
       </div>
@@ -871,23 +1127,44 @@ function InventoryStep({ form, update }: { form: FormState; update: <K extends k
   );
 }
 
-function CustomizationStep({ form, update, showErrors }: { form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void; showErrors: boolean }) {
+function CustomizationStep({
+  form,
+  update,
+  showErrors,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  showErrors: boolean;
+}) {
   const addPrintArea = () => {
     update("printAreas", [
       ...form.printAreas,
-      { id: `PA-${Date.now()}`, name: "Vùng in mới", position: "front", widthMm: "280", heightMm: "380", minDpi: "150" },
+      {
+        id: `PA-${Date.now()}`,
+        name: "Vùng in mới",
+        position: "front",
+        widthMm: "280",
+        heightMm: "380",
+        minDpi: "150",
+      },
     ]);
   };
 
   const updatePrintArea = (id: string, patch: Partial<PrintAreaDraft>) => {
-    update("printAreas", form.printAreas.map((area) => (area.id === id ? { ...area, ...patch } : area)));
+    update(
+      "printAreas",
+      form.printAreas.map((area) => (area.id === id ? { ...area, ...patch } : area)),
+    );
   };
 
   if (form.type === "Standard") {
     return (
       <Card>
-        <SectionTitle title="Tùy chỉnh" description="Sản phẩm Standard không yêu cầu print area hoặc template preview." />
-        <div className="rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-4 py-6 text-center text-[0.8125rem] text-ink-secondary">
+        <SectionTitle
+          title="Tùy chỉnh"
+          description="Sản phẩm Standard không yêu cầu print area hoặc template preview."
+        />
+        <div className="border-border-default bg-bg-subtle text-ink-secondary rounded-[var(--r-sm)] border px-4 py-6 text-center text-[0.8125rem]">
           Bước này được bỏ qua cho sản phẩm Standard.
         </div>
       </Card>
@@ -896,45 +1173,125 @@ function CustomizationStep({ form, update, showErrors }: { form: FormState; upda
 
   return (
     <Card>
-      <SectionTitle title="Cấu hình tùy chỉnh" description="Với sản phẩm in ấn, cần ít nhất một print area và template/model preview trước khi gửi duyệt." />
+      <SectionTitle
+        title="Cấu hình tùy chỉnh"
+        description="Với sản phẩm in ấn, cần ít nhất một print area và template/model preview trước khi gửi duyệt."
+      />
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Template 2D</label>
-          <Input value={form.templateName} onChange={(e) => update("templateName", e.target.value)} placeholder="template-tshirt-front.svg" className={fieldClass(showErrors && !form.templateName.trim() && !form.model3dUrl.trim())} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Template 2D</label>
+          <Input
+            value={form.templateName}
+            onChange={(e) => update("templateName", e.target.value)}
+            placeholder="template-tshirt-front.svg"
+            className={fieldClass(
+              showErrors && !form.templateName.trim() && !form.model3dUrl.trim(),
+            )}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Model 3D</label>
-          <Input value={form.model3dUrl} onChange={(e) => update("model3dUrl", e.target.value)} placeholder="/mock/3d/tshirt.glb" className={fieldClass(showErrors && !form.templateName.trim() && !form.model3dUrl.trim())} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Model 3D</label>
+          <Input
+            value={form.model3dUrl}
+            onChange={(e) => update("model3dUrl", e.target.value)}
+            placeholder="/mock/3d/tshirt.glb"
+            className={fieldClass(
+              showErrors && !form.templateName.trim() && !form.model3dUrl.trim(),
+            )}
+          />
         </div>
         <div className="lg:col-span-2">
           <div className="mb-2 flex items-center justify-between">
-            <label className="block text-xs font-medium text-ink-secondary">Print areas <span className="text-danger">*</span></label>
-            <Button type="button" variant="outline" size="xs" onClick={addPrintArea} className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted">
+            <label className="text-ink-secondary block text-xs font-medium">
+              Print areas <span className="text-danger">*</span>
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={addPrintArea}
+              className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted rounded-[var(--r-sm)]"
+            >
               <Plus className="size-3" /> Thêm vùng in
             </Button>
           </div>
           <div className="space-y-2">
             {form.printAreas.length === 0 && (
-              <div className={cn("rounded-[var(--r-sm)] border px-4 py-6 text-center text-[0.8125rem]", showErrors ? "border-danger/30 bg-danger/5 text-danger" : "border-border-default bg-bg-subtle text-ink-tertiary")}>Chưa có print area.</div>
+              <div
+                className={cn(
+                  "rounded-[var(--r-sm)] border px-4 py-6 text-center text-[0.8125rem]",
+                  showErrors
+                    ? "border-danger/30 bg-danger/5 text-danger"
+                    : "border-border-default bg-bg-subtle text-ink-tertiary",
+                )}
+              >
+                Chưa có print area.
+              </div>
             )}
             {form.printAreas.map((area) => (
-              <div key={area.id} className="grid gap-2 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle p-3 md:grid-cols-[1fr_130px_100px_100px_80px_auto]">
-                <Input value={area.name} onChange={(e) => updatePrintArea(area.id, { name: e.target.value })} className={fieldClass()} />
-                <Select value={area.position} onValueChange={(value) => updatePrintArea(area.id, { position: value as PrintAreaDraft["position"] })}>
-                  <SelectTrigger size="default" aria-label="Vị trí print area" className={fieldClass()}>
+              <div
+                key={area.id}
+                className="border-border-default bg-bg-subtle grid gap-2 rounded-[var(--r-sm)] border p-3 md:grid-cols-[1fr_130px_100px_100px_80px_auto]"
+              >
+                <Input
+                  value={area.name}
+                  onChange={(e) => updatePrintArea(area.id, { name: e.target.value })}
+                  className={fieldClass()}
+                />
+                <Select
+                  value={area.position}
+                  onValueChange={(value) =>
+                    updatePrintArea(area.id, { position: value as PrintAreaDraft["position"] })
+                  }
+                >
+                  <SelectTrigger
+                    size="default"
+                    aria-label="Vị trí print area"
+                    className={fieldClass()}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent align="start">
                     <SelectGroup>
                       <SelectLabel>Vị trí print area</SelectLabel>
-                        {PRINT_POSITIONS.map((position) => <SelectItem key={position.value} value={position.value}>{position.label}</SelectItem>)}
+                      {PRINT_POSITIONS.map((position) => (
+                        <SelectItem key={position.value} value={position.value}>
+                          {position.label}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <Input value={area.widthMm} onChange={(e) => updatePrintArea(area.id, { widthMm: e.target.value })} placeholder="W mm" className={fieldClass()} />
-                <Input value={area.heightMm} onChange={(e) => updatePrintArea(area.id, { heightMm: e.target.value })} placeholder="H mm" className={fieldClass()} />
-                <Input value={area.minDpi} onChange={(e) => updatePrintArea(area.id, { minDpi: e.target.value })} placeholder="DPI" className={fieldClass()} />
-                <Button type="button" variant="outline" size="icon" onClick={() => update("printAreas", form.printAreas.filter((item) => item.id !== area.id))} className="rounded-[var(--r-sm)] border-danger/30 text-danger hover:bg-danger/10 hover:text-danger">
+                <Input
+                  value={area.widthMm}
+                  onChange={(e) => updatePrintArea(area.id, { widthMm: e.target.value })}
+                  placeholder="W mm"
+                  className={fieldClass()}
+                />
+                <Input
+                  value={area.heightMm}
+                  onChange={(e) => updatePrintArea(area.id, { heightMm: e.target.value })}
+                  placeholder="H mm"
+                  className={fieldClass()}
+                />
+                <Input
+                  value={area.minDpi}
+                  onChange={(e) => updatePrintArea(area.id, { minDpi: e.target.value })}
+                  placeholder="DPI"
+                  className={fieldClass()}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    update(
+                      "printAreas",
+                      form.printAreas.filter((item) => item.id !== area.id),
+                    )
+                  }
+                  className="border-danger/30 text-danger hover:bg-danger/10 hover:text-danger rounded-[var(--r-sm)]"
+                >
                   <Trash2 className="size-3.5" />
                 </Button>
               </div>
@@ -942,12 +1299,35 @@ function CustomizationStep({ form, update, showErrors }: { form: FormState; upda
           </div>
         </div>
         <div className="lg:col-span-2">
-          <label className="mb-2 block text-xs font-medium text-ink-secondary">Kỹ thuật in cho phép</label>
+          <label className="text-ink-secondary mb-2 block text-xs font-medium">
+            Kỹ thuật in cho phép
+          </label>
           <div className="flex flex-wrap gap-1.5">
             {PRINT_TECHNIQUES.map((technique) => {
               const active = form.allowedTechniques.includes(technique);
               return (
-                <Button key={technique} type="button" variant="outline" size="xs" onClick={() => update("allowedTechniques", active ? form.allowedTechniques.filter((t) => t !== technique) : [...form.allowedTechniques, technique])} className={cn("rounded-full px-2 py-0.5 text-xs", active ? "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent" : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted")}>{technique}</Button>
+                <Button
+                  key={technique}
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() =>
+                    update(
+                      "allowedTechniques",
+                      active
+                        ? form.allowedTechniques.filter((t) => t !== technique)
+                        : [...form.allowedTechniques, technique],
+                    )
+                  }
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs",
+                    active
+                      ? "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
+                      : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted",
+                  )}
+                >
+                  {technique}
+                </Button>
               );
             })}
           </div>
@@ -957,59 +1337,126 @@ function CustomizationStep({ form, update, showErrors }: { form: FormState; upda
   );
 }
 
-function CatalogStep({ form, update }: { form: FormState; update: <K extends keyof FormState>(key: K, value: FormState[K]) => void }) {
+function CatalogStep({
+  form,
+  update,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+}) {
   return (
     <Card>
-      <SectionTitle title="Dữ liệu TMĐT" description="Thông tin catalog có thể bổ sung sau; module này chỉ lưu mock và không publish thật." />
+      <SectionTitle
+        title="Dữ liệu TMĐT"
+        description="Thông tin catalog có thể bổ sung sau; module này chỉ lưu mock và không publish thật."
+      />
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">Ảnh mock URLs</label>
-          <Textarea value={form.imageUrls} onChange={(e) => update("imageUrls", e.target.value)} rows={3} placeholder="/mock/img/new-1.jpg\n/mock/img/new-2.jpg" className={fieldClass()} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">Ảnh mock URLs</label>
+          <Textarea
+            value={form.imageUrls}
+            onChange={(e) => update("imageUrls", e.target.value)}
+            rows={3}
+            placeholder="/mock/img/new-1.jpg\n/mock/img/new-2.jpg"
+            className={fieldClass()}
+          />
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-secondary">SEO title</label>
-            <Input value={form.seoTitle} onChange={(e) => update("seoTitle", e.target.value)} placeholder="Áo thun cotton in theo yêu cầu" className={fieldClass()} />
+            <label className="text-ink-secondary mb-1 block text-xs font-medium">SEO title</label>
+            <Input
+              value={form.seoTitle}
+              onChange={(e) => update("seoTitle", e.target.value)}
+              placeholder="Áo thun cotton in theo yêu cầu"
+              className={fieldClass()}
+            />
           </div>
           <div>
-            <label className="flex items-center gap-2 text-[0.8125rem] text-ink-secondary">
-              <Checkbox checked={form.catalogVisible} onCheckedChange={(checked) => update("catalogVisible", checked === true)} />
+            <label className="text-ink-secondary flex items-center gap-2 text-[0.8125rem]">
+              <Checkbox
+                checked={form.catalogVisible}
+                onCheckedChange={(checked) => update("catalogVisible", checked === true)}
+              />
               Đánh dấu sẵn sàng hiển thị catalog sau khi Published
             </label>
           </div>
         </div>
         <div className="lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-ink-secondary">SEO description</label>
-          <Textarea value={form.seoDescription} onChange={(e) => update("seoDescription", e.target.value)} rows={3} placeholder="Mô tả ngắn phục vụ catalog..." className={fieldClass()} />
+          <label className="text-ink-secondary mb-1 block text-xs font-medium">
+            SEO description
+          </label>
+          <Textarea
+            value={form.seoDescription}
+            onChange={(e) => update("seoDescription", e.target.value)}
+            rows={3}
+            placeholder="Mô tả ngắn phục vụ catalog..."
+            className={fieldClass()}
+          />
         </div>
       </div>
     </Card>
   );
 }
 
-function ReviewStep({ form, skuRows, issuesByStep, submitted, onSubmit }: { form: FormState; skuRows: SkuPreviewRow[]; issuesByStep: Map<StepKey, string[]>; submitted: boolean; onSubmit: () => void }) {
+function ReviewStep({
+  form,
+  skuRows,
+  issuesByStep,
+  submitted,
+  onSubmit,
+}: {
+  form: FormState;
+  skuRows: SkuPreviewRow[];
+  issuesByStep: Map<StepKey, string[]>;
+  submitted: boolean;
+  onSubmit: () => void;
+}) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
       <Card>
-        <SectionTitle title="Rà soát trước khi gửi duyệt" description="Tổng hợp dữ liệu chính và các lỗi còn chặn submit." />
+        <SectionTitle
+          title="Rà soát trước khi gửi duyệt"
+          description="Tổng hợp dữ liệu chính và các lỗi còn chặn submit."
+        />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <SummaryItem label="Mã sản phẩm" value={form.productCode || "—"} mono />
           <SummaryItem label="Tên sản phẩm" value={form.name || "—"} />
           <SummaryItem label="Loại" value={form.type} />
           <SummaryItem label="Danh mục" value={form.categoryId || "—"} mono />
           <SummaryItem label="SKU được bật" value={String(skuRows.length)} mono />
-          <SummaryItem label="SKU có giá vốn" value={`${Object.values(form.skuCosts).filter((v) => v.trim() !== "" && parsePositiveNumber(v)).length} / ${skuRows.length}`} mono />
+          <SummaryItem
+            label="SKU có giá vốn"
+            value={`${Object.values(form.skuCosts).filter((v) => v.trim() !== "" && parsePositiveNumber(v)).length} / ${skuRows.length}`}
+            mono
+          />
         </div>
-        <div className="mt-5 rounded-[var(--r-sm)] border border-border-default">
+        <div className="border-border-default mt-5 rounded-[var(--r-sm)] border">
           {STEPS.map((step) => {
             const issues = issuesByStep.get(step.key) ?? [];
             const skipped = step.key === "customization" && form.type === "Standard";
             return (
-              <div key={step.key} className="flex items-start gap-3 border-b border-border-default px-3 py-2 last:border-b-0">
-                <div className={cn("mt-0.5 flex size-5 items-center justify-center rounded-full", issues.length ? "bg-danger/10 text-danger" : "bg-positive/10 text-positive")}>{issues.length ? <X className="size-3" /> : <CheckCircle className="size-3" />}</div>
+              <div
+                key={step.key}
+                className="border-border-default flex items-start gap-3 border-b px-3 py-2 last:border-b-0"
+              >
+                <div
+                  className={cn(
+                    "mt-0.5 flex size-5 items-center justify-center rounded-full",
+                    issues.length ? "bg-danger/10 text-danger" : "bg-positive/10 text-positive",
+                  )}
+                >
+                  {issues.length ? <X className="size-3" /> : <CheckCircle className="size-3" />}
+                </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[0.8125rem] font-medium text-ink-primary">{step.label}{skipped ? " · bỏ qua" : ""}</div>
-                  {issues.length ? <div className="mt-0.5 text-xs text-danger">{issues.join(" · ")}</div> : <div className="mt-0.5 text-xs text-ink-tertiary">Sẵn sàng</div>}
+                  <div className="text-ink-primary text-[0.8125rem] font-medium">
+                    {step.label}
+                    {skipped ? " · bỏ qua" : ""}
+                  </div>
+                  {issues.length ? (
+                    <div className="text-danger mt-0.5 text-xs">{issues.join(" · ")}</div>
+                  ) : (
+                    <div className="text-ink-tertiary mt-0.5 text-xs">Sẵn sàng</div>
+                  )}
                 </div>
               </div>
             );
@@ -1019,15 +1466,30 @@ function ReviewStep({ form, skuRows, issuesByStep, submitted, onSubmit }: { form
       <Card className="h-fit">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="text-xs font-medium uppercase tracking-[0.08em] text-ink-tertiary">Lifecycle</div>
-            <div className="mt-1"><StatusBadge domain="product" status={submitted ? "Pending Approval" : "Draft"} withIcon /></div>
+            <div className="text-ink-tertiary text-xs font-medium tracking-[0.08em] uppercase">
+              Lifecycle
+            </div>
+            <div className="mt-1">
+              <StatusBadge
+                domain="product"
+                status={submitted ? "Pending Approval" : "Draft"}
+                withIcon
+              />
+            </div>
           </div>
-          <Settings2 className="size-5 text-accent" />
+          <Settings2 className="text-accent size-5" />
         </div>
-        <p className="text-[0.8125rem] leading-relaxed text-ink-secondary">
-          `Gửi duyệt` chỉ cập nhật trạng thái preview trong UI. Không có API call và không thêm record vào mock data.
+        <p className="text-ink-secondary text-[0.8125rem] leading-relaxed">
+          `Gửi duyệt` chỉ cập nhật trạng thái preview trong UI. Không có API call và không thêm
+          record vào mock data.
         </p>
-        <Button variant="default" type="button" size="sm" onClick={onSubmit} className="mt-4 w-full rounded-[var(--r-sm)] bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse">
+        <Button
+          variant="default"
+          type="button"
+          size="sm"
+          onClick={onSubmit}
+          className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse mt-4 w-full rounded-[var(--r-sm)]"
+        >
           <Send className="size-3.5" />
           Gửi duyệt
         </Button>
@@ -1038,50 +1500,92 @@ function ReviewStep({ form, skuRows, issuesByStep, submitted, onSubmit }: { form
 
 function SummaryItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-3 py-2">
-      <div className="text-xs text-ink-tertiary">{label}</div>
-      <div className={cn("mt-1 truncate text-[0.8125rem] font-medium text-ink-primary", mono && "font-[family-name:var(--font-mono)] tabular-nums")}>{value}</div>
+    <div className="border-border-default bg-bg-subtle rounded-[var(--r-sm)] border px-3 py-2">
+      <div className="text-ink-tertiary text-xs">{label}</div>
+      <div
+        className={cn(
+          "text-ink-primary mt-1 truncate text-[0.8125rem] font-medium",
+          mono && "font-[family-name:var(--font-mono)] tabular-nums",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
-function validateForm(form: FormState, selectedEntries: { attr: ProductAttribute; values: string[] }[], skuRows: SkuPreviewRow[]): ValidationIssue[] {
+function validateForm(
+  form: FormState,
+  selectedEntries: { attr: ProductAttribute; values: string[] }[],
+  skuRows: SkuPreviewRow[],
+): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (!form.name.trim()) issues.push({ step: "draft", message: "Tên sản phẩm là bắt buộc." });
-  if (!form.productCode.trim()) issues.push({ step: "draft", message: "Mã sản phẩm nội bộ là bắt buộc." });
+  if (!form.productCode.trim())
+    issues.push({ step: "draft", message: "Mã sản phẩm nội bộ là bắt buộc." });
   if (!form.categoryId) issues.push({ step: "draft", message: "Danh mục là bắt buộc." });
   if (!form.brand.trim()) issues.push({ step: "draft", message: "Thương hiệu là bắt buộc." });
 
   for (const entry of selectedEntries) {
-    if (entry.values.length === 0) issues.push({ step: "variants", message: `${entry.attr.name.vi} cần chọn ít nhất một giá trị.` });
+    if (entry.values.length === 0)
+      issues.push({
+        step: "variants",
+        message: `${entry.attr.name.vi} cần chọn ít nhất một giá trị.`,
+      });
   }
 
   const enabledRows = skuRows.filter((row) => row.enabled);
-  if (enabledRows.length === 0) issues.push({ step: "sku", message: "Cần ít nhất một SKU được bật." });
+  if (enabledRows.length === 0)
+    issues.push({ step: "sku", message: "Cần ít nhất một SKU được bật." });
   const existingSkuIds = new Set(skus.map((sku) => sku.skuId));
   const seen = new Set<string>();
   for (const row of enabledRows) {
     if (!row.skuCode.trim()) issues.push({ step: "sku", message: "SKU code không được rỗng." });
-    if (seen.has(row.skuCode) || existingSkuIds.has(row.skuCode)) issues.push({ step: "sku", message: `SKU ${row.skuCode} bị trùng.` });
+    if (seen.has(row.skuCode) || existingSkuIds.has(row.skuCode))
+      issues.push({ step: "sku", message: `SKU ${row.skuCode} bị trùng.` });
     seen.add(row.skuCode);
   }
 
-  if (!parsePositiveNumber(form.weightKg)) issues.push({ step: "logistics", message: "Khối lượng là bắt buộc và phải dương." });
-  if (!parsePositiveNumber(form.lengthCm)) issues.push({ step: "logistics", message: "Chiều dài là bắt buộc và phải dương." });
-  if (!parsePositiveNumber(form.widthCm)) issues.push({ step: "logistics", message: "Chiều rộng là bắt buộc và phải dương." });
-  if (!parsePositiveNumber(form.heightCm)) issues.push({ step: "logistics", message: "Chiều cao là bắt buộc và phải dương." });
-  if (!parsePositiveNumber(form.packSize)) issues.push({ step: "logistics", message: "Pack size là bắt buộc và phải dương." });
+  if (!parsePositiveNumber(form.weightKg))
+    issues.push({ step: "logistics", message: "Khối lượng là bắt buộc và phải dương." });
+  if (!parsePositiveNumber(form.lengthCm))
+    issues.push({ step: "logistics", message: "Chiều dài là bắt buộc và phải dương." });
+  if (!parsePositiveNumber(form.widthCm))
+    issues.push({ step: "logistics", message: "Chiều rộng là bắt buộc và phải dương." });
+  if (!parsePositiveNumber(form.heightCm))
+    issues.push({ step: "logistics", message: "Chiều cao là bắt buộc và phải dương." });
+  if (!parsePositiveNumber(form.packSize))
+    issues.push({ step: "logistics", message: "Pack size là bắt buộc và phải dương." });
 
-  if (!parseNonNegativeNumber(form.reorderPoint)) issues.push({ step: "inventory", message: "Reorder point không được âm." });
-  if (!parseNonNegativeNumber(form.maxStock)) issues.push({ step: "inventory", message: "Tồn tối đa không được âm." });
-  if (form.reorderPoint && form.maxStock && Number(form.reorderPoint) > Number(form.maxStock)) issues.push({ step: "inventory", message: "Reorder point không được lớn hơn tồn tối đa." });
+  if (!parseNonNegativeNumber(form.reorderPoint))
+    issues.push({ step: "inventory", message: "Reorder point không được âm." });
+  if (!parseNonNegativeNumber(form.maxStock))
+    issues.push({ step: "inventory", message: "Tồn tối đa không được âm." });
+  if (form.reorderPoint && form.maxStock && Number(form.reorderPoint) > Number(form.maxStock))
+    issues.push({ step: "inventory", message: "Reorder point không được lớn hơn tồn tối đa." });
 
   if (form.type === "Customizable") {
-    if (form.printAreas.length === 0) issues.push({ step: "customization", message: "Sản phẩm Customizable cần ít nhất một print area." });
-    if (!form.templateName.trim() && !form.model3dUrl.trim()) issues.push({ step: "customization", message: "Cần template 2D hoặc model 3D cho sản phẩm Customizable." });
+    if (form.printAreas.length === 0)
+      issues.push({
+        step: "customization",
+        message: "Sản phẩm Customizable cần ít nhất một print area.",
+      });
+    if (!form.templateName.trim() && !form.model3dUrl.trim())
+      issues.push({
+        step: "customization",
+        message: "Cần template 2D hoặc model 3D cho sản phẩm Customizable.",
+      });
     for (const area of form.printAreas) {
-      if (!area.name.trim() || !parsePositiveNumber(area.widthMm) || !parsePositiveNumber(area.heightMm) || !parsePositiveNumber(area.minDpi)) {
-        issues.push({ step: "customization", message: "Print area cần tên, kích thước và DPI hợp lệ." });
+      if (
+        !area.name.trim() ||
+        !parsePositiveNumber(area.widthMm) ||
+        !parsePositiveNumber(area.heightMm) ||
+        !parsePositiveNumber(area.minDpi)
+      ) {
+        issues.push({
+          step: "customization",
+          message: "Print area cần tên, kích thước và DPI hợp lệ.",
+        });
         break;
       }
     }
