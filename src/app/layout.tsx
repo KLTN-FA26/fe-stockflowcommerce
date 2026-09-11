@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     default: `${BRAND.name} — Back-office`,
     template: `%s — ${BRAND.name}`,
   },
-  description: "UI/UX demo — Kho vận & Sàn TMĐT",
+  description: "Hệ thống quản lý kho vận StockFlowCommerce",
   applicationName: BRAND.name,
   icons: {
     icon: [{ url: BRAND.iconSrc, type: "image/svg+xml" }],

@@ -513,7 +513,6 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <SidebarProvider
-        data-mode="A"
         // h-svh + overflow-hidden ghi đè `min-h-svh` của SidebarProvider: chiều cao phải
         // BỊ CHẶN để `overflow-auto` của <main> có hiệu lực, nhờ đó topbar/sidebar đứng yên
         // và chỉ vùng nội dung cuộn. Dùng min-h-* thì cả trang cuộn, topbar trôi theo.

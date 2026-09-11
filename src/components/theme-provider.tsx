@@ -3,13 +3,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { useIsClient } from "usehooks-ts";
 
-export type DesignMode = "A" | "B";
 export type ColorTheme = "light" | "dark";
 
 interface ThemeContextValue {
-  mode: DesignMode;
   theme: ColorTheme;
-  setMode: (m: DesignMode) => void;
   toggleTheme: () => void;
 }
 
@@ -20,7 +17,6 @@ const THEME_INIT_SCRIPT = `
 (function(){
   try{
     document.documentElement.setAttribute('data-theme','light');
-    document.documentElement.setAttribute('data-mode','A');
     document.documentElement.classList.remove('dark');
   }catch(e){}
 })();
@@ -46,11 +42,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Lazy initializer thay cho setState-trong-effect (tránh cascading render).
   // Trên server không có `document` → dùng đúng giá trị mà inline script sẽ set,
   // nên markup SSR và lần render client đầu tiên khớp nhau.
-  const [mode, setModeState] = useState<DesignMode>(() =>
-    typeof document === "undefined"
-      ? "A"
-      : (document.documentElement.dataset.mode as DesignMode) || "A",
-  );
   const [theme, setThemeState] = useState<ColorTheme>(() =>
     typeof document === "undefined"
       ? "light"
@@ -63,7 +54,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (!isClient) return;
     disableTransitionsWhile(() => {
       const el = document.documentElement;
-      el.dataset.mode = mode;
       el.dataset.theme = theme;
       if (theme === "dark") {
         el.classList.add("dark");
@@ -71,16 +61,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         el.classList.remove("dark");
       }
     });
-  }, [mode, theme, isClient]);
+  }, [theme, isClient]);
 
-  const setMode = useCallback((m: DesignMode) => setModeState(m), []);
   const toggleTheme = useCallback(
     () => setThemeState((t) => (t === "light" ? "dark" : "light")),
     [],
   );
 
   return (
-    <ThemeContext.Provider value={{ mode, theme, setMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {/* Script chống flash — render ngay trong head */}
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       {children}
