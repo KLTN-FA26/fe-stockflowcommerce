@@ -95,6 +95,8 @@ export const SCENE_TIMING = {
   parallaxMaxRad: (8 * Math.PI) / 180,
   /** Hệ số lerp mỗi frame cho parallax — càng nhỏ càng mượt và trễ. */
   parallaxDamping: 0.06,
+  /** Quãng dịch chuyển camera theo parallax, world unit. */
+  parallaxTravel: 4,
   /**
    * Fade-in của canvas khi scene sẵn sàng.
    * NGOẠI LỆ có chủ đích so với dải 120–180ms của Mode A (mode-a-backoffice.md §Motion):
@@ -102,3 +104,12 @@ export const SCENE_TIMING = {
    */
   canvasFadeMs: 400,
 } as const;
+
+/**
+ * Vị trí camera orthographic, cố định ở góc isometric.
+ * Dùng ở hai chỗ: prop `camera` của <Canvas> và gốc toạ độ cho phép tính parallax.
+ */
+export const CAMERA_POSITION: readonly [number, number, number] = [6, 5, 8];
+
+/** Độ phóng của camera orthographic — càng lớn kệ càng to trong khung. */
+export const CAMERA_ZOOM = 62;
