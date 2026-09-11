@@ -2,7 +2,6 @@
 
 import { Toaster as SonnerToaster, toast as sonnerToast } from "sonner";
 import { CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react";
-import type { ReactNode } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  Custom toast renderer — match components-preview.html §Feedback           */
@@ -10,10 +9,19 @@ import type { ReactNode } from "react";
 /* -------------------------------------------------------------------------- */
 
 const TONE_STYLES = {
-  success: { borderColor: "var(--positive)", icon: <CheckCircle className="size-4 shrink-0 text-positive" /> },
-  error: { borderColor: "var(--danger)", icon: <XCircle className="size-4 shrink-0 text-danger" /> },
-  warning: { borderColor: "var(--warning)", icon: <AlertTriangle className="size-4 shrink-0 text-warning" /> },
-  info: { borderColor: "var(--info)", icon: <Info className="size-4 shrink-0 text-info" /> },
+  success: {
+    borderColor: "var(--positive)",
+    icon: <CheckCircle className="text-positive size-4 shrink-0" />,
+  },
+  error: {
+    borderColor: "var(--danger)",
+    icon: <XCircle className="text-danger size-4 shrink-0" />,
+  },
+  warning: {
+    borderColor: "var(--warning)",
+    icon: <AlertTriangle className="text-warning size-4 shrink-0" />,
+  },
+  info: { borderColor: "var(--info)", icon: <Info className="text-info size-4 shrink-0" /> },
 } as const;
 
 type ToastTone = keyof typeof TONE_STYLES;
@@ -30,15 +38,13 @@ function ToastContent({
   const { borderColor, icon } = TONE_STYLES[tone];
   return (
     <div
-      className="flex items-start gap-2.5 rounded-[var(--r-md)] border border-border-default bg-bg-surface px-3.5 py-3 shadow-[var(--sh-lg)]"
+      className="border-border-default bg-bg-surface flex items-start gap-2.5 rounded-[var(--r-md)] border px-3.5 py-3 shadow-[var(--sh-lg)]"
       style={{ borderLeft: `3px solid ${borderColor}` }}
     >
       {icon}
       <div>
-        <div className="text-[0.8125rem] font-semibold text-ink-primary">{title}</div>
-        {description && (
-          <div className="mt-0.5 text-xs text-ink-secondary">{description}</div>
-        )}
+        <div className="text-ink-primary text-[0.8125rem] font-semibold">{title}</div>
+        {description && <div className="text-ink-secondary mt-0.5 text-xs">{description}</div>}
       </div>
     </div>
   );
@@ -62,9 +68,7 @@ export function ToastProvider() {
 }
 
 function fireToast(tone: ToastTone, title: string, description?: string) {
-  sonnerToast.custom(() => (
-    <ToastContent tone={tone} title={title} description={description} />
-  ));
+  sonnerToast.custom(() => <ToastContent tone={tone} title={title} description={description} />);
 }
 
 export const toast = {

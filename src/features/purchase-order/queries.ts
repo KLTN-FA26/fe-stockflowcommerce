@@ -8,10 +8,12 @@ import { createQueryKeys, createListQuery, createDetailQuery } from "@/lib/api/q
 import {
   listPurchaseOrders,
   getPurchaseOrder,
+  listPoSuppliers,
+  listPoWarehouses,
   listReplenishmentProposals,
   type ListPoParams,
 } from "./api";
-import type { PurchaseOrder, ReplenishmentProposal } from "./types";
+import type { PurchaseOrder, ReplenishmentProposal, Supplier, Warehouse } from "./types";
 
 /* ── Query keys ──────────────────────────────────────────────────────── */
 
@@ -21,6 +23,9 @@ export const replenishmentKeys = createQueryKeys<{
   page?: number;
   pageSize?: number;
 }>("replenishment-proposals");
+
+export const poSupplierKeys = createQueryKeys<Record<string, unknown>>("po-suppliers");
+export const poWarehouseKeys = createQueryKeys<Record<string, unknown>>("po-warehouses");
 
 /* ── List hooks ──────────────────────────────────────────────────────── */
 
@@ -33,6 +38,16 @@ export const useReplenishmentProposals = createListQuery<
   ReplenishmentProposal,
   { page?: number; pageSize?: number }
 >(replenishmentKeys, listReplenishmentProposals);
+
+export const usePoSuppliers = createListQuery<Supplier, Record<string, unknown>>(
+  poSupplierKeys,
+  (_, signal) => listPoSuppliers(signal),
+);
+
+export const usePoWarehouses = createListQuery<Warehouse, Record<string, unknown>>(
+  poWarehouseKeys,
+  (_, signal) => listPoWarehouses(signal),
+);
 
 /* ── Detail hooks ────────────────────────────────────────────────────── */
 

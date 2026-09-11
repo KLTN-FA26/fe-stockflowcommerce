@@ -6,9 +6,12 @@
  */
 
 export type {
+  Currency,
   PurchaseOrder,
   PoLine,
   PoStatus,
-  ReplenishmentProposal,
   ProposalStatus,
+  ReplenishmentProposal,
+  Supplier,
+  Warehouse,
 } from "@/lib/mock-data";
