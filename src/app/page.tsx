@@ -21,7 +21,7 @@ export default function Home() {
       <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col justify-center gap-6 px-6 py-6 lg:px-8">
         <div className="grid min-h-0 flex-1 items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
           <HomeHero />
-          <div className="hidden h-full min-h-0 lg:block">
+          <div className="hidden h-full min-h-0 lg:block" aria-hidden="true">
             <WarehouseSceneLazy />
           </div>
         </div>

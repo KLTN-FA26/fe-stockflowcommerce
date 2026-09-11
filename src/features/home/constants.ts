@@ -50,7 +50,6 @@ export const SCENE_GEOMETRY = {
   binDepth: 1,
   binGapX: 1.35,
   levelHeight: 1.1,
-  frameThickness: 0.06,
   /** Chiều cao khối hàng bên trong bin, theo mức lấp đầy. */
   fillHeight: { full: 0.72, partial: 0.38, empty: 0 } satisfies Record<BinFill, number>,
 } as const;
