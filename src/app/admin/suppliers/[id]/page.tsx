@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/shared/Card";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { toast } from "@/components/shared/Toast";
 import {
@@ -37,7 +36,11 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 function formatMoney(amount: number, currency: Currency): string {
   if (currency === "VND") return formatVND(amount);
   if (currency === "USD")
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(amount);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }).format(amount);
   return `${CURRENCY_SYMBOL[currency]}${amount.toLocaleString()}`;
 }
 
@@ -53,10 +56,15 @@ function InfoRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border-default py-2.5 last:border-b-0">
-      <span className="shrink-0 text-xs text-ink-tertiary">{label}</span>
+    <div className="border-border-default flex items-start justify-between gap-4 border-b py-2.5 last:border-b-0">
+      <span className="text-ink-tertiary shrink-0 text-xs">{label}</span>
       {children ?? (
-        <span className={cn("text-right text-[0.8125rem] font-medium text-ink-primary", mono && "font-[family-name:var(--font-mono)]")}>
+        <span
+          className={cn(
+            "text-ink-primary text-right text-[0.8125rem] font-medium",
+            mono && "font-[family-name:var(--font-mono)]",
+          )}
+        >
           {value ?? "—"}
         </span>
       )}
@@ -80,13 +88,17 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
 
   const relatedPOs = useMemo(
     () => (supplier ? purchaseOrders.filter((po) => po.supplierId === supplier.supplierId) : []),
-    [supplier]
+    [supplier],
   );
 
   const poStats = useMemo(() => {
     const total = relatedPOs.length;
-    const totalValue = relatedPOs.filter((po) => po.currency === "VND").reduce((s, po) => s + po.grandTotal, 0);
-    const open = relatedPOs.filter((po) => !["Closed", "Cancelled", "Received"].includes(po.status)).length;
+    const totalValue = relatedPOs
+      .filter((po) => po.currency === "VND")
+      .reduce((s, po) => s + po.grandTotal, 0);
+    const open = relatedPOs.filter(
+      (po) => !["Closed", "Cancelled", "Received"].includes(po.status),
+    ).length;
     return { total, totalValue, open };
   }, [relatedPOs]);
 
@@ -99,7 +111,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
       cell: (row) => (
         <Link
           href={`/admin/purchase-orders/${row.poId}`}
-          className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
+          className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium hover:underline"
         >
           {row.poNumber}
         </Link>
@@ -111,7 +123,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
       sortable: true,
       compare: (a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime(),
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] text-xs text-ink-secondary">
+        <span className="text-ink-secondary font-[family-name:var(--font-mono)] text-xs">
           {new Date(row.orderDate).toLocaleDateString("vi-VN")}
         </span>
       ),
@@ -123,7 +135,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
       sortable: true,
       compare: (a, b) => a.grandTotal - b.grandTotal,
       cell: (row) => (
-        <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium tabular-nums">
           {formatMoney(row.grandTotal, row.currency)}
         </span>
       ),
@@ -146,12 +158,19 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
             { label: "Chi tiết" },
           ]}
         />
-        <div className="flex flex-col items-center justify-center py-20 text-ink-tertiary">
+        <div className="text-ink-tertiary flex flex-col items-center justify-center py-20">
           <Building2 className="mb-3 size-12 opacity-40" />
           <p className="text-[0.8125rem]">
-            Nhà cung cấp <code className="rounded bg-bg-muted px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-ink-primary">{id}</code> không tồn tại trong mock data.
+            Nhà cung cấp{" "}
+            <code className="bg-bg-muted text-ink-primary rounded px-1.5 py-0.5 font-[family-name:var(--font-mono)]">
+              {id}
+            </code>{" "}
+            không tồn tại trong mock data.
           </p>
-          <Link href="/admin/suppliers" className="mt-4 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-accent hover:underline">
+          <Link
+            href="/admin/suppliers"
+            className="text-accent mt-4 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium hover:underline"
+          >
             <ArrowLeft className="size-3.5" />
             Quay lại danh sách
           </Link>
@@ -173,7 +192,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
         actions={
           <Link
             href="/admin/suppliers"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-border-default bg-bg-surface px-3 py-1.5 text-[0.8125rem] font-medium text-ink-secondary transition-colors hover:bg-bg-muted hover:text-ink-primary"
+            className="border-border-default bg-bg-surface text-ink-secondary hover:bg-bg-muted hover:text-ink-primary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors"
           >
             <ArrowLeft className="size-3.5" />
             Quay lại
@@ -186,20 +205,23 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
         <div className="space-y-5">
           {/* Profile + Contact */}
           <div className="grid gap-5 md:grid-cols-2">
-            <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
-                <Building2 className="size-4 text-accent" />
+            <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary flex items-center gap-2 text-sm font-semibold">
+                <Building2 className="text-accent size-4" />
                 Hồ sơ NCC
               </h2>
-              <div className="mt-3 divide-y divide-border-default">
+              <div className="divide-border-default mt-3 divide-y">
                 <InfoRow label="Mã NCC" value={supplier.supplierId} mono />
                 <InfoRow label="Tên NCC" value={supplier.name} />
                 <InfoRow label="MST" value={supplier.taxCode} mono />
                 <InfoRow label="Trạng thái">
-                  <span className={supplier.active
-                    ? "inline-flex items-center gap-1.5 rounded-full border border-positive/25 bg-positive/10 px-2.5 py-0.5 text-xs font-medium text-positive"
-                    : "inline-flex items-center gap-1.5 rounded-full border border-muted-tone/25 bg-muted-tone/10 px-2.5 py-0.5 text-xs font-medium text-muted-tone"
-                  }>
+                  <span
+                    className={
+                      supplier.active
+                        ? "border-positive/25 bg-positive/10 text-positive inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                        : "border-muted-tone/25 bg-muted-tone/10 text-muted-tone inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                    }
+                  >
                     <span className="size-1.5 rounded-full bg-current" />
                     {supplier.active ? "Đang hoạt động" : "Tạm ngưng"}
                   </span>
@@ -207,12 +229,12 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </section>
 
-            <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
-                <Contact className="size-4 text-accent" />
+            <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+              <h2 className="text-ink-primary flex items-center gap-2 text-sm font-semibold">
+                <Contact className="text-accent size-4" />
                 Liên hệ
               </h2>
-              <div className="mt-3 divide-y divide-border-default">
+              <div className="divide-border-default mt-3 divide-y">
                 <InfoRow label="Người liên hệ" value={supplier.contactName} />
                 <InfoRow label="Email" value={supplier.contactEmail} />
                 <InfoRow label="Điện thoại" value={supplier.contactPhone} mono />
@@ -221,34 +243,36 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
           </div>
 
           {/* Address */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
-              <MapPin className="size-4 text-accent" />
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary flex items-center gap-2 text-sm font-semibold">
+              <MapPin className="text-accent size-4" />
               Địa chỉ
             </h2>
-            <div className="mt-3 divide-y divide-border-default">
+            <div className="divide-border-default mt-3 divide-y">
               <InfoRow label="Đường / số nhà" value={supplier.address.street} />
               <InfoRow label="Phường / xã" value={supplier.address.ward} />
               <InfoRow label="Quận / huyện" value={supplier.address.district} />
               <InfoRow label="Tỉnh / TP" value={supplier.address.province} />
               <InfoRow label="Mã bưu chính" value={supplier.address.postalCode} mono />
             </div>
-            <div className="mt-3 rounded-[var(--r-sm)] border border-border-default bg-bg-subtle px-3 py-2 text-xs text-ink-secondary">
+            <div className="border-border-default bg-bg-subtle text-ink-secondary mt-3 rounded-[var(--r-sm)] border px-3 py-2 text-xs">
               {fullAddress(supplier)}
             </div>
           </section>
 
           {/* Related POs */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
-                <ShoppingCart className="size-4 text-accent" />
+              <h2 className="text-ink-primary flex items-center gap-2 text-sm font-semibold">
+                <ShoppingCart className="text-accent size-4" />
                 Đơn đặt hàng liên quan
-                <span className="rounded-full bg-bg-subtle px-2 py-0.5 text-[0.6875rem] font-medium text-ink-secondary">{relatedPOs.length}</span>
+                <span className="bg-bg-subtle text-ink-secondary rounded-full px-2 py-0.5 text-[0.6875rem] font-medium">
+                  {relatedPOs.length}
+                </span>
               </h2>
               <Link
                 href="/admin/purchase-orders"
-                className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                className="text-accent inline-flex items-center gap-1 text-xs font-medium hover:underline"
               >
                 Xem tất cả PO
                 <ExternalLink className="size-3" />
@@ -263,7 +287,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
                 pageSize={15}
               />
             ) : (
-              <div className="flex flex-col items-center py-10 text-ink-tertiary">
+              <div className="text-ink-tertiary flex flex-col items-center py-10">
                 <FileText className="mb-2 size-8 opacity-40" />
                 <p className="text-[0.8125rem]">Chưa có đơn đặt hàng nào từ NCC này.</p>
               </div>
@@ -274,37 +298,49 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
         {/* RIGHT SIDEBAR */}
         <div className="space-y-5">
           {/* Action Card */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
             <div className="mb-4 text-center">
-              <span className={supplier.active
-                ? "inline-flex items-center gap-1.5 rounded-full border border-positive/25 bg-positive/10 px-3 py-1 text-sm font-medium text-positive"
-                : "inline-flex items-center gap-1.5 rounded-full border border-muted-tone/25 bg-muted-tone/10 px-3 py-1 text-sm font-medium text-muted-tone"
-              }>
+              <span
+                className={
+                  supplier.active
+                    ? "border-positive/25 bg-positive/10 text-positive inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium"
+                    : "border-muted-tone/25 bg-muted-tone/10 text-muted-tone inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium"
+                }
+              >
                 <span className="size-2 rounded-full bg-current" />
                 {supplier.active ? "Đang hoạt động" : "Tạm ngưng"}
               </span>
             </div>
             <div className="space-y-2">
-              <Button variant="ghost"
+              <Button
+                variant="ghost"
                 type="button"
-                onClick={() => toast.success("Mock action", `Cập nhật hồ sơ ${supplier.supplierId} là UI-only.`)}
-                className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-brand px-3 py-2 text-[0.8125rem] font-medium !text-ink-inverse transition-colors hover:bg-brand-hover hover:!text-ink-inverse"
+                onClick={() =>
+                  toast.success("Mock action", `Cập nhật hồ sơ ${supplier.supplierId} là UI-only.`)
+                }
+                className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] px-3 py-2 text-[0.8125rem] font-medium transition-colors"
               >
                 Cập nhật hồ sơ
               </Button>
               {supplier.active ? (
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
-                  onClick={() => toast.warning("Mock action", `Tạm ngưng ${supplier.supplierId} là UI-only.`)}
-                  className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border border-danger/30 bg-bg-surface px-3 py-2 text-[0.8125rem] font-medium text-danger transition-colors hover:bg-danger/5"
+                  onClick={() =>
+                    toast.warning("Mock action", `Tạm ngưng ${supplier.supplierId} là UI-only.`)
+                  }
+                  className="border-danger/30 bg-bg-surface text-danger hover:bg-danger/5 flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border px-3 py-2 text-[0.8125rem] font-medium transition-colors"
                 >
                   Tạm ngưng NCC
                 </Button>
               ) : (
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
                   type="button"
-                  onClick={() => toast.success("Mock action", `Kích hoạt lại ${supplier.supplierId} là UI-only.`)}
-                  className="flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border border-positive/30 bg-bg-surface px-3 py-2 text-[0.8125rem] font-medium text-positive transition-colors hover:bg-positive/5"
+                  onClick={() =>
+                    toast.success("Mock action", `Kích hoạt lại ${supplier.supplierId} là UI-only.`)
+                  }
+                  className="border-positive/30 bg-bg-surface text-positive hover:bg-positive/5 flex w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border px-3 py-2 text-[0.8125rem] font-medium transition-colors"
                 >
                   Kích hoạt lại
                 </Button>
@@ -313,18 +349,18 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
           </section>
 
           {/* Terms Card */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
-              <Landmark className="size-4 text-accent" />
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary flex items-center gap-2 text-sm font-semibold">
+              <Landmark className="text-accent size-4" />
               Điều khoản thương mại
             </h2>
-            <div className="mt-3 divide-y divide-border-default">
+            <div className="divide-border-default mt-3 divide-y">
               <InfoRow label="Thanh toán" value={supplier.paymentTerms} />
               <InfoRow label="Tiền tệ PO" value={supplier.currency} mono />
               <InfoRow label="Lead time" value={`${supplier.leadTimeDays} ngày`} />
               <InfoRow label="Rating">
-                <span className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-ink-primary">
-                  <Star className="size-3.5 text-warning" />
+                <span className="text-ink-primary inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium">
+                  <Star className="text-warning size-3.5" />
                   {supplier.rating.toFixed(1)} / 5.0
                 </span>
               </InfoRow>
@@ -332,9 +368,9 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
           </section>
 
           {/* Quick stats */}
-          <section className="rounded-[var(--card-radius)] border border-border-default bg-bg-surface p-[var(--card-pad)]">
-            <h2 className="text-sm font-semibold text-ink-primary">Thống kê PO</h2>
-            <div className="mt-3 divide-y divide-border-default">
+          <section className="border-border-default bg-bg-surface rounded-[var(--card-radius)] border p-[var(--card-pad)]">
+            <h2 className="text-ink-primary text-sm font-semibold">Thống kê PO</h2>
+            <div className="divide-border-default mt-3 divide-y">
               <InfoRow label="Tổng PO" value={poStats.total.toString()} />
               <InfoRow label="PO đang mở" value={poStats.open.toString()} />
               <InfoRow label="Tổng giá trị (VND)" value={formatVND(poStats.totalValue)} mono />

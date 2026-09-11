@@ -62,7 +62,8 @@ export const useTablePrefs = create<TablePrefsState>()(
 
       resetPrefs: (tableId) =>
         set((s) => {
-          const { [tableId]: _, ...rest } = s.prefs;
+          const rest = { ...s.prefs };
+          delete rest[tableId];
           return { prefs: rest };
         }),
     }),

@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import type { StatusDomain } from "@/lib/mock-data";
@@ -15,7 +14,7 @@ export function codeCell<T>(
   key: string,
   header: string,
   getValue: (row: T) => string,
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number; onClick?: (row: T) => void }
+  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number; onClick?: (row: T) => void },
 ): ColumnDef<T> {
   return {
     key,
@@ -30,14 +29,14 @@ export function codeCell<T>(
             type="button"
             variant="link"
             onClick={() => opts.onClick!(row)}
-            className="h-auto p-0 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
+            className="text-accent h-auto p-0 font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium hover:underline"
           >
             {value}
           </Button>
         );
       }
       return (
-        <span className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent">
+        <span className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium">
           {value}
         </span>
       );
@@ -50,19 +49,26 @@ export function textCell<T>(
   key: string,
   header: string,
   getValue: (row: T) => string,
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number; color?: "primary" | "secondary" | "tertiary"; lineClamp?: boolean }
+  opts?: {
+    sortable?: boolean;
+    compare?: (a: T, b: T) => number;
+    color?: "primary" | "secondary" | "tertiary";
+    lineClamp?: boolean;
+  },
 ): ColumnDef<T> {
   const colorClass =
-    opts?.color === "primary" ? "text-ink-primary" :
-    opts?.color === "tertiary" ? "text-ink-tertiary" :
-    "text-ink-secondary";
+    opts?.color === "primary"
+      ? "text-ink-primary"
+      : opts?.color === "tertiary"
+        ? "text-ink-tertiary"
+        : "text-ink-secondary";
   return {
     key,
     header,
     sortable: opts?.sortable,
     compare: opts?.compare,
     cell: (row) => (
-      <span className={`text-[0.8125rem] ${colorClass}${opts?.lineClamp ? " line-clamp-1" : ""}`}>
+      <span className={`text-[0.8125rem] ${colorClass}${opts?.lineClamp ? "line-clamp-1" : ""}`}>
         {getValue(row)}
       </span>
     ),
@@ -74,7 +80,7 @@ export function subCodeCell<T>(
   key: string,
   header: string,
   getValue: (row: T) => string,
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number }
+  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number },
 ): ColumnDef<T> {
   return {
     key,
@@ -82,7 +88,7 @@ export function subCodeCell<T>(
     sortable: opts?.sortable,
     compare: opts?.compare,
     cell: (row) => (
-      <span className="font-[family-name:var(--font-mono)] text-xs text-ink-secondary">
+      <span className="text-ink-secondary font-[family-name:var(--font-mono)] text-xs">
         {getValue(row)}
       </span>
     ),
@@ -94,7 +100,7 @@ export function dateCell<T>(
   key: string,
   header: string,
   getValue: (row: T) => string,
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number }
+  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number },
 ): ColumnDef<T> {
   return {
     key,
@@ -102,7 +108,7 @@ export function dateCell<T>(
     sortable: opts?.sortable,
     compare: opts?.compare,
     cell: (row) => (
-      <span className="tabular-nums text-[0.8125rem] text-ink-tertiary">
+      <span className="text-ink-tertiary text-[0.8125rem] tabular-nums">
         {new Date(getValue(row)).toLocaleDateString("vi-VN")}
       </span>
     ),
@@ -115,7 +121,7 @@ export function moneyCell<T>(
   header: string,
   getValue: (row: T) => number,
   formatFn: (n: number) => string,
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number }
+  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number },
 ): ColumnDef<T> {
   return {
     key,
@@ -124,7 +130,7 @@ export function moneyCell<T>(
     sortable: opts?.sortable,
     compare: opts?.compare,
     cell: (row) => (
-      <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-ink-primary">
+      <span className="text-ink-primary font-[family-name:var(--font-mono)] font-medium tabular-nums">
         {formatFn(getValue(row))}
       </span>
     ),
@@ -136,7 +142,7 @@ export function numberCell<T>(
   key: string,
   header: string,
   getValue: (row: T) => number,
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number }
+  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number },
 ): ColumnDef<T> {
   return {
     key,
@@ -145,7 +151,7 @@ export function numberCell<T>(
     sortable: opts?.sortable,
     compare: opts?.compare,
     cell: (row) => (
-      <span className="font-[family-name:var(--font-mono)] tabular-nums text-[0.8125rem] font-medium text-ink-primary">
+      <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
         {getValue(row).toLocaleString("vi-VN")}
       </span>
     ),
@@ -158,7 +164,7 @@ export function statusCell<T>(
   header: string,
   getStatus: (row: T) => string,
   domain: StatusDomain | ((row: T) => StatusDomain),
-  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number; withIcon?: boolean }
+  opts?: { sortable?: boolean; compare?: (a: T, b: T) => number; withIcon?: boolean },
 ): ColumnDef<T> {
   return {
     key,

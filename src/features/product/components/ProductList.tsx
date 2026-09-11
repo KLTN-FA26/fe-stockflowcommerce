@@ -1,0 +1,1172 @@
+"use client";
+
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { cn } from "cn";
+import {
+  BarChart3,
+  Eye,
+  Package,
+  PackageCheck,
+  Clock,
+  CheckCircle,
+  ShoppingBag,
+  XCircle,
+  Archive,
+  Plus,
+  Tag,
+  Barcode,
+} from "lucide-react";
+import {
+  ADMIN_ROUTES,
+  PAGE_SIZE,
+  PRODUCT_STATUSES,
+  PRODUCT_STATUS,
+  SKU_STATUSES,
+  STORAGE_KEYS,
+} from "@/constants";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
+import {
+  ColumnFilterButton,
+  ListToolbar,
+  type ListSummaryItem,
+} from "@/components/shared/ListToolbar";
+import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
+import { toast } from "@/components/shared/Toast";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { numberCell, moneyCell, statusCell, textCell } from "@/components/shared/column-helpers";
+import { STATUS_LABEL_VI } from "@/lib/status-map";
+import {
+  computeProductStats as computeProductStatsSelector,
+  computeSkuStats as computeSkuStatsSelector,
+  formatVnd,
+  productSkuCount,
+  shouldFlagProductRow,
+  shouldFlagSkuRow,
+  useCategories,
+  useProducts,
+  useSkus,
+} from "@/features/product";
+
+import type { Category, Product, Sku } from "@/features/product";
+
+type TabKey = "products" | "skus";
+type ProductStatusFilter = "all" | Product["status"];
+type SkuStatusFilter = "all" | Sku["status"];
+type ProductSearchField = "productId" | "name" | "category" | "type";
+type SkuSearchField = "skuId" | "variantLabel" | "product" | "barcode";
+type ProductColumnSearchKey = "productId" | "name" | "category";
+type SkuColumnSearchKey = "skuId" | "variantLabel" | "product";
+type ProductTableColumnKey =
+  "productId" | "name" | "category" | "type" | "skuCount" | "status" | "actions";
+type SkuTableColumnKey =
+  | "skuId"
+  | "variantLabel"
+  | "productId"
+  | "uom"
+  | "stockOnHand"
+  | "stockAvailable"
+  | "cost"
+  | "status"
+  | "actions";
+
+interface TabConfig<
+  Status extends string,
+  Field extends string,
+  ColumnSearch extends string,
+  Column extends string,
+> {
+  showStats: boolean;
+  statuses: Status[];
+  globalSearch: { query: string; fields: Field[] };
+  columnSearch: Partial<Record<ColumnSearch, string>>;
+  visibleColumns: Column[];
+}
+
+interface ProductsPageConfig {
+  products: TabConfig<
+    ProductStatusFilter,
+    ProductSearchField,
+    ProductColumnSearchKey,
+    ProductTableColumnKey
+  >;
+  skus: TabConfig<SkuStatusFilter, SkuSearchField, SkuColumnSearchKey, SkuTableColumnKey>;
+}
+
+const PRODUCT_DEFAULT_COLUMNS: ProductTableColumnKey[] = [
+  "productId",
+  "name",
+  "category",
+  "type",
+  "skuCount",
+  "status",
+  "actions",
+];
+const SKU_DEFAULT_COLUMNS: SkuTableColumnKey[] = [
+  "skuId",
+  "variantLabel",
+  "productId",
+  "uom",
+  "stockOnHand",
+  "stockAvailable",
+  "cost",
+  "status",
+  "actions",
+];
+const DEFAULT_CONFIG: ProductsPageConfig = {
+  products: {
+    showStats: false,
+    statuses: ["all"],
+    globalSearch: { query: "", fields: ["productId", "name"] },
+    columnSearch: {},
+    visibleColumns: PRODUCT_DEFAULT_COLUMNS,
+  },
+  skus: {
+    showStats: false,
+    statuses: ["all"],
+    globalSearch: { query: "", fields: ["skuId", "variantLabel", "barcode"] },
+    columnSearch: {},
+    visibleColumns: SKU_DEFAULT_COLUMNS,
+  },
+};
+
+const TABS: { key: TabKey; label: string; icon: typeof Package }[] = [
+  { key: "products", label: "Sản phẩm", icon: Package },
+  { key: "skus", label: "SKU", icon: Barcode },
+];
+
+const PRODUCT_STATUS_OPTIONS = ["all", ...PRODUCT_STATUSES].map((value) => ({
+  label: value === "all" ? "Tất cả" : (STATUS_LABEL_VI[value] ?? value),
+  value: value as ProductStatusFilter,
+}));
+const SKU_STATUS_OPTIONS = ["all", ...SKU_STATUSES].map((value) => ({
+  label: value === "all" ? "Tất cả" : (STATUS_LABEL_VI[value] ?? value),
+  value: value as SkuStatusFilter,
+}));
+
+const PRODUCT_COLUMN_LABELS: Record<ProductTableColumnKey, string> = {
+  productId: "Mã SP",
+  name: "Tên sản phẩm",
+  category: "Danh mục",
+  type: "Loại",
+  skuCount: "SKU",
+  status: "Trạng thái",
+  actions: "Thao tác",
+};
+const SKU_COLUMN_LABELS: Record<SkuTableColumnKey, string> = {
+  skuId: "Mã SKU",
+  variantLabel: "Biến thể",
+  productId: "Sản phẩm",
+  uom: "UoM",
+  stockOnHand: "Tồn kho",
+  stockAvailable: "Khả dụng",
+  cost: "Giá vốn",
+  status: "Trạng thái",
+  actions: "Thao tác",
+};
+const PRODUCT_COLUMN_SEARCH_LABELS: Record<ProductColumnSearchKey, string> = {
+  productId: "Mã SP",
+  name: "Tên sản phẩm",
+  category: "Danh mục",
+};
+const SKU_COLUMN_SEARCH_LABELS: Record<SkuColumnSearchKey, string> = {
+  skuId: "Mã SKU",
+  variantLabel: "Biến thể",
+  product: "Sản phẩm",
+};
+
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function categoryName(categoryId: string, categories: readonly Category[]): string {
+  return categories.find((category) => category.categoryId === categoryId)?.name.vi ?? "";
+}
+
+function readInitialConfig(): ProductsPageConfig {
+  if (typeof window === "undefined") return DEFAULT_CONFIG;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.adminProductsConfig);
+    if (!raw) return DEFAULT_CONFIG;
+
+    const stored = JSON.parse(raw) as Partial<ProductsPageConfig>;
+    return {
+      products: {
+        ...DEFAULT_CONFIG.products,
+        ...stored.products,
+        globalSearch: { ...DEFAULT_CONFIG.products.globalSearch, ...stored.products?.globalSearch },
+        columnSearch: stored.products?.columnSearch ?? {},
+        visibleColumns: stored.products?.visibleColumns?.length
+          ? stored.products.visibleColumns
+          : PRODUCT_DEFAULT_COLUMNS,
+      },
+      skus: {
+        ...DEFAULT_CONFIG.skus,
+        ...stored.skus,
+        globalSearch: { ...DEFAULT_CONFIG.skus.globalSearch, ...stored.skus?.globalSearch },
+        columnSearch: stored.skus?.columnSearch ?? {},
+        visibleColumns: stored.skus?.visibleColumns?.length
+          ? stored.skus.visibleColumns
+          : SKU_DEFAULT_COLUMNS,
+      },
+    };
+  } catch {
+    return DEFAULT_CONFIG;
+  }
+}
+
+export function ProductList() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(["products", "skus"] as const).withDefault("products"),
+  );
+  const [productQ, setProductQ] = useQueryState("productQ", parseAsString.withDefault(""));
+  const [skuQ, setSkuQ] = useQueryState("skuQ", parseAsString.withDefault(""));
+  const [productStatuses, setProductStatuses] = useQueryState(
+    "productStatus",
+    parseAsArrayOf(parseAsStringLiteral(PRODUCT_STATUSES)).withDefault([]),
+  );
+  const [skuStatuses, setSkuStatuses] = useQueryState(
+    "skuStatus",
+    parseAsArrayOf(parseAsStringLiteral(SKU_STATUSES)).withDefault([]),
+  );
+  const [config, setConfig] = useState<ProductsPageConfig>(readInitialConfig);
+  const [prodSelectedKeys, setProdSelectedKeys] = useState<Set<string>>(new Set());
+  const [skuSelectedKeys, setSkuSelectedKeys] = useState<Set<string>>(new Set());
+
+  const productsQuery = useProducts({ page: 1, pageSize: PAGE_SIZE.masterData });
+  const skusQuery = useSkus({ page: 1, pageSize: PAGE_SIZE.masterData });
+  const categoriesQuery = useCategories({});
+
+  const rawProducts = useMemo(() => productsQuery.data?.items ?? [], [productsQuery.data]);
+  const rawSkus = useMemo(() => skusQuery.data?.items ?? [], [skusQuery.data]);
+  const categories = useMemo(() => categoriesQuery.data?.items ?? [], [categoriesQuery.data]);
+  const isLoading = productsQuery.isLoading || skusQuery.isLoading || categoriesQuery.isLoading;
+
+  const productConfig = useMemo<ProductsPageConfig["products"]>(
+    () => ({
+      ...config.products,
+      statuses: productStatuses.length > 0 ? productStatuses : ["all"],
+      globalSearch: { ...config.products.globalSearch, query: productQ },
+    }),
+    [config.products, productQ, productStatuses],
+  );
+
+  const skuConfig = useMemo<ProductsPageConfig["skus"]>(
+    () => ({
+      ...config.skus,
+      statuses: skuStatuses.length > 0 ? skuStatuses : ["all"],
+      globalSearch: { ...config.skus.globalSearch, query: skuQ },
+    }),
+    [config.skus, skuQ, skuStatuses],
+  );
+
+  const productNameMap = useMemo(
+    () => new Map<string, string>(rawProducts.map((product) => [product.productId, product.name])),
+    [rawProducts],
+  );
+
+  const productSearchFields = useMemo(
+    () => [
+      { label: "Mã SP", value: "productId" as const, getValue: (row: Product) => row.productId },
+      { label: "Tên sản phẩm", value: "name" as const, getValue: (row: Product) => row.name },
+      {
+        label: "Danh mục",
+        value: "category" as const,
+        getValue: (row: Product) => categoryName(row.categoryId, categories),
+      },
+      { label: "Loại", value: "type" as const, getValue: (row: Product) => row.type },
+    ],
+    [categories],
+  );
+
+  const skuSearchFields = useMemo(
+    () => [
+      { label: "Mã SKU", value: "skuId" as const, getValue: (row: Sku) => row.skuId },
+      {
+        label: "Biến thể",
+        value: "variantLabel" as const,
+        getValue: (row: Sku) => row.variantLabel,
+      },
+      {
+        label: "Sản phẩm",
+        value: "product" as const,
+        getValue: (row: Sku) => productNameMap.get(row.productId) ?? row.productId,
+      },
+      { label: "Barcode", value: "barcode" as const, getValue: (row: Sku) => row.barcode },
+    ],
+    [productNameMap],
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.adminProductsConfig, JSON.stringify(config));
+  }, [config]);
+
+  const updateProductsConfig = (
+    updater: (current: ProductsPageConfig["products"]) => ProductsPageConfig["products"],
+  ) => setConfig((current) => ({ ...current, products: updater(current.products) }));
+  const updateSkusConfig = (
+    updater: (current: ProductsPageConfig["skus"]) => ProductsPageConfig["skus"],
+  ) => setConfig((current) => ({ ...current, skus: updater(current.skus) }));
+  const navigateToDetail = useCallback(
+    (product: Product) => router.push(ADMIN_ROUTES.products.detail(product.productId)),
+    [router],
+  );
+  const navigateToSkuDetail = useCallback(
+    (sku: Sku) => router.push(ADMIN_ROUTES.products.skuDetail(sku.skuId)),
+    [router],
+  );
+
+  const filteredProducts = useMemo(() => {
+    let list = rawProducts;
+    const pageConfig = productConfig;
+    if (!pageConfig.statuses.includes("all"))
+      list = list.filter((p) => pageConfig.statuses.includes(p.status));
+    const q = normalize(pageConfig.globalSearch.query);
+    if (q && pageConfig.globalSearch.fields.length > 0) {
+      const fieldMap = new Map(productSearchFields.map((field) => [field.value, field.getValue]));
+      list = list.filter((product) =>
+        pageConfig.globalSearch.fields.some((field) =>
+          normalize(fieldMap.get(field)?.(product) ?? "").includes(q),
+        ),
+      );
+    }
+    const idQuery = normalize(pageConfig.columnSearch.productId ?? "");
+    if (idQuery) list = list.filter((product) => normalize(product.productId).includes(idQuery));
+    const nameQuery = normalize(pageConfig.columnSearch.name ?? "");
+    if (nameQuery) list = list.filter((product) => normalize(product.name).includes(nameQuery));
+    const categoryQuery = normalize(pageConfig.columnSearch.category ?? "");
+    if (categoryQuery)
+      list = list.filter((product) =>
+        normalize(categoryName(product.categoryId, categories)).includes(categoryQuery),
+      );
+    return list;
+  }, [categories, productConfig, productSearchFields, rawProducts]);
+
+  const filteredSkus = useMemo(() => {
+    let list = rawSkus;
+    const pageConfig = skuConfig;
+    if (!pageConfig.statuses.includes("all"))
+      list = list.filter((sku) => pageConfig.statuses.includes(sku.status));
+    const q = normalize(pageConfig.globalSearch.query);
+    if (q && pageConfig.globalSearch.fields.length > 0) {
+      const fieldMap = new Map(skuSearchFields.map((field) => [field.value, field.getValue]));
+      list = list.filter((sku) =>
+        pageConfig.globalSearch.fields.some((field) =>
+          normalize(fieldMap.get(field)?.(sku) ?? "").includes(q),
+        ),
+      );
+    }
+    const skuQuery = normalize(pageConfig.columnSearch.skuId ?? "");
+    if (skuQuery) list = list.filter((sku) => normalize(sku.skuId).includes(skuQuery));
+    const variantQuery = normalize(pageConfig.columnSearch.variantLabel ?? "");
+    if (variantQuery)
+      list = list.filter((sku) => normalize(sku.variantLabel).includes(variantQuery));
+    const productQuery = normalize(pageConfig.columnSearch.product ?? "");
+    if (productQuery)
+      list = list.filter((sku) =>
+        normalize(productNameMap.get(sku.productId) ?? sku.productId).includes(productQuery),
+      );
+    return list;
+  }, [skuConfig, productNameMap, rawSkus, skuSearchFields]);
+
+  const productStats = useMemo(() => {
+    const stats = computeProductStatsSelector(filteredProducts, rawSkus);
+    const inactive = filteredProducts.filter(
+      (product) =>
+        product.status === PRODUCT_STATUS.INACTIVE ||
+        product.status === PRODUCT_STATUS.DISCONTINUED,
+    ).length;
+
+    return [
+      { label: "Tổng SP", value: stats.totalProducts.toString(), icon: Package },
+      { label: "Draft", value: stats.draftProducts.toString(), icon: Clock },
+      {
+        label: "Chờ duyệt",
+        value: filteredProducts
+          .filter((product) => product.status === PRODUCT_STATUS.PENDING_APPROVAL)
+          .length.toString(),
+        icon: PackageCheck,
+      },
+      {
+        label: "Đã duyệt",
+        value: filteredProducts
+          .filter((product) => product.status === PRODUCT_STATUS.APPROVED)
+          .length.toString(),
+        icon: CheckCircle,
+      },
+      { label: "Đang hoạt động", value: stats.activeProducts.toString(), icon: ShoppingBag },
+      { label: "Đã xuất bản", value: stats.publishedProducts.toString(), icon: Archive },
+      { label: "Ngừng KD", value: inactive.toString(), icon: XCircle },
+    ];
+  }, [filteredProducts, rawSkus]);
+
+  const skuStats = useMemo(() => {
+    const stats = computeSkuStatsSelector(filteredSkus);
+
+    return [
+      { label: "Tổng SKU", value: stats.total.toString(), icon: Tag },
+      { label: "Active", value: stats.active.toString(), icon: CheckCircle },
+      { label: "Blocked", value: stats.blocked.toString(), icon: XCircle },
+      { label: "Obsolete", value: stats.obsolete.toString(), icon: Archive },
+      { label: "Tồn kho", value: stats.totalStock.toLocaleString("vi-VN"), icon: Package },
+      { label: "Khả dụng", value: stats.available.toLocaleString("vi-VN"), icon: ShoppingBag },
+      { label: "Sắp hết", value: stats.lowStock.toString(), icon: Clock },
+    ];
+  }, [filteredSkus]);
+
+  const toggleProductStatus = (status: ProductStatusFilter) => {
+    if (status === "all") {
+      setProductStatuses([]);
+      return;
+    }
+    const next = productStatuses.includes(status)
+      ? productStatuses.filter((item) => item !== status)
+      : [...productStatuses, status];
+    setProductStatuses(next);
+  };
+  const toggleSkuStatus = (status: SkuStatusFilter) => {
+    if (status === "all") {
+      setSkuStatuses([]);
+      return;
+    }
+    const next = skuStatuses.includes(status)
+      ? skuStatuses.filter((item) => item !== status)
+      : [...skuStatuses, status];
+    setSkuStatuses(next);
+  };
+
+  const productColumns: (ColumnDef<Product> & { key: ProductTableColumnKey })[] = [
+    {
+      key: "productId",
+      header: "Mã SP",
+      sortable: true,
+      compare: (a, b) => a.productId.localeCompare(b.productId),
+      headerFilter: (
+        <ColumnFilterButton
+          value={productConfig.columnSearch.productId ?? ""}
+          label="Mã SP"
+          placeholder="Lọc mã SP"
+          onChange={(value) =>
+            updateProductsConfig((current) => ({
+              ...current,
+              columnSearch: { ...current.columnSearch, productId: value },
+            }))
+          }
+        />
+      ),
+      cell: (row) => (
+        <Link
+          href={ADMIN_ROUTES.products.detail(row.productId)}
+          onClick={(e) => e.stopPropagation()}
+          className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium hover:underline"
+        >
+          {row.productId}
+        </Link>
+      ),
+    },
+    {
+      key: "name",
+      header: "Tên sản phẩm",
+      sortable: true,
+      compare: (a, b) => a.name.localeCompare(b.name),
+      headerFilter: (
+        <ColumnFilterButton
+          value={productConfig.columnSearch.name ?? ""}
+          label="Tên sản phẩm"
+          placeholder="Lọc tên"
+          onChange={(value) =>
+            updateProductsConfig((current) => ({
+              ...current,
+              columnSearch: { ...current.columnSearch, name: value },
+            }))
+          }
+        />
+      ),
+      cell: (row) => (
+        <Link
+          href={ADMIN_ROUTES.products.detail(row.productId)}
+          onClick={(e) => e.stopPropagation()}
+          className="text-ink-primary hover:text-accent text-[0.8125rem] font-medium hover:underline"
+        >
+          {row.name}
+        </Link>
+      ),
+    },
+    {
+      ...textCell<Product>(
+        "category",
+        "Danh mục",
+        (row) => categoryName(row.categoryId, categories) || "—",
+        {
+          sortable: true,
+          compare: (a, b) =>
+            categoryName(a.categoryId, categories).localeCompare(
+              categoryName(b.categoryId, categories),
+            ),
+          color: "secondary",
+        },
+      ),
+      key: "category",
+      headerFilter: (
+        <ColumnFilterButton
+          value={productConfig.columnSearch.category ?? ""}
+          label="Danh mục"
+          placeholder="Lọc danh mục"
+          onChange={(value) =>
+            updateProductsConfig((current) => ({
+              ...current,
+              columnSearch: { ...current.columnSearch, category: value },
+            }))
+          }
+        />
+      ),
+    },
+    {
+      key: "type",
+      header: "Loại",
+      sortable: true,
+      compare: (a, b) => a.type.localeCompare(b.type),
+      cell: (row) => (
+        <span className="text-ink-secondary text-[0.8125rem]">
+          {row.type === "Customizable" ? "Tùy chỉnh" : "Tiêu chuẩn"}
+        </span>
+      ),
+    },
+    {
+      key: "skuCount",
+      header: "SKU",
+      align: "right",
+      sortable: true,
+      compare: (a, b) =>
+        productSkuCount(a.productId, rawSkus) - productSkuCount(b.productId, rawSkus),
+      cell: (row) => (
+        <span className="text-ink-primary font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium tabular-nums">
+          {productSkuCount(row.productId, rawSkus)}
+        </span>
+      ),
+    },
+    statusCell<Product>("status", "Trạng thái", (row) => row.status, "product", {
+      sortable: true,
+      compare: (a, b) => a.status.localeCompare(b.status),
+      withIcon: true,
+    }) as ColumnDef<Product> & { key: ProductTableColumnKey },
+    {
+      key: "actions",
+      header: "",
+      cell: (row) => (
+        <Link
+          href={ADMIN_ROUTES.products.detail(row.productId)}
+          onClick={(e) => e.stopPropagation()}
+          className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary flex size-7 items-center justify-center rounded-[var(--r-sm)] border transition-colors"
+          aria-label="Xem chi tiết"
+        >
+          <Eye className="size-3.5" />
+        </Link>
+      ),
+    },
+  ];
+
+  const skuColumns: (ColumnDef<Sku> & { key: SkuTableColumnKey })[] = [
+    {
+      key: "skuId",
+      header: "Mã SKU",
+      sortable: true,
+      compare: (a, b) => a.skuId.localeCompare(b.skuId),
+      headerFilter: (
+        <ColumnFilterButton
+          value={skuConfig.columnSearch.skuId ?? ""}
+          label="Mã SKU"
+          placeholder="Lọc SKU"
+          onChange={(value) =>
+            updateSkusConfig((current) => ({
+              ...current,
+              columnSearch: { ...current.columnSearch, skuId: value },
+            }))
+          }
+        />
+      ),
+      cell: (row) => (
+        <Link
+          href={ADMIN_ROUTES.products.skuDetail(row.skuId)}
+          onClick={(e) => e.stopPropagation()}
+          className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium hover:underline"
+        >
+          {row.skuId}
+        </Link>
+      ),
+    },
+    {
+      ...textCell<Sku>("variantLabel", "Biến thể", (row) => row.variantLabel, {
+        sortable: true,
+        compare: (a, b) => a.variantLabel.localeCompare(b.variantLabel),
+        color: "primary",
+      }),
+      key: "variantLabel",
+      headerFilter: (
+        <ColumnFilterButton
+          value={skuConfig.columnSearch.variantLabel ?? ""}
+          label="Biến thể"
+          placeholder="Lọc biến thể"
+          onChange={(value) =>
+            updateSkusConfig((current) => ({
+              ...current,
+              columnSearch: { ...current.columnSearch, variantLabel: value },
+            }))
+          }
+        />
+      ),
+    },
+    {
+      key: "productId",
+      header: "Sản phẩm",
+      sortable: true,
+      compare: (a, b) => a.productId.localeCompare(b.productId),
+      headerFilter: (
+        <ColumnFilterButton
+          value={skuConfig.columnSearch.product ?? ""}
+          label="Sản phẩm"
+          placeholder="Lọc sản phẩm"
+          onChange={(value) =>
+            updateSkusConfig((current) => ({
+              ...current,
+              columnSearch: { ...current.columnSearch, product: value },
+            }))
+          }
+        />
+      ),
+      cell: (row) => (
+        <Link
+          href={ADMIN_ROUTES.products.detail(row.productId)}
+          onClick={(e) => e.stopPropagation()}
+          className="text-ink-secondary hover:text-accent text-[0.8125rem] hover:underline"
+        >
+          {productNameMap.get(row.productId) ?? row.productId}
+        </Link>
+      ),
+    },
+    textCell<Sku>("uom", "UoM", (row) => row.uom, { color: "secondary" }) as ColumnDef<Sku> & {
+      key: SkuTableColumnKey;
+    },
+    numberCell<Sku>("stockOnHand", "Tồn kho", (row) => row.stockOnHand, {
+      sortable: true,
+      compare: (a, b) => a.stockOnHand - b.stockOnHand,
+    }) as ColumnDef<Sku> & { key: SkuTableColumnKey },
+    numberCell<Sku>("stockAvailable", "Khả dụng", (row) => row.stockAvailable, {
+      sortable: true,
+      compare: (a, b) => a.stockAvailable - b.stockAvailable,
+    }) as ColumnDef<Sku> & { key: SkuTableColumnKey },
+    moneyCell<Sku>("cost", "Giá vốn", (row) => row.cost, formatVnd, {
+      sortable: true,
+      compare: (a, b) => a.cost - b.cost,
+    }) as ColumnDef<Sku> & { key: SkuTableColumnKey },
+    statusCell<Sku>("status", "Trạng thái", (row) => row.status, "sku", {
+      sortable: true,
+      compare: (a, b) => a.status.localeCompare(b.status),
+      withIcon: true,
+    }) as ColumnDef<Sku> & { key: SkuTableColumnKey },
+    {
+      key: "actions",
+      header: "",
+      cell: (row) => (
+        <Link
+          href={ADMIN_ROUTES.products.skuDetail(row.skuId)}
+          onClick={(e) => e.stopPropagation()}
+          className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary flex size-7 items-center justify-center rounded-[var(--r-sm)] border transition-colors"
+          aria-label="Xem chi tiết"
+        >
+          <Eye className="size-3.5" />
+        </Link>
+      ),
+    },
+  ];
+
+  const renderToolbar = () => {
+    if (activeTab === "products") {
+      const pageConfig = productConfig;
+      const hasStatusFilter = !pageConfig.statuses.includes("all");
+      const hasGlobalSearch = Boolean(pageConfig.globalSearch.query.trim());
+      const activeColumnSearch = Object.entries(pageConfig.columnSearch).filter(([, value]) =>
+        value?.trim(),
+      );
+      const hasFieldConfig =
+        pageConfig.globalSearch.fields.length !==
+          DEFAULT_CONFIG.products.globalSearch.fields.length ||
+        pageConfig.globalSearch.fields.some(
+          (field) => !DEFAULT_CONFIG.products.globalSearch.fields.includes(field),
+        );
+      const visibleColumnCount = pageConfig.visibleColumns.filter(
+        (column) => column !== "actions",
+      ).length;
+      const hasColumnConfig = visibleColumnCount !== PRODUCT_DEFAULT_COLUMNS.length - 1;
+      const hasAnyConfig =
+        hasStatusFilter ||
+        hasGlobalSearch ||
+        hasFieldConfig ||
+        activeColumnSearch.length > 0 ||
+        pageConfig.showStats ||
+        hasColumnConfig;
+      const summaryItems: ListSummaryItem[] = [
+        { label: "Stats", value: pageConfig.showStats ? "Đang hiện" : "Đang ẩn" },
+        {
+          label: "Trạng thái",
+          value: pageConfig.statuses
+            .map(
+              (status) =>
+                PRODUCT_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status,
+            )
+            .join(", "),
+          active: hasStatusFilter,
+          onClear: () => setProductStatuses([]),
+        },
+        {
+          label: "Search chính",
+          value: hasGlobalSearch ? `“${pageConfig.globalSearch.query}”` : "Chưa dùng",
+          active: hasGlobalSearch,
+          onClear: () => setProductQ(""),
+        },
+        {
+          label: "Trường search",
+          value:
+            pageConfig.globalSearch.fields
+              .map(
+                (field) =>
+                  productSearchFields.find((option) => option.value === field)?.label ?? field,
+              )
+              .join(", ") || "Chưa chọn",
+          active: hasFieldConfig,
+          onClear: () =>
+            updateProductsConfig((current) => ({
+              ...current,
+              globalSearch: {
+                ...current.globalSearch,
+                fields: DEFAULT_CONFIG.products.globalSearch.fields,
+              },
+            })),
+        },
+        {
+          label: "Search trong cột",
+          value: activeColumnSearch.length
+            ? activeColumnSearch
+                .map(
+                  ([key, value]) =>
+                    `${PRODUCT_COLUMN_SEARCH_LABELS[key as ProductColumnSearchKey]} “${value}”`,
+                )
+                .join(", ")
+            : "Chưa dùng",
+          active: activeColumnSearch.length > 0,
+          onClear: () => updateProductsConfig((current) => ({ ...current, columnSearch: {} })),
+        },
+        {
+          label: "Cột hiển thị",
+          value: `${visibleColumnCount}/${PRODUCT_DEFAULT_COLUMNS.length - 1}`,
+          active: hasColumnConfig,
+          onClear: () =>
+            updateProductsConfig((current) => ({
+              ...current,
+              visibleColumns: PRODUCT_DEFAULT_COLUMNS,
+            })),
+        },
+      ];
+      return (
+        <ListToolbar
+          search={pageConfig.globalSearch.query}
+          onSearchChange={setProductQ}
+          searchPlaceholder="Tìm sản phẩm theo mã, tên, danh mục..."
+          statusOptions={PRODUCT_STATUS_OPTIONS}
+          selectedStatuses={pageConfig.statuses}
+          onToggleStatus={toggleProductStatus}
+          onClearStatuses={() => setProductStatuses([])}
+          hasStatusFilter={hasStatusFilter}
+          fieldOptions={productSearchFields}
+          selectedFields={pageConfig.globalSearch.fields}
+          defaultFields={DEFAULT_CONFIG.products.globalSearch.fields}
+          onToggleField={(field) =>
+            updateProductsConfig((current) => ({
+              ...current,
+              globalSearch: {
+                ...current.globalSearch,
+                fields: current.globalSearch.fields.includes(field)
+                  ? current.globalSearch.fields.filter((item) => item !== field)
+                  : [...current.globalSearch.fields, field],
+              },
+            }))
+          }
+          onResetFields={() =>
+            updateProductsConfig((current) => ({
+              ...current,
+              globalSearch: {
+                ...current.globalSearch,
+                fields: DEFAULT_CONFIG.products.globalSearch.fields,
+              },
+            }))
+          }
+          onSelectAllFields={() =>
+            updateProductsConfig((current) => ({
+              ...current,
+              globalSearch: {
+                ...current.globalSearch,
+                fields: productSearchFields.map((field) => field.value),
+              },
+            }))
+          }
+          hasFieldConfig={hasFieldConfig}
+          columnOptions={PRODUCT_DEFAULT_COLUMNS.map((column) => ({
+            label: PRODUCT_COLUMN_LABELS[column],
+            value: column,
+          }))}
+          selectedColumns={pageConfig.visibleColumns}
+          defaultColumns={PRODUCT_DEFAULT_COLUMNS}
+          lockedColumns={["actions"]}
+          visibleColumnCount={visibleColumnCount}
+          onToggleColumn={(column) =>
+            column !== "actions" &&
+            updateProductsConfig((current) => ({
+              ...current,
+              visibleColumns: current.visibleColumns.includes(column)
+                ? current.visibleColumns.filter((item) => item !== column)
+                : [...current.visibleColumns, column],
+            }))
+          }
+          onResetColumns={() =>
+            updateProductsConfig((current) => ({
+              ...current,
+              visibleColumns: PRODUCT_DEFAULT_COLUMNS,
+            }))
+          }
+          hasColumnConfig={hasColumnConfig}
+          selectedCount={prodSelectedKeys.size}
+          onBulkDelete={() => {
+            toast.info(
+              "Xoá sản phẩm",
+              `Đã chọn ${prodSelectedKeys.size} sản phẩm. Chức năng này đang ở UI-only.`,
+            );
+            setProdSelectedKeys(new Set());
+          }}
+          onExport={() =>
+            toast.success(
+              "Xuất file mock",
+              `Sẵn sàng xuất ${filteredProducts.length} sản phẩm đang hiển thị.`,
+            )
+          }
+          summaryItems={summaryItems}
+          onResetAll={() => {
+            updateProductsConfig(() => DEFAULT_CONFIG.products);
+            setProductQ("");
+            setProductStatuses([]);
+          }}
+          resetDisabled={!hasAnyConfig}
+        />
+      );
+    }
+
+    const pageConfig = skuConfig;
+    const hasStatusFilter = !pageConfig.statuses.includes("all");
+    const hasGlobalSearch = Boolean(pageConfig.globalSearch.query.trim());
+    const activeColumnSearch = Object.entries(pageConfig.columnSearch).filter(([, value]) =>
+      value?.trim(),
+    );
+    const hasFieldConfig =
+      pageConfig.globalSearch.fields.length !== DEFAULT_CONFIG.skus.globalSearch.fields.length ||
+      pageConfig.globalSearch.fields.some(
+        (field) => !DEFAULT_CONFIG.skus.globalSearch.fields.includes(field),
+      );
+    const visibleColumnCount = pageConfig.visibleColumns.filter(
+      (column) => column !== "actions",
+    ).length;
+    const hasColumnConfig = visibleColumnCount !== SKU_DEFAULT_COLUMNS.length - 1;
+    const hasAnyConfig =
+      hasStatusFilter ||
+      hasGlobalSearch ||
+      hasFieldConfig ||
+      activeColumnSearch.length > 0 ||
+      pageConfig.showStats ||
+      hasColumnConfig;
+    const summaryItems: ListSummaryItem[] = [
+      { label: "Stats", value: pageConfig.showStats ? "Đang hiện" : "Đang ẩn" },
+      {
+        label: "Trạng thái",
+        value: pageConfig.statuses
+          .map(
+            (status) =>
+              SKU_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status,
+          )
+          .join(", "),
+        active: hasStatusFilter,
+        onClear: () => setSkuStatuses([]),
+      },
+      {
+        label: "Search chính",
+        value: hasGlobalSearch ? `“${pageConfig.globalSearch.query}”` : "Chưa dùng",
+        active: hasGlobalSearch,
+        onClear: () => setSkuQ(""),
+      },
+      {
+        label: "Trường search",
+        value:
+          pageConfig.globalSearch.fields
+            .map(
+              (field) => skuSearchFields.find((option) => option.value === field)?.label ?? field,
+            )
+            .join(", ") || "Chưa chọn",
+        active: hasFieldConfig,
+        onClear: () =>
+          updateSkusConfig((current) => ({
+            ...current,
+            globalSearch: {
+              ...current.globalSearch,
+              fields: DEFAULT_CONFIG.skus.globalSearch.fields,
+            },
+          })),
+      },
+      {
+        label: "Search trong cột",
+        value: activeColumnSearch.length
+          ? activeColumnSearch
+              .map(
+                ([key, value]) =>
+                  `${SKU_COLUMN_SEARCH_LABELS[key as SkuColumnSearchKey]} “${value}”`,
+              )
+              .join(", ")
+          : "Chưa dùng",
+        active: activeColumnSearch.length > 0,
+        onClear: () => updateSkusConfig((current) => ({ ...current, columnSearch: {} })),
+      },
+      {
+        label: "Cột hiển thị",
+        value: `${visibleColumnCount}/${SKU_DEFAULT_COLUMNS.length - 1}`,
+        active: hasColumnConfig,
+        onClear: () =>
+          updateSkusConfig((current) => ({ ...current, visibleColumns: SKU_DEFAULT_COLUMNS })),
+      },
+    ];
+    return (
+      <ListToolbar
+        search={pageConfig.globalSearch.query}
+        onSearchChange={setSkuQ}
+        searchPlaceholder="Tìm SKU theo mã, biến thể, barcode..."
+        statusOptions={SKU_STATUS_OPTIONS}
+        selectedStatuses={pageConfig.statuses}
+        onToggleStatus={toggleSkuStatus}
+        onClearStatuses={() => setSkuStatuses([])}
+        hasStatusFilter={hasStatusFilter}
+        fieldOptions={skuSearchFields}
+        selectedFields={pageConfig.globalSearch.fields}
+        defaultFields={DEFAULT_CONFIG.skus.globalSearch.fields}
+        onToggleField={(field) =>
+          updateSkusConfig((current) => ({
+            ...current,
+            globalSearch: {
+              ...current.globalSearch,
+              fields: current.globalSearch.fields.includes(field)
+                ? current.globalSearch.fields.filter((item) => item !== field)
+                : [...current.globalSearch.fields, field],
+            },
+          }))
+        }
+        onResetFields={() =>
+          updateSkusConfig((current) => ({
+            ...current,
+            globalSearch: {
+              ...current.globalSearch,
+              fields: DEFAULT_CONFIG.skus.globalSearch.fields,
+            },
+          }))
+        }
+        onSelectAllFields={() =>
+          updateSkusConfig((current) => ({
+            ...current,
+            globalSearch: {
+              ...current.globalSearch,
+              fields: skuSearchFields.map((field) => field.value),
+            },
+          }))
+        }
+        hasFieldConfig={hasFieldConfig}
+        columnOptions={SKU_DEFAULT_COLUMNS.map((column) => ({
+          label: SKU_COLUMN_LABELS[column],
+          value: column,
+        }))}
+        selectedColumns={pageConfig.visibleColumns}
+        defaultColumns={SKU_DEFAULT_COLUMNS}
+        lockedColumns={["actions"]}
+        visibleColumnCount={visibleColumnCount}
+        onToggleColumn={(column) =>
+          column !== "actions" &&
+          updateSkusConfig((current) => ({
+            ...current,
+            visibleColumns: current.visibleColumns.includes(column)
+              ? current.visibleColumns.filter((item) => item !== column)
+              : [...current.visibleColumns, column],
+          }))
+        }
+        onResetColumns={() =>
+          updateSkusConfig((current) => ({ ...current, visibleColumns: SKU_DEFAULT_COLUMNS }))
+        }
+        hasColumnConfig={hasColumnConfig}
+        selectedCount={skuSelectedKeys.size}
+        onBulkDelete={() => {
+          toast.info(
+            "Xoá SKU",
+            `Đã chọn ${skuSelectedKeys.size} SKU. Chức năng này đang ở UI-only.`,
+          );
+          setSkuSelectedKeys(new Set());
+        }}
+        onExport={() =>
+          toast.success("Xuất file mock", `Sẵn sàng xuất ${filteredSkus.length} SKU đang hiển thị.`)
+        }
+        summaryItems={summaryItems}
+        onResetAll={() => {
+          updateSkusConfig(() => DEFAULT_CONFIG.skus);
+          setSkuQ("");
+          setSkuStatuses([]);
+        }}
+        resetDisabled={!hasAnyConfig}
+      />
+    );
+  };
+
+  if (isLoading) {
+    return <Skeleton className="h-[640px] rounded-[var(--card-radius)]" />;
+  }
+
+  return (
+    <>
+      <PageHeader
+        title="Sản phẩm & SKU"
+        breadcrumbs={[{ label: "Back-office", href: ADMIN_ROUTES.home }, { label: "Sản phẩm" }]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={
+                (activeTab === "products" ? productConfig.showStats : skuConfig.showStats)
+                  ? "secondary"
+                  : "outline"
+              }
+              size="sm"
+              onClick={() =>
+                activeTab === "products"
+                  ? updateProductsConfig((current) => ({
+                      ...current,
+                      showStats: !current.showStats,
+                    }))
+                  : updateSkusConfig((current) => ({ ...current, showStats: !current.showStats }))
+              }
+              className={cn(
+                "rounded-[var(--r-sm)]",
+                (activeTab === "products" ? productConfig.showStats : skuConfig.showStats) &&
+                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+              )}
+            >
+              <BarChart3 className="size-3.5" />
+              {(activeTab === "products" ? productConfig.showStats : skuConfig.showStats)
+                ? "Ẩn thống kê"
+                : "Hiện thống kê"}
+            </Button>
+            {activeTab === "products" ? (
+              <Button
+                variant="default"
+                type="button"
+                size="sm"
+                onClick={() => router.push(ADMIN_ROUTES.products.create)}
+                className="bg-brand !text-ink-inverse hover:bg-brand-hover hover:!text-ink-inverse rounded-[var(--r-sm)]"
+              >
+                <Plus className="size-3.5" />
+                Tạo sản phẩm
+              </Button>
+            ) : (
+              <span className="border-border-default bg-bg-subtle text-ink-tertiary inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border px-3 py-1.5 text-xs">
+                SKU tự sinh từ tổ hợp biến thể
+              </span>
+            )}
+          </div>
+        }
+      />
+
+      <div className="border-border-default mb-4 flex gap-0 border-b">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const Icon = tab.icon;
+          return (
+            <Button
+              key={tab.key}
+              type="button"
+              variant="ghost"
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "hover:bg-bg-muted/60 h-auto rounded-none border-b-2 bg-transparent px-4 py-2 text-[0.8125rem] font-medium transition-colors",
+                isActive
+                  ? "border-accent text-accent hover:text-accent"
+                  : "text-ink-tertiary hover:text-ink-primary border-transparent",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {tab.label}
+              <span
+                className={cn(
+                  "ml-1 rounded-full px-1.5 py-0.5 text-[0.625rem] font-semibold tabular-nums",
+                  isActive ? "bg-accent/10 text-accent" : "bg-bg-muted text-ink-tertiary",
+                )}
+              >
+                {tab.key === "products" ? rawProducts.length : rawSkus.length}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+
+      {activeTab === "products" ? (
+        <>
+          <ListStatsPanel
+            stats={productStats}
+            open={productConfig.showStats}
+            gridClassName="lg:grid-cols-4 xl:grid-cols-7"
+          />
+          {renderToolbar()}
+          <DataTable
+            data={filteredProducts}
+            columns={productColumns.filter((column) =>
+              productConfig.visibleColumns.includes(column.key),
+            )}
+            rowKey={(row) => row.productId}
+            caption={`Hiển thị ${filteredProducts.length} sản phẩm`}
+            flagRow={shouldFlagProductRow}
+            onRowClick={navigateToDetail}
+            selectable
+            selectedKeys={prodSelectedKeys}
+            onSelectionChange={setProdSelectedKeys}
+            pageSize={15}
+          />
+        </>
+      ) : (
+        <>
+          <ListStatsPanel
+            stats={skuStats}
+            open={skuConfig.showStats}
+            gridClassName="lg:grid-cols-4 xl:grid-cols-7"
+          />
+          {renderToolbar()}
+          <DataTable
+            data={filteredSkus}
+            columns={skuColumns.filter((column) => skuConfig.visibleColumns.includes(column.key))}
+            rowKey={(row) => row.skuId}
+            caption={`Hiển thị ${filteredSkus.length} SKU`}
+            flagRow={shouldFlagSkuRow}
+            onRowClick={navigateToSkuDetail}
+            selectable
+            selectedKeys={skuSelectedKeys}
+            onSelectionChange={setSkuSelectedKeys}
+            pageSize={15}
+          />
+        </>
+      )}
+    </>
+  );
+}

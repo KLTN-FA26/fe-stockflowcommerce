@@ -2,11 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BarChart3, AlertTriangle, CheckCircle, ClipboardList, Clock, Eye, Package, ReceiptText, Truck } from "lucide-react";
+import {
+  BarChart3,
+  AlertTriangle,
+  CheckCircle,
+  ClipboardList,
+  Clock,
+  Eye,
+  Package,
+  ReceiptText,
+  Truck,
+} from "lucide-react";
 import { cn } from "cn";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
-import { ColumnFilterButton, ListToolbar, type ListSummaryItem } from "@/components/shared/ListToolbar";
+import {
+  ColumnFilterButton,
+  ListToolbar,
+  type ListSummaryItem,
+} from "@/components/shared/ListToolbar";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { OrderDetailPanel } from "@/components/backoffice/OrderDetailPanel";
 import { toast } from "@/components/shared/Toast";
@@ -18,7 +32,8 @@ import { STATUS_LABEL_VI } from "@/lib/status-map";
 type OrderStatusFilter = "all" | Order["status"];
 type OrderSearchField = "orderNumber" | "recipientName" | "recipientPhone" | "orderId";
 type OrderColumnSearchKey = "orderNumber" | "recipientName";
-type OrderTableColumnKey = "orderNumber" | "recipientName" | "placedAt" | "grandTotal" | "status" | "actions";
+type OrderTableColumnKey =
+  "orderNumber" | "recipientName" | "placedAt" | "grandTotal" | "status" | "actions";
 
 interface OrdersPageConfig {
   showStats: boolean;
@@ -32,7 +47,14 @@ interface OrdersPageConfig {
 }
 
 const STORAGE_KEY = "stockflow:admin:orders:config";
-const DEFAULT_VISIBLE_COLUMNS: OrderTableColumnKey[] = ["orderNumber", "recipientName", "placedAt", "grandTotal", "status", "actions"];
+const DEFAULT_VISIBLE_COLUMNS: OrderTableColumnKey[] = [
+  "orderNumber",
+  "recipientName",
+  "placedAt",
+  "grandTotal",
+  "status",
+  "actions",
+];
 const DEFAULT_CONFIG: OrdersPageConfig = {
   showStats: false,
   statuses: ["all"],
@@ -63,9 +85,16 @@ const STATUS_OPTIONS = [
   "Delivery Failed",
   "Return Requested",
   "Closed",
-].map((value) => ({ label: value === "all" ? "Tất cả" : STATUS_LABEL_VI[value] ?? value, value: value as OrderStatusFilter }));
+].map((value) => ({
+  label: value === "all" ? "Tất cả" : (STATUS_LABEL_VI[value] ?? value),
+  value: value as OrderStatusFilter,
+}));
 
-const SEARCH_FIELDS: { label: string; value: OrderSearchField; getValue: (order: Order) => string }[] = [
+const SEARCH_FIELDS: {
+  label: string;
+  value: OrderSearchField;
+  getValue: (order: Order) => string;
+}[] = [
   { label: "Mã đơn", value: "orderNumber", getValue: (order) => order.orderNumber },
   { label: "Khách", value: "recipientName", getValue: (order) => order.recipientName },
   { label: "SĐT", value: "recipientPhone", getValue: (order) => order.recipientPhone },
@@ -87,18 +116,26 @@ const TABLE_COLUMN_LABELS: Record<OrderTableColumnKey, string> = {
 };
 
 function formatCompactVND(amount: number): string {
-  if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ ₫`;
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr ₫`;
+  if (amount >= 1_000_000_000)
+    return `${(amount / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ ₫`;
+  if (amount >= 1_000_000)
+    return `${(amount / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr ₫`;
   return formatVND(amount);
 }
 
 function computeStats(list: Order[]) {
   const total = list.length;
   const pending = list.filter((o) => o.status === "Pending Payment").length;
-  const processing = list.filter((o) => ["Confirmed", "In Production", "Ready to Fulfill", "Picking", "Packed"].includes(o.status)).length;
+  const processing = list.filter((o) =>
+    ["Confirmed", "In Production", "Ready to Fulfill", "Picking", "Packed"].includes(o.status),
+  ).length;
   const shipped = list.filter((o) => ["Shipped", "In Transit"].includes(o.status)).length;
   const delivered = list.filter((o) => o.status === "Delivered").length;
-  const attention = list.filter((o) => ["Payment Failed", "Delivery Failed", "On Hold", "Partially Fulfilled", "Cancelled"].includes(o.status)).length;
+  const attention = list.filter((o) =>
+    ["Payment Failed", "Delivery Failed", "On Hold", "Partially Fulfilled", "Cancelled"].includes(
+      o.status,
+    ),
+  ).length;
   const revenue = list.reduce((s, o) => s + o.grandTotal, 0);
 
   return [
@@ -117,47 +154,53 @@ function normalize(value: string) {
 }
 
 function shouldFlag(row: Order): boolean {
-  return ["Payment Failed", "Delivery Failed", "On Hold", "Partially Fulfilled"].includes(row.status);
+  return ["Payment Failed", "Delivery Failed", "On Hold", "Partially Fulfilled"].includes(
+    row.status,
+  );
+}
+
+function readInitialConfig(): OrdersPageConfig {
+  if (typeof window === "undefined") return DEFAULT_CONFIG;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_CONFIG;
+
+    const stored = JSON.parse(raw) as Partial<OrdersPageConfig>;
+    return {
+      ...DEFAULT_CONFIG,
+      ...stored,
+      globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
+      columnSearch: stored.columnSearch ?? {},
+      visibleColumns: stored.visibleColumns?.length
+        ? stored.visibleColumns
+        : DEFAULT_VISIBLE_COLUMNS,
+    };
+  } catch {
+    return DEFAULT_CONFIG;
+  }
 }
 
 export default function OrdersPage() {
-  const [config, setConfig] = useState<OrdersPageConfig>(DEFAULT_CONFIG);
-  const [mounted, setMounted] = useState(false);
+  const [config, setConfig] = useState<OrdersPageConfig>(readInitialConfig);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const stored = JSON.parse(raw) as Partial<OrdersPageConfig>;
-        setConfig({
-          ...DEFAULT_CONFIG,
-          ...stored,
-          globalSearch: { ...DEFAULT_CONFIG.globalSearch, ...stored.globalSearch },
-          columnSearch: stored.columnSearch ?? {},
-          visibleColumns: stored.visibleColumns?.length ? stored.visibleColumns : DEFAULT_VISIBLE_COLUMNS,
-        });
-      }
-    } catch {
-      setConfig(DEFAULT_CONFIG);
-    }
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  }, [config, mounted]);
+  }, [config]);
 
-  const updateConfig = (updater: (current: OrdersPageConfig) => OrdersPageConfig) => setConfig((current) => updater(current));
+  const updateConfig = (updater: (current: OrdersPageConfig) => OrdersPageConfig) =>
+    setConfig((current) => updater(current));
 
   const toggleStatus = (status: OrderStatusFilter) => {
     updateConfig((current) => {
       if (status === "all") return { ...current, statuses: ["all"] };
       const withoutAll = current.statuses.filter((item) => item !== "all");
-      const next = withoutAll.includes(status) ? withoutAll.filter((item) => item !== status) : [...withoutAll, status];
+      const next = withoutAll.includes(status)
+        ? withoutAll.filter((item) => item !== status)
+        : [...withoutAll, status];
       return { ...current, statuses: next.length ? next : ["all"] };
     });
   };
@@ -177,12 +220,20 @@ export default function OrdersPage() {
       const visibleColumns = current.visibleColumns.includes(column)
         ? current.visibleColumns.filter((item) => item !== column)
         : [...current.visibleColumns, column];
-      return { ...current, visibleColumns: visibleColumns.includes("actions") ? visibleColumns : [...visibleColumns, "actions"] };
+      return {
+        ...current,
+        visibleColumns: visibleColumns.includes("actions")
+          ? visibleColumns
+          : [...visibleColumns, "actions"],
+      };
     });
   };
 
   const updateColumnSearch = (key: OrderColumnSearchKey, value: string) => {
-    updateConfig((current) => ({ ...current, columnSearch: { ...current.columnSearch, [key]: value } }));
+    updateConfig((current) => ({
+      ...current,
+      columnSearch: { ...current.columnSearch, [key]: value },
+    }));
   };
 
   const clearColumnSearch = () => updateConfig((current) => ({ ...current, columnSearch: {} }));
@@ -190,33 +241,56 @@ export default function OrdersPage() {
 
   const filtered = useMemo(() => {
     let list = orders;
-    if (!config.statuses.includes("all")) list = list.filter((order) => config.statuses.includes(order.status));
+    if (!config.statuses.includes("all"))
+      list = list.filter((order) => config.statuses.includes(order.status));
 
     const q = normalize(config.globalSearch.query);
     if (q && config.globalSearch.fields.length > 0) {
       const fieldMap = new Map(SEARCH_FIELDS.map((field) => [field.value, field.getValue]));
-      list = list.filter((order) => config.globalSearch.fields.some((field) => normalize(fieldMap.get(field)?.(order) ?? "").includes(q)));
+      list = list.filter((order) =>
+        config.globalSearch.fields.some((field) =>
+          normalize(fieldMap.get(field)?.(order) ?? "").includes(q),
+        ),
+      );
     }
 
     const orderNumberQuery = normalize(config.columnSearch.orderNumber ?? "");
-    if (orderNumberQuery) list = list.filter((order) => normalize(order.orderNumber).includes(orderNumberQuery));
+    if (orderNumberQuery)
+      list = list.filter((order) => normalize(order.orderNumber).includes(orderNumberQuery));
     const recipientQuery = normalize(config.columnSearch.recipientName ?? "");
-    if (recipientQuery) list = list.filter((order) => normalize(`${order.recipientName} ${order.recipientPhone}`).includes(recipientQuery));
+    if (recipientQuery)
+      list = list.filter((order) =>
+        normalize(`${order.recipientName} ${order.recipientPhone}`).includes(recipientQuery),
+      );
 
     return list;
   }, [config]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
-  const selectedEvents = useMemo(() => (selectedOrder ? orderEvents.filter((event) => event.orderId === selectedOrder.orderId) : []), [selectedOrder]);
+  const selectedEvents = useMemo(
+    () =>
+      selectedOrder ? orderEvents.filter((event) => event.orderId === selectedOrder.orderId) : [],
+    [selectedOrder],
+  );
 
   const hasStatusFilter = !config.statuses.includes("all");
   const hasGlobalSearch = Boolean(config.globalSearch.query.trim());
-  const activeColumnSearch = Object.entries(config.columnSearch).filter(([, value]) => value?.trim());
+  const activeColumnSearch = Object.entries(config.columnSearch).filter(([, value]) =>
+    value?.trim(),
+  );
   const defaultSearchFields = DEFAULT_CONFIG.globalSearch.fields;
-  const hasFieldConfig = config.globalSearch.fields.length !== defaultSearchFields.length || config.globalSearch.fields.some((field) => !defaultSearchFields.includes(field));
+  const hasFieldConfig =
+    config.globalSearch.fields.length !== defaultSearchFields.length ||
+    config.globalSearch.fields.some((field) => !defaultSearchFields.includes(field));
   const visibleColumnCount = config.visibleColumns.filter((column) => column !== "actions").length;
   const hasColumnConfig = visibleColumnCount !== DEFAULT_VISIBLE_COLUMNS.length - 1;
-  const hasAnyConfig = hasStatusFilter || hasGlobalSearch || hasFieldConfig || activeColumnSearch.length > 0 || config.showStats || hasColumnConfig;
+  const hasAnyConfig =
+    hasStatusFilter ||
+    hasGlobalSearch ||
+    hasFieldConfig ||
+    activeColumnSearch.length > 0 ||
+    config.showStats ||
+    hasColumnConfig;
 
   const openPanel = (order: Order) => {
     setSelectedOrder(order);
@@ -229,11 +303,18 @@ export default function OrdersPage() {
       header: "Mã đơn",
       sortable: true,
       compare: (a, b) => a.orderNumber.localeCompare(b.orderNumber),
-      headerFilter: <ColumnFilterButton value={config.columnSearch.orderNumber ?? ""} label="Mã đơn" placeholder="Lọc mã đơn" onChange={(value) => updateColumnSearch("orderNumber", value)} />,
+      headerFilter: (
+        <ColumnFilterButton
+          value={config.columnSearch.orderNumber ?? ""}
+          label="Mã đơn"
+          placeholder="Lọc mã đơn"
+          onChange={(value) => updateColumnSearch("orderNumber", value)}
+        />
+      ),
       cell: (row) => (
         <Link
           href={`/admin/orders/${row.orderId}`}
-          className="font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium text-accent hover:underline"
+          className="text-accent font-[family-name:var(--font-mono)] text-[0.8125rem] font-medium hover:underline"
           onClick={(event) => {
             event.preventDefault();
             openPanel(row);
@@ -248,8 +329,15 @@ export default function OrdersPage() {
       header: "Khách",
       sortable: true,
       compare: (a, b) => a.recipientName.localeCompare(b.recipientName),
-      headerFilter: <ColumnFilterButton value={config.columnSearch.recipientName ?? ""} label="Khách" placeholder="Tên / SĐT" onChange={(value) => updateColumnSearch("recipientName", value)} />,
-      cell: (row) => <span className="text-[0.8125rem] text-ink-primary">{row.recipientName}</span>,
+      headerFilter: (
+        <ColumnFilterButton
+          value={config.columnSearch.recipientName ?? ""}
+          label="Khách"
+          placeholder="Tên / SĐT"
+          onChange={(value) => updateColumnSearch("recipientName", value)}
+        />
+      ),
+      cell: (row) => <span className="text-ink-primary text-[0.8125rem]">{row.recipientName}</span>,
     },
     dateCell<Order>("placedAt", "Ngày đặt", (row) => row.placedAt, {
       sortable: true,
@@ -276,7 +364,7 @@ export default function OrdersPage() {
             event.stopPropagation();
             openPanel(row);
           }}
-          className="rounded-[var(--r-sm)] border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary"
+          className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)]"
           aria-label="Xem chi tiết"
         >
           <Eye className="size-3.5" />
@@ -288,11 +376,56 @@ export default function OrdersPage() {
   const visibleColumns = columns.filter((column) => config.visibleColumns.includes(column.key));
   const summaryItems: ListSummaryItem[] = [
     { label: "Stats", value: config.showStats ? "Đang hiện" : "Đang ẩn" },
-    { label: "Trạng thái", value: config.statuses.map((status) => STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status).join(", "), active: hasStatusFilter, onClear: () => updateConfig((current) => ({ ...current, statuses: ["all"] })) },
-    { label: "Search chính", value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng", active: hasGlobalSearch, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: "" } })) },
-    { label: "Trường search", value: config.globalSearch.fields.map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field).join(", ") || "Chưa chọn", active: hasFieldConfig, onClear: () => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } })) },
-    { label: "Search trong cột", value: activeColumnSearch.length ? activeColumnSearch.map(([key, value]) => `${COLUMN_SEARCH_LABELS[key as OrderColumnSearchKey]} “${value}”`).join(", ") : "Chưa dùng", active: activeColumnSearch.length > 0, onClear: clearColumnSearch },
-    { label: "Cột hiển thị", value: `${visibleColumnCount}/${DEFAULT_VISIBLE_COLUMNS.length - 1}`, active: hasColumnConfig, onClear: () => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS })) },
+    {
+      label: "Trạng thái",
+      value: config.statuses
+        .map((status) => STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status)
+        .join(", "),
+      active: hasStatusFilter,
+      onClear: () => updateConfig((current) => ({ ...current, statuses: ["all"] })),
+    },
+    {
+      label: "Search chính",
+      value: hasGlobalSearch ? `“${config.globalSearch.query}”` : "Chưa dùng",
+      active: hasGlobalSearch,
+      onClear: () =>
+        updateConfig((current) => ({
+          ...current,
+          globalSearch: { ...current.globalSearch, query: "" },
+        })),
+    },
+    {
+      label: "Trường search",
+      value:
+        config.globalSearch.fields
+          .map((field) => SEARCH_FIELDS.find((option) => option.value === field)?.label ?? field)
+          .join(", ") || "Chưa chọn",
+      active: hasFieldConfig,
+      onClear: () =>
+        updateConfig((current) => ({
+          ...current,
+          globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields },
+        })),
+    },
+    {
+      label: "Search trong cột",
+      value: activeColumnSearch.length
+        ? activeColumnSearch
+            .map(
+              ([key, value]) => `${COLUMN_SEARCH_LABELS[key as OrderColumnSearchKey]} “${value}”`,
+            )
+            .join(", ")
+        : "Chưa dùng",
+      active: activeColumnSearch.length > 0,
+      onClear: clearColumnSearch,
+    },
+    {
+      label: "Cột hiển thị",
+      value: `${visibleColumnCount}/${DEFAULT_VISIBLE_COLUMNS.length - 1}`,
+      active: hasColumnConfig,
+      onClear: () =>
+        updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS })),
+    },
   ];
 
   return (
@@ -305,8 +438,14 @@ export default function OrdersPage() {
             type="button"
             variant={config.showStats ? "secondary" : "outline"}
             size="sm"
-            onClick={() => updateConfig((current) => ({ ...current, showStats: !current.showStats }))}
-            className={cn("rounded-[var(--r-sm)]", config.showStats && "border border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent")}
+            onClick={() =>
+              updateConfig((current) => ({ ...current, showStats: !current.showStats }))
+            }
+            className={cn(
+              "rounded-[var(--r-sm)]",
+              config.showStats &&
+                "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+            )}
           >
             <BarChart3 className="size-3.5" />
             {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
@@ -314,11 +453,20 @@ export default function OrdersPage() {
         }
       />
 
-      <ListStatsPanel stats={stats} open={config.showStats} gridClassName="lg:grid-cols-4 xl:grid-cols-7" />
+      <ListStatsPanel
+        stats={stats}
+        open={config.showStats}
+        gridClassName="lg:grid-cols-4 xl:grid-cols-7"
+      />
 
       <ListToolbar
         search={config.globalSearch.query}
-        onSearchChange={(value) => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, query: value } }))}
+        onSearchChange={(value) =>
+          updateConfig((current) => ({
+            ...current,
+            globalSearch: { ...current.globalSearch, query: value },
+          }))
+        }
         searchPlaceholder="Tìm đơn theo mã, khách, SĐT..."
         statusOptions={STATUS_OPTIONS}
         selectedStatuses={config.statuses}
@@ -329,23 +477,49 @@ export default function OrdersPage() {
         selectedFields={config.globalSearch.fields}
         defaultFields={DEFAULT_CONFIG.globalSearch.fields}
         onToggleField={toggleSearchField}
-        onResetFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields } }))}
-        onSelectAllFields={() => updateConfig((current) => ({ ...current, globalSearch: { ...current.globalSearch, fields: SEARCH_FIELDS.map((field) => field.value) } }))}
+        onResetFields={() =>
+          updateConfig((current) => ({
+            ...current,
+            globalSearch: { ...current.globalSearch, fields: DEFAULT_CONFIG.globalSearch.fields },
+          }))
+        }
+        onSelectAllFields={() =>
+          updateConfig((current) => ({
+            ...current,
+            globalSearch: {
+              ...current.globalSearch,
+              fields: SEARCH_FIELDS.map((field) => field.value),
+            },
+          }))
+        }
         hasFieldConfig={hasFieldConfig}
-        columnOptions={DEFAULT_VISIBLE_COLUMNS.map((column) => ({ label: TABLE_COLUMN_LABELS[column], value: column }))}
+        columnOptions={DEFAULT_VISIBLE_COLUMNS.map((column) => ({
+          label: TABLE_COLUMN_LABELS[column],
+          value: column,
+        }))}
         selectedColumns={config.visibleColumns}
         defaultColumns={DEFAULT_VISIBLE_COLUMNS}
         lockedColumns={["actions"]}
         visibleColumnCount={visibleColumnCount}
         onToggleColumn={toggleTableColumn}
-        onResetColumns={() => updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS }))}
+        onResetColumns={() =>
+          updateConfig((current) => ({ ...current, visibleColumns: DEFAULT_VISIBLE_COLUMNS }))
+        }
         hasColumnConfig={hasColumnConfig}
         selectedCount={selectedKeys.size}
         onBulkDelete={() => {
-          toast.info("Xoá đơn hàng", `Đã chọn ${selectedKeys.size} đơn hàng. Chức năng này đang ở UI-only.`);
+          toast.info(
+            "Xoá đơn hàng",
+            `Đã chọn ${selectedKeys.size} đơn hàng. Chức năng này đang ở UI-only.`,
+          );
           setSelectedKeys(new Set());
         }}
-        onExport={() => toast.success("Xuất file mock", `Sẵn sàng xuất ${filtered.length} đơn hàng đang hiển thị.`)}
+        onExport={() =>
+          toast.success(
+            "Xuất file mock",
+            `Sẵn sàng xuất ${filtered.length} đơn hàng đang hiển thị.`,
+          )
+        }
         summaryItems={summaryItems}
         onResetAll={resetAll}
         resetDisabled={!hasAnyConfig}
@@ -364,7 +538,12 @@ export default function OrdersPage() {
         pageSize={15}
       />
 
-      <OrderDetailPanel order={selectedOrder} events={selectedEvents} open={panelOpen} onClose={() => setPanelOpen(false)} />
+      <OrderDetailPanel
+        order={selectedOrder}
+        events={selectedEvents}
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+      />
     </>
   );
 }

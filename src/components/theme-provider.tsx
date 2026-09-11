@@ -40,24 +40,21 @@ function disableTransitionsWhile(fn: () => void) {
   });
 }
 
+function initialTheme(): ColorTheme {
+  if (typeof document === "undefined") return "light";
+  return (document.documentElement.dataset.theme as ColorTheme) || "light";
+}
+
+function initialMode(): DesignMode {
+  if (typeof document === "undefined") return "A";
+  return (document.documentElement.dataset.mode as DesignMode) || "A";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<DesignMode>("A");
-  const [theme, setThemeState] = useState<ColorTheme>("light");
-  const [mounted, setMounted] = useState(false);
+  const [mode, setModeState] = useState<DesignMode>(initialMode);
+  const [theme, setThemeState] = useState<ColorTheme>(initialTheme);
 
-  // Detect system preference on mount (đọc từ inline script đã set)
   useEffect(() => {
-    const el = document.documentElement;
-    const initialTheme = (el.dataset.theme as ColorTheme) || "light";
-    const initialMode = (el.dataset.mode as DesignMode) || "A";
-    setThemeState(initialTheme);
-    setModeState(initialMode);
-    setMounted(true);
-  }, []);
-
-  // Sync DOM attributes on change — chỉ chạy sau mount
-  useEffect(() => {
-    if (!mounted) return;
     disableTransitionsWhile(() => {
       const el = document.documentElement;
       el.dataset.mode = mode;
@@ -68,10 +65,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         el.classList.remove("dark");
       }
     });
-  }, [mode, theme, mounted]);
+  }, [mode, theme]);
 
   const setMode = useCallback((m: DesignMode) => setModeState(m), []);
-  const toggleTheme = useCallback(() => setThemeState((t) => (t === "light" ? "dark" : "light")), []);
+  const toggleTheme = useCallback(
+    () => setThemeState((t) => (t === "light" ? "dark" : "light")),
+    [],
+  );
 
   return (
     <ThemeContext.Provider value={{ mode, theme, setMode, toggleTheme }}>

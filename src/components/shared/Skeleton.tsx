@@ -1,6 +1,6 @@
 import { cn } from "cn";
 
-interface SkeletonProps extends React.ComponentProps<"div"> {}
+type SkeletonProps = React.ComponentProps<"div">;
 
 /**
  * Shimmer skeleton — dùng thay cho ui/skeleton khi cần shimmer gradient
@@ -11,8 +11,8 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
     <div
       className={cn(
         "animate-shimmer rounded-[var(--r-sm)] bg-[linear-gradient(90deg,var(--bg-muted)_25%,var(--bg-subtle)_37%,var(--bg-muted)_63%)] bg-[length:400%_100%]",
-        "motion-reduce:animate-none motion-reduce:bg-bg-muted",
-        className
+        "motion-reduce:bg-bg-muted motion-reduce:animate-none",
+        className,
       )}
       {...props}
     />

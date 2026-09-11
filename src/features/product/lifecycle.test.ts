@@ -1,0 +1,33 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  allowedProductActions,
+  allowedSkuActions,
+  nextProductStatuses,
+  nextSkuStatuses,
+} from "./lifecycle";
+
+import type { ProductStatus, SkuStatus } from "./types";
+
+describe("product lifecycle", () => {
+  it("allows product transitions from Draft per docs §5", () => {
+    expect(nextProductStatuses("Draft")).toEqual(["Pending Approval"] satisfies ProductStatus[]);
+  });
+
+  it("allows SKU transitions from Active per docs §5", () => {
+    expect(nextSkuStatuses("Active")).toEqual(["Blocked", "Obsolete"] satisfies SkuStatus[]);
+  });
+
+  it("gates Pending Approval product actions by E-commerce Admin role", () => {
+    expect(
+      allowedProductActions("Pending Approval", "E-commerce Admin").map((action) => action.code),
+    ).toEqual(["approve", "reject"]);
+  });
+
+  it("gates Active SKU actions by E-commerce Admin role", () => {
+    expect(allowedSkuActions("Active", "E-commerce Admin").map((action) => action.code)).toEqual([
+      "block",
+      "obsolete",
+    ]);
+  });
+});
