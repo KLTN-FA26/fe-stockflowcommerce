@@ -25,6 +25,7 @@ import {
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatTile } from "@/components/shared/StatTile";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
+import { StatusDot } from "@/components/shared/StatusDot";
 import { toast } from "@/components/shared/Toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -537,16 +538,7 @@ export default function SuppliersPage() {
       sortable: true,
       compare: (a, b) => Number(a.active) - Number(b.active),
       cell: (row) => (
-        <span
-          className={
-            row.active
-              ? "border-positive/25 bg-positive/10 text-positive inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
-              : "border-muted-tone/25 bg-muted-tone/10 text-muted-tone inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
-          }
-        >
-          <span className="size-1.5 rounded-full bg-current" />
-          {row.active ? "Đang hoạt động" : "Tạm ngưng"}
-        </span>
+        <StatusDot domain="product" status={row.active ? "Active" : "Inactive"} size="sm" />
       ),
     },
     {
@@ -573,9 +565,7 @@ export default function SuppliersPage() {
     <>
       <PageHeader
         title="Nhà cung cấp"
-        hideTitle
         subtitle="Quản lý hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice."
-        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Nhà cung cấp" }]}
         actions={
           <div className="flex items-center gap-2">
             <Button

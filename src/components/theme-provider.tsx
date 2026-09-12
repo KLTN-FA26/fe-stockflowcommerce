@@ -12,16 +12,6 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-/** Inline script chạy trước paint để tránh flash-of-wrong-theme. */
-const THEME_INIT_SCRIPT = `
-(function(){
-  try{
-    document.documentElement.setAttribute('data-theme','dark');
-    document.documentElement.classList.add('dark');
-  }catch(e){}
-})();
-`;
-
 /**
  * Tắt mọi CSS transition trên toàn trang, chạy callback, rồi bật lại sau 1 frame.
  * Tránh hiệu ứng lag khi chuyển theme (hàng trăm element animate cùng lúc).
@@ -38,10 +28,6 @@ function disableTransitionsWhile(fn: () => void) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Đọc ngay trong render từ attribute mà THEME_INIT_SCRIPT đã set trước paint.
-  // Lazy initializer thay cho setState-trong-effect (tránh cascading render).
-  // Trên server không có `document` → dùng đúng giá trị mà inline script sẽ set,
-  // nên markup SSR và lần render client đầu tiên khớp nhau.
   const [theme, setThemeState] = useState<ColorTheme>(() =>
     typeof document === "undefined"
       ? "dark"
@@ -68,13 +54,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {/* Script chống flash — render ngay trong head */}
-      <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

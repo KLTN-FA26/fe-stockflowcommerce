@@ -421,8 +421,7 @@ export default function OrdersPage() {
     <>
       <PageHeader
         title="Đơn hàng"
-        hideTitle
-        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Đơn hàng" }]}
+        subtitle="Theo dõi đơn bán, trạng thái xử lý và các ngoại lệ cần thao tác."
         actions={
           <Button
             type="button"

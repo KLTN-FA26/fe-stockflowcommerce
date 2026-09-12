@@ -1,19 +1,38 @@
 "use client";
 
 import { cn } from "cn";
-import { AlertTriangle, ClipboardCheck, Eye, FileText, PackageCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  BarChart3,
+  CheckCircle,
+  CircleDollarSign,
+  Eye,
+  FileText,
+  Wallet,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { ADMIN_ROUTES, RECEIPT_COLUMNS, RECEIPT_STATUSES, STORAGE_KEYS } from "@/constants";
+import { ADMIN_ROUTES, INVOICE_COLUMNS, INVOICE_STATUSES, STORAGE_KEYS } from "@/constants";
 
 import { usePageConfig } from "@/hooks/use-page-config";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 
-import { computeReceiptStats, receiptHasDiscrepancy } from "@/features/receipt/selectors";
-import { useReceipts } from "@/features/receipt/queries";
+import {
+  computeInvoiceStats,
+  formatCompactCurrency,
+  formatMoney,
+  shouldFlagInvoiceRow,
+} from "@/features/invoice";
+import { useInvoices } from "@/features/invoice/queries";
 
-import { codeCell, numberCell, statusCell, textCell } from "@/components/shared/column-helpers";
+import {
+  codeCell,
+  dateCell,
+  moneyCell,
+  statusCell,
+  textCell,
+} from "@/components/shared/column-helpers";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
 import { ListToolbar, type ListSummaryItem } from "@/components/shared/ListToolbar";
@@ -22,47 +41,40 @@ import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
 
-import type { Receipt, ReceiptStatus } from "@/features/receipt/types";
+import type { Invoice, InvoiceStatus } from "@/features/invoice/types";
 
-type ReceiptColumnKey = (typeof RECEIPT_COLUMNS)[keyof typeof RECEIPT_COLUMNS];
-type ReceiptSearchField = "receiptNumber" | "poId" | "supplierId" | "warehouseId" | "receivedBy";
+type InvoiceColumnKey = (typeof INVOICE_COLUMNS)[keyof typeof INVOICE_COLUMNS];
+type InvoiceSearchField = "invoiceNumber" | "supplierId" | "poId" | "invoiceDate" | "dueDate";
 
-const SEARCH_FIELDS: { label: string; value: ReceiptSearchField }[] = [
-  { label: "Mã phiếu nhận", value: "receiptNumber" },
-  { label: "PO tham chiếu", value: "poId" },
+const SEARCH_FIELDS: { label: string; value: InvoiceSearchField }[] = [
+  { label: "Số hoá đơn", value: "invoiceNumber" },
   { label: "Nhà cung cấp", value: "supplierId" },
-  { label: "Kho", value: "warehouseId" },
-  { label: "Người nhận", value: "receivedBy" },
+  { label: "PO tham chiếu", value: "poId" },
+  { label: "Ngày hoá đơn", value: "invoiceDate" },
+  { label: "Hạn thanh toán", value: "dueDate" },
 ];
 
-const STATUS_OPTIONS: { label: string; value: ReceiptStatus }[] = RECEIPT_STATUSES.map(
+const STATUS_OPTIONS: { label: string; value: InvoiceStatus }[] = INVOICE_STATUSES.map(
   (status) => ({
     label: status,
     value: status,
   }),
 );
 
-const COLUMN_OPTIONS: { label: string; value: ReceiptColumnKey }[] = [
-  { label: "Receipt number", value: RECEIPT_COLUMNS.RECEIPT_NUMBER },
-  { label: "PO tham chiếu", value: RECEIPT_COLUMNS.PO_REFERENCE },
-  { label: "NCC", value: RECEIPT_COLUMNS.SUPPLIER },
-  { label: "Kho", value: RECEIPT_COLUMNS.WAREHOUSE },
-  { label: "Số dòng", value: RECEIPT_COLUMNS.LINE_COUNT },
-  { label: "ReceiptStatus", value: RECEIPT_COLUMNS.STATUS },
-  { label: "Hành động", value: RECEIPT_COLUMNS.ACTIONS },
+const COLUMN_OPTIONS: { label: string; value: InvoiceColumnKey }[] = [
+  { label: "Invoice number", value: INVOICE_COLUMNS.INVOICE_NUMBER },
+  { label: "NCC", value: INVOICE_COLUMNS.SUPPLIER },
+  { label: "PO tham chiếu", value: INVOICE_COLUMNS.PO_REFERENCE },
+  { label: "Ngày hoá đơn", value: INVOICE_COLUMNS.INVOICE_DATE },
+  { label: "Hạn thanh toán", value: INVOICE_COLUMNS.DUE_DATE },
+  { label: "Tổng tiền", value: INVOICE_COLUMNS.GRAND_TOTAL },
+  { label: "InvoiceStatus", value: INVOICE_COLUMNS.STATUS },
+  { label: "Hành động", value: INVOICE_COLUMNS.ACTIONS },
 ];
 
 const DEFAULT_CONFIG = {
   showStats: false,
-  visibleColumns: [
-    RECEIPT_COLUMNS.RECEIPT_NUMBER,
-    RECEIPT_COLUMNS.PO_REFERENCE,
-    RECEIPT_COLUMNS.SUPPLIER,
-    RECEIPT_COLUMNS.WAREHOUSE,
-    RECEIPT_COLUMNS.LINE_COUNT,
-    RECEIPT_COLUMNS.STATUS,
-    RECEIPT_COLUMNS.ACTIONS,
-  ],
+  visibleColumns: COLUMN_OPTIONS.map((column) => column.value),
   searchFields: SEARCH_FIELDS.map((field) => field.value),
 };
 
@@ -75,84 +87,87 @@ function mergeConfig(stored: Partial<typeof DEFAULT_CONFIG>, fallback: typeof DE
   };
 }
 
-export function ReceiptList() {
+export function InvoiceList() {
   const router = useRouter();
+  const filters = useUrlFilters(INVOICE_STATUSES);
   const { config, updateConfig } = usePageConfig(
-    STORAGE_KEYS.adminReceiptsConfig,
+    STORAGE_KEYS.adminInvoicesConfig,
     DEFAULT_CONFIG,
     mergeConfig,
   );
-  const filters = useUrlFilters(RECEIPT_STATUSES);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-  const receiptsQuery = useReceipts({
+  const invoicesQuery = useInvoices({
     page: filters.page,
     pageSize: 50,
     q: filters.debouncedQ,
     status: filters.status,
   });
-
-  const receipts = useMemo(() => receiptsQuery.data?.items ?? [], [receiptsQuery.data?.items]);
-
-  const filteredReceipts = useMemo(() => {
+  const invoices = useMemo(() => invoicesQuery.data?.items ?? [], [invoicesQuery.data?.items]);
+  const filteredInvoices = useMemo(() => {
     const query = filters.debouncedQ.trim().toLowerCase();
-    if (!query) return receipts;
-
-    return receipts.filter((receipt) =>
-      config.searchFields.some((field) => String(receipt[field]).toLowerCase().includes(query)),
+    if (!query) return invoices;
+    return invoices.filter((invoice) =>
+      config.searchFields.some((field) => String(invoice[field]).toLowerCase().includes(query)),
     );
-  }, [config.searchFields, filters.debouncedQ, receipts]);
+  }, [config.searchFields, filters.debouncedQ, invoices]);
+  const stats = useMemo(() => computeInvoiceStats(filteredInvoices), [filteredInvoices]);
 
-  const stats = useMemo(() => computeReceiptStats(receipts), [receipts]);
-
-  const columns = useMemo<ColumnDef<Receipt>[]>(
+  const columns = useMemo<ColumnDef<Invoice>[]>(
     () => [
       codeCell(
-        RECEIPT_COLUMNS.RECEIPT_NUMBER,
-        "Receipt number",
-        (receipt) => receipt.receiptNumber,
+        INVOICE_COLUMNS.INVOICE_NUMBER,
+        "Invoice number",
+        (invoice) => invoice.invoiceNumber,
         {
           sortable: true,
-          compare: (a, b) => a.receiptNumber.localeCompare(b.receiptNumber),
-          onClick: (receipt) => router.push(ADMIN_ROUTES.receipts.detail(receipt.receiptId)),
+          compare: (a, b) => a.invoiceNumber.localeCompare(b.invoiceNumber),
+          onClick: (invoice) => router.push(ADMIN_ROUTES.invoices.detail(invoice.invoiceId)),
         },
       ),
-      textCell(RECEIPT_COLUMNS.PO_REFERENCE, "PO tham chiếu", (receipt) => receipt.poId, {
-        sortable: true,
-        compare: (a, b) => a.poId.localeCompare(b.poId),
-      }),
-      textCell(RECEIPT_COLUMNS.SUPPLIER, "NCC", (receipt) => receipt.supplierId, {
+      textCell(INVOICE_COLUMNS.SUPPLIER, "NCC", (invoice) => invoice.supplierId, {
         sortable: true,
         compare: (a, b) => a.supplierId.localeCompare(b.supplierId),
       }),
-      textCell(RECEIPT_COLUMNS.WAREHOUSE, "Kho", (receipt) => receipt.warehouseId, {
+      textCell(INVOICE_COLUMNS.PO_REFERENCE, "PO tham chiếu", (invoice) => invoice.poId, {
         sortable: true,
-        compare: (a, b) => a.warehouseId.localeCompare(b.warehouseId),
+        compare: (a, b) => a.poId.localeCompare(b.poId),
       }),
-      numberCell(RECEIPT_COLUMNS.LINE_COUNT, "Số dòng", (receipt) => receipt.lines.length, {
+      dateCell(INVOICE_COLUMNS.INVOICE_DATE, "Ngày hoá đơn", (invoice) => invoice.invoiceDate, {
         sortable: true,
-        compare: (a, b) => a.lines.length - b.lines.length,
+        compare: (a, b) => a.invoiceDate.localeCompare(b.invoiceDate),
       }),
-      statusCell(RECEIPT_COLUMNS.STATUS, "ReceiptStatus", (receipt) => receipt.status, "receipt", {
+      dateCell(INVOICE_COLUMNS.DUE_DATE, "Hạn thanh toán", (invoice) => invoice.dueDate, {
+        sortable: true,
+        compare: (a, b) => a.dueDate.localeCompare(b.dueDate),
+      }),
+      moneyCell(
+        INVOICE_COLUMNS.GRAND_TOTAL,
+        "Tổng tiền",
+        (invoice) => invoice.grandTotal,
+        (amount) => formatMoney(amount, "VND"),
+        { sortable: true, compare: (a, b) => a.grandTotal - b.grandTotal },
+      ),
+      statusCell(INVOICE_COLUMNS.STATUS, "InvoiceStatus", (invoice) => invoice.status, "invoice", {
         sortable: true,
         compare: (a, b) => a.status.localeCompare(b.status),
         withIcon: true,
       }),
       {
-        key: RECEIPT_COLUMNS.ACTIONS,
+        key: INVOICE_COLUMNS.ACTIONS,
         header: "",
         className: "w-[56px]",
-        cell: (receipt) => (
+        cell: (invoice) => (
           <Button
             type="button"
             variant="outline"
             size="icon"
+            aria-label="Xem chi tiết hoá đơn"
             onClick={(event) => {
               event.stopPropagation();
-              router.push(ADMIN_ROUTES.receipts.detail(receipt.receiptId));
+              router.push(ADMIN_ROUTES.invoices.detail(invoice.invoiceId));
             }}
-            className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)] transition-colors"
-            aria-label="Xem chi tiết phiếu nhận"
+            className="border-border-default bg-bg-surface text-ink-tertiary hover:bg-bg-muted hover:text-ink-primary rounded-[var(--r-sm)]"
           >
             <Eye className="size-3.5" />
           </Button>
@@ -163,20 +178,28 @@ export function ReceiptList() {
   );
 
   const visibleColumns = columns.filter((column) =>
-    config.visibleColumns.includes(column.key as ReceiptColumnKey),
+    config.visibleColumns.includes(column.key as InvoiceColumnKey),
   );
+  const hasStatusFilter = filters.status.length > 0;
   const hasColumnConfig = config.visibleColumns.length !== DEFAULT_CONFIG.visibleColumns.length;
   const hasFieldConfig = config.searchFields.length !== DEFAULT_CONFIG.searchFields.length;
-  const hasStatusFilter = filters.status.length > 0;
-  const resetDisabled = !filters.q && !hasStatusFilter && !hasColumnConfig && !hasFieldConfig;
+  const hasGlobalSearch = Boolean(filters.q);
+  const resetDisabled = !hasStatusFilter && !hasColumnConfig && !hasFieldConfig && !hasGlobalSearch;
 
   const summaryItems: ListSummaryItem[] = [
     {
-      active: Boolean(filters.q),
+      active: hasGlobalSearch,
       clearLabel: "Xoá search chính",
       label: "Search chính",
-      onClear: filters.q ? () => filters.setQ("") : undefined,
+      onClear: hasGlobalSearch ? () => filters.setQ("") : undefined,
       value: filters.q || "Chưa nhập",
+    },
+    {
+      active: hasStatusFilter,
+      clearLabel: "Xoá trạng thái",
+      label: "Trạng thái",
+      onClear: hasStatusFilter ? () => filters.setStatus([]) : undefined,
+      value: filters.status.length ? filters.status.join(", ") : "Tất cả",
     },
     {
       active: hasFieldConfig,
@@ -201,33 +224,23 @@ export function ReceiptList() {
         : undefined,
       value: `${visibleColumns.length}/${columns.length}`,
     },
-    {
-      active: hasStatusFilter,
-      clearLabel: "Xoá trạng thái",
-      label: "Trạng thái",
-      onClear: hasStatusFilter ? () => filters.setStatus([]) : undefined,
-      value: filters.status.length ? filters.status.join(", ") : "Tất cả",
-    },
   ];
 
-  const toggleStatus = (status: ReceiptStatus) => {
+  const toggleStatus = (status: InvoiceStatus) =>
     filters.setStatus(
       filters.status.includes(status)
         ? filters.status.filter((item) => item !== status)
         : [...filters.status, status],
     );
-  };
-
-  const toggleField = (field: ReceiptSearchField) => {
+  const toggleField = (field: InvoiceSearchField) =>
     updateConfig((current) => ({
       ...current,
       searchFields: current.searchFields.includes(field)
         ? current.searchFields.filter((item) => item !== field)
         : [...current.searchFields, field],
     }));
-  };
-
-  const toggleColumn = (column: ReceiptColumnKey) => {
+  const toggleColumn = (column: InvoiceColumnKey) => {
+    if (column === INVOICE_COLUMNS.INVOICE_NUMBER || column === INVOICE_COLUMNS.ACTIONS) return;
     updateConfig((current) => ({
       ...current,
       visibleColumns: current.visibleColumns.includes(column)
@@ -235,7 +248,6 @@ export function ReceiptList() {
         : [...current.visibleColumns, column],
     }));
   };
-
   const resetAll = () => {
     filters.reset();
     updateConfig((current) => ({
@@ -245,13 +257,13 @@ export function ReceiptList() {
     }));
   };
 
-  if (receiptsQuery.isLoading) return <PageSkeleton variant="list" />;
+  if (invoicesQuery.isLoading) return <PageSkeleton variant="list" />;
 
   return (
     <>
       <PageHeader
-        title="Phiếu nhận"
-        subtitle="Ghi nhận hàng thực tế về kho theo PO, QC sơ bộ và bàn giao vào inbound area."
+        title="Hoá đơn NCC"
+        subtitle="Đối chiếu hoá đơn nhà cung cấp với PO, Receipt và duyệt thanh toán."
         actions={
           <Button
             type="button"
@@ -266,31 +278,42 @@ export function ReceiptList() {
                 "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
             )}
           >
-            <ClipboardCheck className="size-3.5" />
+            <BarChart3 className="size-3.5" />
             {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
           </Button>
         }
       />
-
       <ListStatsPanel
         open={config.showStats}
         stats={[
-          { icon: FileText, label: "Tổng phiếu", value: stats.total.toLocaleString("vi-VN") },
-          { icon: ClipboardCheck, label: "Draft", value: stats.draft.toLocaleString("vi-VN") },
-          { icon: PackageCheck, label: "Đang xử lý", value: stats.active.toLocaleString("vi-VN") },
+          { icon: FileText, label: "Tổng hoá đơn", value: stats.total.toLocaleString("vi-VN") },
+          {
+            icon: CircleDollarSign,
+            label: "Tổng giá trị VND",
+            value: formatCompactCurrency(stats.totalValueVND, "VND"),
+          },
+          {
+            icon: CheckCircle,
+            label: "Đã khớp",
+            value: formatCompactCurrency(stats.valueByStatus.Matched?.VND ?? 0, "VND"),
+          },
           {
             icon: AlertTriangle,
-            label: "Chênh lệch",
-            value: stats.discrepancies.toLocaleString("vi-VN"),
+            label: "Ngoại lệ",
+            value: formatCompactCurrency(stats.valueByStatus.Exception?.VND ?? 0, "VND"),
+          },
+          {
+            icon: Wallet,
+            label: "Đã thanh toán",
+            value: formatCompactCurrency(stats.valueByStatus.Paid?.VND ?? 0, "VND"),
           },
         ]}
-        gridClassName="sm:grid-cols-4"
+        gridClassName="sm:grid-cols-2 lg:grid-cols-5"
       />
-
-      <ListToolbar<ReceiptStatus, ReceiptSearchField, ReceiptColumnKey>
+      <ListToolbar<InvoiceStatus, InvoiceSearchField, InvoiceColumnKey>
         search={filters.q}
         onSearchChange={filters.setQ}
-        searchPlaceholder="Tìm phiếu nhận theo mã, PO, NCC, kho..."
+        searchPlaceholder="Tìm hoá đơn theo số, NCC, PO..."
         statusOptions={STATUS_OPTIONS}
         selectedStatuses={filters.status}
         onToggleStatus={toggleStatus}
@@ -313,7 +336,7 @@ export function ReceiptList() {
         columnOptions={COLUMN_OPTIONS}
         selectedColumns={config.visibleColumns}
         defaultColumns={DEFAULT_CONFIG.visibleColumns}
-        lockedColumns={[RECEIPT_COLUMNS.RECEIPT_NUMBER, RECEIPT_COLUMNS.ACTIONS]}
+        lockedColumns={[INVOICE_COLUMNS.INVOICE_NUMBER, INVOICE_COLUMNS.ACTIONS]}
         visibleColumnCount={visibleColumns.length}
         onToggleColumn={toggleColumn}
         onResetColumns={() =>
@@ -321,24 +344,21 @@ export function ReceiptList() {
         }
         hasColumnConfig={hasColumnConfig}
         selectedCount={selectedKeys.size}
-        bulkDeleteLabel="Xoá đã chọn"
         onBulkDelete={() =>
           toast.warning("Chưa xoá dữ liệu", "Prototype chỉ chọn dòng để thao tác hàng loạt.")
         }
-        exportLabel="Xuất Excel"
-        onExport={() => toast.success("Xuất Excel", "Đã tạo file phiếu nhận mẫu.")}
+        onExport={() => toast.success("Xuất Excel", "Đã tạo file hoá đơn mẫu.")}
         summaryItems={summaryItems}
         onResetAll={resetAll}
         resetDisabled={resetDisabled}
       />
-
       <DataTable
-        data={filteredReceipts}
+        data={filteredInvoices}
         columns={visibleColumns}
-        rowKey={(receipt) => receipt.receiptId}
-        caption={`Hiển thị ${filteredReceipts.length.toLocaleString("vi-VN")} phiếu nhận`}
-        flagRow={receiptHasDiscrepancy}
-        onRowClick={(receipt) => router.push(ADMIN_ROUTES.receipts.detail(receipt.receiptId))}
+        rowKey={(invoice) => invoice.invoiceId}
+        caption={`Hiển thị ${filteredInvoices.length.toLocaleString("vi-VN")} hoá đơn`}
+        flagRow={shouldFlagInvoiceRow}
+        onRowClick={(invoice) => router.push(ADMIN_ROUTES.invoices.detail(invoice.invoiceId))}
         selectable
         selectedKeys={selectedKeys}
         onSelectionChange={setSelectedKeys}

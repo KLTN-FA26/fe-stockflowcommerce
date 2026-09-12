@@ -50,6 +50,17 @@ export const SKU_COLUMNS = {
   VARIANT_LABEL: "variantLabel",
 } as const;
 
+export const INVOICE_COLUMNS = {
+  ACTIONS: "actions",
+  DUE_DATE: "dueDate",
+  GRAND_TOTAL: "grandTotal",
+  INVOICE_DATE: "invoiceDate",
+  INVOICE_NUMBER: "invoiceNumber",
+  PO_REFERENCE: "poReference",
+  STATUS: "status",
+  SUPPLIER: "supplier",
+} as const;
+
 export const VARIANT_COLUMNS = {
   ATTRIBUTE_ID: "attributeId",
   NAME_EN: "nameEn",

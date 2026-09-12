@@ -1025,8 +1025,7 @@ export function ProductList() {
     <>
       <PageHeader
         title="Sản phẩm & SKU"
-        hideTitle
-        breadcrumbs={[{ label: "Back-office", href: ADMIN_ROUTES.home }, { label: "Sản phẩm" }]}
+        subtitle="Quản lý sản phẩm, biến thể và SKU bán hàng."
         actions={
           <div className="flex items-center gap-2">
             <Button

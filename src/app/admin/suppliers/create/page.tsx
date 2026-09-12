@@ -18,7 +18,7 @@ import {
 import { cn } from "cn";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card } from "@/components/shared/Card";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { StatusDot } from "@/components/shared/StatusDot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -260,13 +260,7 @@ export default function CreateSupplierPage() {
     <>
       <PageHeader
         title="Tạo nhà cung cấp"
-        hideTitle
         subtitle="Tạo hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice."
-        breadcrumbs={[
-          { label: "Back-office", href: "/admin" },
-          { label: "Nhà cung cấp", href: "/admin/suppliers" },
-          { label: "Tạo nhà cung cấp" },
-        ]}
         actions={
           <Link
             href="/admin/suppliers"
@@ -283,7 +277,7 @@ export default function CreateSupplierPage() {
           <div className="border-border-default border-b px-4 py-3">
             <div className="text-ink-tertiary text-xs">Trạng thái hồ sơ</div>
             <div className="mt-2">
-              <StatusBadge domain="po" status={status} withIcon />
+              <StatusDot domain="po" status={status} withIcon />
             </div>
           </div>
           <div className="p-2">
