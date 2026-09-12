@@ -16,6 +16,16 @@ export const PO_COLUMNS = {
   WAREHOUSE: "warehouse",
 } as const;
 
+export const RECEIPT_COLUMNS = {
+  ACTIONS: "actions",
+  LINE_COUNT: "lineCount",
+  PO_REFERENCE: "poReference",
+  RECEIPT_NUMBER: "receiptNumber",
+  STATUS: "status",
+  SUPPLIER: "supplier",
+  WAREHOUSE: "warehouse",
+} as const;
+
 export const PRODUCT_COLUMNS = {
   ACTIONS: "actions",
   CATEGORY: "category",

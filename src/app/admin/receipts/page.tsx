@@ -1,6 +1,5 @@
-import { FileText } from "lucide-react";
-import { ComingSoonPage } from "@/components/shared/ComingSoonPage";
+import { ReceiptList } from "@/features/receipt/components/ReceiptList";
 
 export default function ReceiptsPage() {
-  return <ComingSoonPage title="Phiếu nhận" icon={FileText} />;
+  return <ReceiptList />;
 }

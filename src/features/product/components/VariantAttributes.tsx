@@ -301,6 +301,7 @@ export function VariantAttributes() {
     <>
       <PageHeader
         title="Thuộc tính biến thể"
+        hideTitle
         breadcrumbs={[
           { label: "Back-office", href: ADMIN_ROUTES.home },
           { label: "Sản phẩm", href: ADMIN_ROUTES.products.list },
@@ -318,7 +319,7 @@ export function VariantAttributes() {
               className={cn(
                 "rounded-[var(--r-sm)]",
                 config.showStats &&
-                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+                  "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
               )}
             >
               <BarChart3 className="size-3.5" />
@@ -570,7 +571,7 @@ export function VariantAttributes() {
                 value={newNameVi}
                 onChange={(e) => setNewNameVi(e.target.value)}
                 placeholder="Chất liệu"
-                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
+                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-brand focus-visible:ring-brand/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
               />
             </div>
             <div>
@@ -586,7 +587,7 @@ export function VariantAttributes() {
                 value={newNameEn}
                 onChange={(e) => setNewNameEn(e.target.value)}
                 placeholder="Material"
-                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
+                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-brand focus-visible:ring-brand/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
               />
             </div>
             <div>
@@ -602,7 +603,7 @@ export function VariantAttributes() {
                 value={newValues}
                 onChange={(e) => setNewValues(e.target.value)}
                 placeholder="Cotton, Polyester, Linen"
-                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
+                className="border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-brand focus-visible:ring-brand/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
               />
             </div>
             <label className="text-ink-secondary flex items-center gap-2 text-[0.8125rem]">
