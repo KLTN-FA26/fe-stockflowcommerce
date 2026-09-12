@@ -3,7 +3,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { cn } from "cn";
 import {
   BarChart3,
@@ -28,6 +27,7 @@ import {
   STORAGE_KEYS,
 } from "@/constants";
 import { usePageConfig } from "@/hooks/use-page-config";
+import { useUrlFilters, useUrlTab } from "@/hooks/use-url-filters";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
 import {
@@ -216,20 +216,13 @@ function mergeStoredConfig(
 
 export function ProductList() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useQueryState(
-    "tab",
-    parseAsStringLiteral(["products", "skus"] as const).withDefault("products"),
-  );
-  const [productQ, setProductQ] = useQueryState("productQ", parseAsString.withDefault(""));
-  const [skuQ, setSkuQ] = useQueryState("skuQ", parseAsString.withDefault(""));
-  const [productStatuses, setProductStatuses] = useQueryState(
-    "productStatus",
-    parseAsArrayOf(parseAsStringLiteral(PRODUCT_STATUSES)).withDefault([]),
-  );
-  const [skuStatuses, setSkuStatuses] = useQueryState(
-    "skuStatus",
-    parseAsArrayOf(parseAsStringLiteral(SKU_STATUSES)).withDefault([]),
-  );
+  const [activeTab, setActiveTab] = useUrlTab("tab", ["products", "skus"] as const, "products");
+  const productFilters = useUrlFilters(PRODUCT_STATUSES, {
+    keys: { q: "productQ", status: "productStatus" },
+  });
+  const skuFilters = useUrlFilters(SKU_STATUSES, {
+    keys: { q: "skuQ", status: "skuStatus" },
+  });
   const { config, setConfig } = usePageConfig<ProductsPageConfig>(
     STORAGE_KEYS.adminProductsConfig,
     DEFAULT_CONFIG,
@@ -250,19 +243,19 @@ export function ProductList() {
   const productConfig = useMemo<ProductsPageConfig["products"]>(
     () => ({
       ...config.products,
-      statuses: productStatuses.length > 0 ? productStatuses : ["all"],
-      globalSearch: { ...config.products.globalSearch, query: productQ },
+      statuses: productFilters.status.length > 0 ? productFilters.status : ["all"],
+      globalSearch: { ...config.products.globalSearch, query: productFilters.q },
     }),
-    [config.products, productQ, productStatuses],
+    [config.products, productFilters.q, productFilters.status],
   );
 
   const skuConfig = useMemo<ProductsPageConfig["skus"]>(
     () => ({
       ...config.skus,
-      statuses: skuStatuses.length > 0 ? skuStatuses : ["all"],
-      globalSearch: { ...config.skus.globalSearch, query: skuQ },
+      statuses: skuFilters.status.length > 0 ? skuFilters.status : ["all"],
+      globalSearch: { ...config.skus.globalSearch, query: skuFilters.q },
     }),
-    [config.skus, skuQ, skuStatuses],
+    [config.skus, skuFilters.q, skuFilters.status],
   );
 
   const productNameMap = useMemo(
@@ -417,23 +410,23 @@ export function ProductList() {
 
   const toggleProductStatus = (status: ProductStatusFilter) => {
     if (status === "all") {
-      setProductStatuses([]);
+      productFilters.setStatus([]);
       return;
     }
-    const next = productStatuses.includes(status)
-      ? productStatuses.filter((item) => item !== status)
-      : [...productStatuses, status];
-    setProductStatuses(next);
+    const next = productFilters.status.includes(status)
+      ? productFilters.status.filter((item) => item !== status)
+      : [...productFilters.status, status];
+    productFilters.setStatus(next);
   };
   const toggleSkuStatus = (status: SkuStatusFilter) => {
     if (status === "all") {
-      setSkuStatuses([]);
+      skuFilters.setStatus([]);
       return;
     }
-    const next = skuStatuses.includes(status)
-      ? skuStatuses.filter((item) => item !== status)
-      : [...skuStatuses, status];
-    setSkuStatuses(next);
+    const next = skuFilters.status.includes(status)
+      ? skuFilters.status.filter((item) => item !== status)
+      : [...skuFilters.status, status];
+    skuFilters.setStatus(next);
   };
 
   const productColumns: (ColumnDef<Product> & { key: ProductTableColumnKey })[] = [
@@ -717,13 +710,13 @@ export function ProductList() {
             )
             .join(", "),
           active: hasStatusFilter,
-          onClear: () => setProductStatuses([]),
+          onClear: () => productFilters.setStatus([]),
         },
         {
           label: "Search chính",
           value: hasGlobalSearch ? `“${pageConfig.globalSearch.query}”` : "Chưa dùng",
           active: hasGlobalSearch,
-          onClear: () => setProductQ(""),
+          onClear: () => productFilters.setQ(""),
         },
         {
           label: "Trường search",
@@ -771,12 +764,12 @@ export function ProductList() {
       return (
         <ListToolbar
           search={pageConfig.globalSearch.query}
-          onSearchChange={setProductQ}
+          onSearchChange={productFilters.setQ}
           searchPlaceholder="Tìm sản phẩm theo mã, tên, danh mục..."
           statusOptions={PRODUCT_STATUS_OPTIONS}
           selectedStatuses={pageConfig.statuses}
           onToggleStatus={toggleProductStatus}
-          onClearStatuses={() => setProductStatuses([])}
+          onClearStatuses={() => productFilters.setStatus([])}
           hasStatusFilter={hasStatusFilter}
           fieldOptions={productSearchFields}
           selectedFields={pageConfig.globalSearch.fields}
@@ -852,8 +845,7 @@ export function ProductList() {
           summaryItems={summaryItems}
           onResetAll={() => {
             updateProductsConfig(() => DEFAULT_CONFIG.products);
-            setProductQ("");
-            setProductStatuses([]);
+            productFilters.reset();
           }}
           resetDisabled={!hasAnyConfig}
         />
@@ -893,13 +885,13 @@ export function ProductList() {
           )
           .join(", "),
         active: hasStatusFilter,
-        onClear: () => setSkuStatuses([]),
+        onClear: () => skuFilters.setStatus([]),
       },
       {
         label: "Search chính",
         value: hasGlobalSearch ? `“${pageConfig.globalSearch.query}”` : "Chưa dùng",
         active: hasGlobalSearch,
-        onClear: () => setSkuQ(""),
+        onClear: () => skuFilters.setQ(""),
       },
       {
         label: "Trường search",
@@ -943,12 +935,12 @@ export function ProductList() {
     return (
       <ListToolbar
         search={pageConfig.globalSearch.query}
-        onSearchChange={setSkuQ}
+        onSearchChange={skuFilters.setQ}
         searchPlaceholder="Tìm SKU theo mã, biến thể, barcode..."
         statusOptions={SKU_STATUS_OPTIONS}
         selectedStatuses={pageConfig.statuses}
         onToggleStatus={toggleSkuStatus}
-        onClearStatuses={() => setSkuStatuses([])}
+        onClearStatuses={() => skuFilters.setStatus([])}
         hasStatusFilter={hasStatusFilter}
         fieldOptions={skuSearchFields}
         selectedFields={pageConfig.globalSearch.fields}
@@ -1018,8 +1010,7 @@ export function ProductList() {
         summaryItems={summaryItems}
         onResetAll={() => {
           updateSkusConfig(() => DEFAULT_CONFIG.skus);
-          setSkuQ("");
-          setSkuStatuses([]);
+          skuFilters.reset();
         }}
         resetDisabled={!hasAnyConfig}
       />
