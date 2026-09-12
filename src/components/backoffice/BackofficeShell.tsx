@@ -3,7 +3,6 @@
 import { cn } from "cn";
 import {
   ArrowRightLeft,
-  ChevronsUpDown,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -227,116 +226,48 @@ const NAV_GROUPS: NavGroup[] = [
 /*  Breadcrumb helper                                                        */
 /* -------------------------------------------------------------------------- */
 
-interface PageMeta {
-  title: string;
-  subtitle: string;
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
 }
 
-const PAGE_META: Record<string, PageMeta> = {
-  "/admin": {
-    title: "Tổng quan",
-    subtitle: "Theo dõi vận hành kho, đơn hàng và tồn kho.",
-  },
-  "/admin/products": {
-    title: "Sản phẩm & SKU",
-    subtitle: "Quản lý sản phẩm, biến thể và SKU bán hàng.",
-  },
-  "/admin/suppliers": {
-    title: "Nhà cung cấp",
-    subtitle: "Quản lý hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice.",
-  },
-  "/admin/replenishment": {
-    title: "Đề xuất nhập hàng",
-    subtitle: "Theo dõi SKU dưới reorder point, hàng đang về và số lượng cần bổ sung.",
-  },
-  "/admin/receipts": {
-    title: "Phiếu nhận",
-    subtitle: "Ghi nhận hàng thực tế về kho theo PO, QC sơ bộ và inbound area.",
-  },
-  "/admin/putaway": {
-    title: "Cất hàng",
-    subtitle: "Theo dõi tác vụ đưa hàng từ inbound zone vào vị trí lưu kho.",
-  },
-  "/admin/purchase-orders": {
-    title: "Đơn đặt NCC",
-    subtitle: "Theo dõi vòng đời PO, nhà cung cấp, giá trị và tiến độ nhận hàng.",
-  },
-  "/admin/invoices": {
-    title: "Hoá đơn NCC",
-    subtitle: "Đối chiếu hoá đơn nhà cung cấp với PO và phiếu nhận hàng.",
-  },
-  "/admin/warehouse-map": {
-    title: "Kho map & slotting",
-    subtitle: "Quan sát layout kho, sức chứa vị trí và gợi ý tối ưu lưu trữ.",
-  },
-  "/admin/slotting": {
-    title: "Gợi ý vị trí",
-    subtitle: "Đề xuất vị trí cất hàng theo SKU, sức chứa và luồng vận hành kho.",
-  },
-  "/admin/transfers": {
-    title: "Chuyển kho liên kho",
-    subtitle: "Theo dõi điều chuyển tồn kho giữa các kho và trạng thái vận chuyển.",
-  },
-  "/admin/moves": {
-    title: "Di chuyển nội bộ",
-    subtitle: "Quản lý tác vụ chuyển hàng giữa các vị trí trong cùng kho.",
-  },
-  "/admin/orders": {
-    title: "Đơn hàng",
-    subtitle: "Theo dõi đơn bán, trạng thái xử lý và các ngoại lệ cần thao tác.",
-  },
-  "/admin/picking": {
-    title: "Lấy hàng",
-    subtitle: "Theo dõi pick task, thiếu hàng và tiến độ lấy hàng theo đơn.",
-  },
-  "/admin/packing": {
-    title: "Đóng gói",
-    subtitle: "Theo dõi kiểm đơn, vật liệu đóng gói và trạng thái sẵn sàng giao.",
-  },
-  "/admin/shipments": {
-    title: "Vận đơn",
-    subtitle: "Theo dõi vận chuyển, bàn giao carrier và ngoại lệ giao hàng.",
-  },
-  "/admin/variants": {
-    title: "Thuộc tính biến thể",
-    subtitle: "Quản lý thuộc tính tạo SKU như size, màu sắc và chất liệu.",
-  },
+const DETAIL_LABEL_BY_ROUTE: Record<string, string> = {
+  "/admin/products/create": "Tạo sản phẩm",
+  "/admin/purchase-orders/create": "Tạo đơn đặt hàng",
+  "/admin/suppliers/create": "Tạo nhà cung cấp",
 };
 
-function pathToBreadcrumb(pathname: string): string {
-  for (const group of NAV_GROUPS) {
-    for (const item of group.items) {
-      if (pathname === item.href || pathname.startsWith(item.href + "/")) {
-        return item.label;
-      }
-    }
-  }
-  return "Back-office";
+function findNavItem(pathname: string): NavItem | undefined {
+  return NAV_GROUPS.flatMap((group) => group.items)
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0];
 }
 
-function pathToPageMeta(pathname: string): PageMeta {
-  const exact = PAGE_META[pathname];
-  if (exact) return exact;
+function buildBreadcrumbItems(pathname: string): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [{ label: "Back-office", href: ADMIN_ROUTES.home }];
+  if (pathname === ADMIN_ROUTES.home) return items;
 
-  const route = Object.keys(PAGE_META)
-    .filter((key) => key !== "/admin" && pathname.startsWith(`${key}/`))
-    .sort((a, b) => b.length - a.length)[0];
+  const navItem = findNavItem(pathname);
+  if (!navItem) return items;
 
-  if (route) return PAGE_META[route];
+  const isListPage = pathname === navItem.href;
+  items.push({ label: navItem.label, href: isListPage ? undefined : navItem.href });
 
-  const title = pathToBreadcrumb(pathname);
-  return {
-    title,
-    subtitle: "Không gian thao tác back-office StockFlow.",
-  };
+  if (!isListPage) {
+    items.push({
+      label:
+        DETAIL_LABEL_BY_ROUTE[pathname] ??
+        decodeURIComponent(pathname.split("/").at(-1) ?? "Chi tiết"),
+    });
+  }
+
+  return items;
 }
 
 /* -------------------------------------------------------------------------- */
 /*  Sidebar nội dung — dùng shadcn primitives, giữ nguyên style StockFlow     */
 /* -------------------------------------------------------------------------- */
 
-/** Nút thu nhỏ/mở rộng sidebar — đặt ở topbar của page, chỉ hiện từ md trở lên
- *  (mobile đã có <SidebarTrigger> mở sidebar dạng sheet). */
 function SidebarCollapseButton() {
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
@@ -383,20 +314,16 @@ function WarehouseSwitcher({ selected, onSelect, label }: WarehouseSwitcherProps
             aria-label={title}
             aria-expanded={open}
           >
-            <ChevronsUpDown className="size-4" />
+            <WarehouseIcon className="size-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">{title}</TooltipContent>
+        <TooltipContent side="bottom">{title}</TooltipContent>
       </Tooltip>
 
       {open && (
         <>
           <div className="fixed inset-0 z-[800]" onClick={() => setOpen(false)} />
-          <div
-            // Neo theo mép trái nút và cho tràn sang phải: sidebar chỉ rộng 240px,
-            // neo phải sẽ khiến menu 224px bị cắt mất mép trái.
-            className="border-border-default bg-bg-surface absolute top-full left-0 z-[801] mt-1 w-60 rounded-[var(--r-md)] border py-1 shadow-[var(--sh-lg)]"
-          >
+          <div className="border-border-default bg-bg-surface absolute top-full right-0 z-[801] mt-1 w-64 rounded-[var(--r-md)] border py-1 shadow-[var(--sh-lg)]">
             <Button
               type="button"
               variant="ghost"
@@ -438,17 +365,7 @@ function WarehouseSwitcher({ selected, onSelect, label }: WarehouseSwitcherProps
   );
 }
 
-interface BackofficeSidebarProps {
-  selectedWarehouse: string;
-  onSelectWarehouse: (warehouseId: string) => void;
-  warehouseLabel: string;
-}
-
-function BackofficeSidebar({
-  selectedWarehouse,
-  onSelectWarehouse,
-  warehouseLabel,
-}: BackofficeSidebarProps) {
+function BackofficeSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -460,8 +377,6 @@ function BackofficeSidebar({
       collapsible="icon"
       className="border-border-default [&_[data-slot=sidebar-inner]]:bg-bg-subtle border-r"
     >
-      {/* Logo — nút thu nhỏ nằm ở topbar của page, không đặt ở đây.
-          Nhờ vậy rail 48px lúc collapsed đủ chỗ hiện icon mark. */}
       <SidebarHeader
         className={cn(
           "border-border-default h-14 shrink-0 flex-row items-center border-b p-0",
@@ -473,38 +388,24 @@ function BackofficeSidebar({
           aria-label={`${BRAND.name} — về trang tổng quan`}
           className={cn(
             "hover:bg-bg-muted focus-visible:ring-border-strong flex min-w-0 items-center rounded-[var(--r-sm)] transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none",
-            collapsed ? "size-10 justify-center" : "h-10 gap-2 px-1.5",
+            collapsed ? "size-10 justify-center" : "h-10 flex-1 gap-2 px-1.5",
           )}
         >
           {/* Logo đã có sẵn chữ "StockFlow" trong ảnh — không cần chữ HTML kèm theo. */}
           <Logo variant="mark" height={collapsed ? 32 : 36} decorative />
         </Link>
 
-        {/* Đổi kho — chỉ đủ chỗ cạnh logo khi sidebar mở rộng.
-            Lúc thu gọn rail chỉ 60px, logo đã chiếm hết nên nút nằm ở nhóm nav phía dưới. */}
-        {!collapsed && (
-          <div className="ml-auto">
-            <WarehouseSwitcher
-              selected={selectedWarehouse}
-              onSelect={onSelectWarehouse}
-              label={warehouseLabel}
-            />
-          </div>
-        )}
+        {!collapsed && <SidebarCollapseButton />}
       </SidebarHeader>
 
       {collapsed && (
         <div className="border-border-default flex justify-center border-b py-1.5">
-          <WarehouseSwitcher
-            selected={selectedWarehouse}
-            onSelect={onSelectWarehouse}
-            label={warehouseLabel}
-          />
+          <SidebarCollapseButton />
         </div>
       )}
 
       {/* Nav groups */}
-      <SidebarContent className="gap-0 px-2 py-2">
+      <SidebarContent className="[&::-webkit-scrollbar-thumb]:bg-border-strong min-h-0 flex-1 [scrollbar-width:thin] gap-0 overflow-y-auto px-2 py-2 [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
         {NAV_GROUPS.map((group) => (
           <SidebarGroup key={group.title} className="mb-1.5 gap-0 p-0">
             {collapsed ? (
@@ -590,7 +491,7 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
     return wh ? wh.code : selectedWarehouse;
   }, [selectedWarehouse]);
 
-  const currentPageMeta = pathToPageMeta(pathname);
+  const breadcrumbItems = buildBreadcrumbItems(pathname);
   const currentUserName = currentUser?.fullName ?? "Người dùng";
 
   async function handleLogout() {
@@ -618,11 +519,7 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
           } as React.CSSProperties
         }
       >
-        <BackofficeSidebar
-          selectedWarehouse={selectedWarehouse}
-          onSelectWarehouse={setSelectedWarehouse}
-          warehouseLabel={selectedWhLabel}
-        />
+        <BackofficeSidebar />
 
         {/* ================================================================== */}
         {/*  Main area                                                        */}
@@ -633,16 +530,30 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
             {/* Mobile sidebar trigger */}
             <SidebarTrigger className="text-ink-secondary hover:bg-bg-muted hover:text-ink-primary size-8 shrink-0 md:hidden" />
 
-            {/* Thu nhỏ/mở rộng sidebar (desktop) */}
-            <SidebarCollapseButton />
-
             <div className="min-w-0 flex-1">
-              <div className="text-ink-primary truncate text-[0.8125rem] leading-5 font-semibold">
-                {currentPageMeta.title}
-              </div>
-              <div className="text-ink-tertiary truncate text-xs leading-4">
-                {currentPageMeta.subtitle}
-              </div>
+              <nav
+                aria-label="Breadcrumb"
+                className="text-ink-tertiary flex items-center gap-1.5 text-[0.8125rem]"
+              >
+                {breadcrumbItems.map((item, index) => (
+                  <span
+                    key={`${item.label}-${index}`}
+                    className="flex min-w-0 items-center gap-1.5"
+                  >
+                    {index > 0 && <span className="opacity-50">/</span>}
+                    {item.href ? (
+                      <Link
+                        href={item.href}
+                        className="text-ink-secondary hover:text-ink-primary truncate transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <span className="text-ink-primary truncate font-medium">{item.label}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
             </div>
 
             {/* Global search */}
@@ -650,6 +561,12 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
               placeholder="Tìm nhanh (⌘K)"
               className="max-w-[240px]"
               aria-label="Tìm toàn cục"
+            />
+
+            <WarehouseSwitcher
+              selected={selectedWarehouse}
+              onSelect={setSelectedWarehouse}
+              label={selectedWhLabel}
             />
 
             {/* Theme toggle */}

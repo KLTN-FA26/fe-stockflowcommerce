@@ -301,12 +301,7 @@ export function VariantAttributes() {
     <>
       <PageHeader
         title="Thuộc tính biến thể"
-        hideTitle
-        breadcrumbs={[
-          { label: "Back-office", href: ADMIN_ROUTES.home },
-          { label: "Sản phẩm", href: ADMIN_ROUTES.products.list },
-          { label: "Thuộc tính biến thể" },
-        ]}
+        subtitle="Quản lý danh mục thuộc tính (Size, Color…) và giá trị dùng để sinh SKU."
         actions={
           <div className="flex items-center gap-2">
             <Button

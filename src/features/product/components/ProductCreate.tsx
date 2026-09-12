@@ -30,7 +30,7 @@ import { Card } from "@/components/shared/Card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { StatusDot } from "@/components/shared/StatusDot";
 import { toast } from "@/components/shared/Toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -361,13 +361,7 @@ export function ProductCreate() {
     <>
       <PageHeader
         title="Tạo sản phẩm"
-        hideTitle
         subtitle="Khai báo product master data, sinh SKU từ biến thể và gửi vào luồng duyệt."
-        breadcrumbs={[
-          { label: "Back-office", href: ADMIN_ROUTES.home },
-          { label: "Sản phẩm", href: ADMIN_ROUTES.products.list },
-          { label: "Tạo sản phẩm" },
-        ]}
         actions={
           <Link
             href={ADMIN_ROUTES.products.list}
@@ -386,7 +380,7 @@ export function ProductCreate() {
               Quy trình
             </div>
             <div className="mt-1 flex items-center gap-2">
-              <StatusBadge
+              <StatusDot
                 domain="product"
                 status={submitted ? "Pending Approval" : "Draft"}
                 size="sm"
@@ -937,7 +931,7 @@ function SkuStep({
     {
       key: "status",
       header: "Trạng thái",
-      cell: () => <StatusBadge domain="sku" status="Active" size="sm" />,
+      cell: () => <StatusDot domain="sku" status="Active" size="sm" />,
     },
     {
       key: "cost",
@@ -1538,7 +1532,7 @@ function ReviewStep({
               Lifecycle
             </div>
             <div className="mt-1">
-              <StatusBadge
+              <StatusDot
                 domain="product"
                 status={submitted ? "Pending Approval" : "Draft"}
                 withIcon
