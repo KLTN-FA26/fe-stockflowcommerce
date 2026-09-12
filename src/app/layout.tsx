@@ -2,6 +2,8 @@ import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 
 import { BRAND } from "@/constants";
 
+import { IS_MOCK } from "@/lib/config";
+
 import { ToastProvider } from "@/components/shared/Toast";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppProviders } from "@/providers/app-providers";
@@ -52,7 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
-          <AppProviders>{children}</AppProviders>
+          <AppProviders isMock={IS_MOCK}>{children}</AppProviders>
           <ToastProvider />
         </ThemeProvider>
       </body>

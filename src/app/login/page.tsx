@@ -24,6 +24,8 @@ import { ADMIN_ROUTES, APP_ROUTES } from "@/constants";
 import { getMockLoginUsersApi, loginApi, mockLoginApi } from "@/lib/auth/auth-api";
 import { useAuthStore } from "@/lib/auth/auth-store";
 
+import { useIsMock } from "@/providers/app-providers";
+
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,8 +40,6 @@ import {
 
 import type { MockLoginUser } from "@/lib/auth/auth-api";
 import type { FormEvent } from "react";
-
-const IS_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export default function LoginPage() {
   return (
@@ -69,18 +69,19 @@ function LoginForm() {
     ? requestedCallback
     : ADMIN_ROUTES.home;
   const login = useAuthStore((state) => state.login);
+  const isMock = useIsMock();
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [mockUsers, setMockUsers] = useState<MockLoginUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
-  const [isLoadingUsers, setIsLoadingUsers] = useState(IS_MOCK);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(isMock);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!IS_MOCK) return;
+    if (!isMock) return;
 
     let cancelled = false;
     void getMockLoginUsersApi()
@@ -104,7 +105,7 @@ function LoginForm() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isMock]);
 
   function completeLogin(response: Awaited<ReturnType<typeof loginApi>>) {
     login(response.user, {
@@ -201,7 +202,7 @@ function LoginForm() {
             <ArrowLeft className="size-4" aria-hidden="true" />
             Trang chủ
           </Link>
-          {IS_MOCK && (
+          {isMock && (
             <span className="border-warning/30 bg-warning/10 text-warning rounded-full border px-2.5 py-1 text-xs font-medium">
               Môi trường demo
             </span>
@@ -221,7 +222,7 @@ function LoginForm() {
               Chào mừng trở lại
             </h2>
             <p className="text-ink-secondary mt-2 text-sm leading-6">
-              {IS_MOCK
+              {isMock
                 ? "Chọn một tài khoản nhân sự để truy cập dữ liệu demo."
                 : "Đăng nhập bằng tài khoản nội bộ đã được cấp cho bạn."}
             </p>
@@ -236,7 +237,7 @@ function LoginForm() {
             </div>
           )}
 
-          {IS_MOCK ? (
+          {isMock ? (
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="mock-user">Tài khoản nhân sự</Label>

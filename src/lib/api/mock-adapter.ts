@@ -1,9 +1,13 @@
 /**
  * Mock adapter for axios.
  *
- * When `NEXT_PUBLIC_USE_MOCK=true` this adapter intercepts every request and
- * resolves it against `mock-data.ts` — simulating server-side pagination,
- * filtering, sorting, latency, and occasional errors.
+ * When `USE_MOCK=true` (server-only flag, see `src/lib/config.ts`) this
+ * adapter intercepts every request and resolves it against `mock-data.ts` —
+ * simulating server-side pagination, filtering, sorting, latency, and
+ * occasional errors.
+ *
+ * `activateMockAdapter()` is only called (from `AppProviders`) when the
+ * server-derived `isMock` flag is true — no env var is read here.
  *
  * **Only this file may import mock-data.ts** — enforced by CI grep.
  */
@@ -107,8 +111,6 @@ async function mockAdapter(config: AxiosRequestConfig): Promise<MockResponse> {
 /* ── Activate ────────────────────────────────────────────────────────── */
 
 export function activateMockAdapter(): void {
-  if (process.env.NEXT_PUBLIC_USE_MOCK !== "true") return;
-
   // Register all mock routes before activating the adapter
   import("./mock-routes").then(({ registerAllMockRoutes }) => {
     registerAllMockRoutes();
