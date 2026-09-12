@@ -229,7 +229,7 @@ function parseNonNegativeNumber(value: string) {
 
 function fieldClass(hasError = false) {
   return cn(
-    "w-full rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20",
+    "w-full rounded-[var(--r-sm)] border-border-default bg-bg-surface text-[0.8125rem] text-ink-primary shadow-none placeholder:text-ink-tertiary focus-visible:border-brand focus-visible:ring-brand/20",
     hasError && "border-danger focus-visible:border-danger focus-visible:ring-danger/20",
   );
 }
@@ -361,6 +361,7 @@ export function ProductCreate() {
     <>
       <PageHeader
         title="Tạo sản phẩm"
+        hideTitle
         subtitle="Khai báo product master data, sinh SKU từ biến thể và gửi vào luồng duyệt."
         breadcrumbs={[
           { label: "Back-office", href: ADMIN_ROUTES.home },
@@ -834,7 +835,7 @@ function VariantStep({
                         className={cn(
                           "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors",
                           checked
-                            ? "border-accent bg-accent/10 text-accent"
+                            ? "border-brand bg-brand/10 text-brand"
                             : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted",
                         )}
                       >
@@ -1382,7 +1383,7 @@ function CustomizationStep({
                   className={cn(
                     "rounded-full px-2 py-0.5 text-xs",
                     active
-                      ? "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
+                      ? "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand"
                       : "border-border-default bg-bg-subtle text-ink-secondary hover:bg-bg-muted",
                   )}
                 >

@@ -22,6 +22,22 @@ export const PO_STATUS = {
 
 export const PROPOSAL_STATUSES = ["Draft Proposal", "Reviewed", "Converted"] as const;
 
+export const RECEIPT_STATUSES = [
+  "Draft",
+  "Confirmed",
+  "In Putaway",
+  "Closed",
+  "Cancelled",
+] as const;
+
+export const RECEIPT_STATUS = {
+  CANCELLED: "Cancelled",
+  CLOSED: "Closed",
+  CONFIRMED: "Confirmed",
+  DRAFT: "Draft",
+  IN_PUTAWAY: "In Putaway",
+} as const satisfies Record<string, ReceiptStatus>;
+
 export const PRODUCT_STATUSES = [
   "Draft",
   "Pending Approval",
@@ -51,6 +67,7 @@ export const SKU_STATUS = {
 } as const satisfies Record<string, SkuStatus>;
 
 export type PoStatus = (typeof PO_STATUSES)[number];
+export type ReceiptStatus = (typeof RECEIPT_STATUSES)[number];
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 export type SkuStatus = (typeof SKU_STATUSES)[number];

@@ -1034,6 +1034,7 @@ export function ProductList() {
     <>
       <PageHeader
         title="Sản phẩm & SKU"
+        hideTitle
         breadcrumbs={[{ label: "Back-office", href: ADMIN_ROUTES.home }, { label: "Sản phẩm" }]}
         actions={
           <div className="flex items-center gap-2">
@@ -1056,7 +1057,7 @@ export function ProductList() {
               className={cn(
                 "rounded-[var(--r-sm)]",
                 (activeTab === "products" ? productConfig.showStats : skuConfig.showStats) &&
-                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+                  "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
               )}
             >
               <BarChart3 className="size-3.5" />
@@ -1097,7 +1098,7 @@ export function ProductList() {
               className={cn(
                 "hover:bg-bg-muted/60 h-auto rounded-none border-b-2 bg-transparent px-4 py-2 text-[0.8125rem] font-medium transition-colors",
                 isActive
-                  ? "border-accent text-accent hover:text-accent"
+                  ? "border-brand text-brand hover:text-brand"
                   : "text-ink-tertiary hover:text-ink-primary border-transparent",
               )}
             >
@@ -1106,7 +1107,7 @@ export function ProductList() {
               <span
                 className={cn(
                   "ml-1 rounded-full px-1.5 py-0.5 text-[0.625rem] font-semibold tabular-nums",
-                  isActive ? "bg-accent/10 text-accent" : "bg-bg-muted text-ink-tertiary",
+                  isActive ? "bg-brand text-ink-inverse" : "bg-bg-muted text-ink-tertiary",
                 )}
               >
                 {tab.key === "products" ? rawProducts.length : rawSkus.length}

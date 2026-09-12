@@ -455,6 +455,7 @@ export function PurchaseOrderList() {
     <>
       <PageHeader
         title="Đơn đặt NCC"
+        hideTitle
         breadcrumbs={[{ label: "Back-office", href: ADMIN_ROUTES.home }, { label: "Đơn đặt NCC" }]}
         actions={
           <div className="flex items-center gap-2">
@@ -468,7 +469,7 @@ export function PurchaseOrderList() {
               className={cn(
                 "rounded-[var(--r-sm)]",
                 pageConfig.showStats &&
-                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+                  "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
               )}
             >
               <BarChart3 className="size-3.5" />

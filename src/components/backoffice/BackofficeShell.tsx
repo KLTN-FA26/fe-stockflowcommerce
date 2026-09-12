@@ -227,8 +227,83 @@ const NAV_GROUPS: NavGroup[] = [
 /*  Breadcrumb helper                                                        */
 /* -------------------------------------------------------------------------- */
 
+interface PageMeta {
+  title: string;
+  subtitle: string;
+}
+
+const PAGE_META: Record<string, PageMeta> = {
+  "/admin": {
+    title: "Tổng quan",
+    subtitle: "Theo dõi vận hành kho, đơn hàng và tồn kho.",
+  },
+  "/admin/products": {
+    title: "Sản phẩm & SKU",
+    subtitle: "Quản lý sản phẩm, biến thể và SKU bán hàng.",
+  },
+  "/admin/suppliers": {
+    title: "Nhà cung cấp",
+    subtitle: "Quản lý hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice.",
+  },
+  "/admin/replenishment": {
+    title: "Đề xuất nhập hàng",
+    subtitle: "Theo dõi SKU dưới reorder point, hàng đang về và số lượng cần bổ sung.",
+  },
+  "/admin/receipts": {
+    title: "Phiếu nhận",
+    subtitle: "Ghi nhận hàng thực tế về kho theo PO, QC sơ bộ và inbound area.",
+  },
+  "/admin/putaway": {
+    title: "Cất hàng",
+    subtitle: "Theo dõi tác vụ đưa hàng từ inbound zone vào vị trí lưu kho.",
+  },
+  "/admin/purchase-orders": {
+    title: "Đơn đặt NCC",
+    subtitle: "Theo dõi vòng đời PO, nhà cung cấp, giá trị và tiến độ nhận hàng.",
+  },
+  "/admin/invoices": {
+    title: "Hoá đơn NCC",
+    subtitle: "Đối chiếu hoá đơn nhà cung cấp với PO và phiếu nhận hàng.",
+  },
+  "/admin/warehouse-map": {
+    title: "Kho map & slotting",
+    subtitle: "Quan sát layout kho, sức chứa vị trí và gợi ý tối ưu lưu trữ.",
+  },
+  "/admin/slotting": {
+    title: "Gợi ý vị trí",
+    subtitle: "Đề xuất vị trí cất hàng theo SKU, sức chứa và luồng vận hành kho.",
+  },
+  "/admin/transfers": {
+    title: "Chuyển kho liên kho",
+    subtitle: "Theo dõi điều chuyển tồn kho giữa các kho và trạng thái vận chuyển.",
+  },
+  "/admin/moves": {
+    title: "Di chuyển nội bộ",
+    subtitle: "Quản lý tác vụ chuyển hàng giữa các vị trí trong cùng kho.",
+  },
+  "/admin/orders": {
+    title: "Đơn hàng",
+    subtitle: "Theo dõi đơn bán, trạng thái xử lý và các ngoại lệ cần thao tác.",
+  },
+  "/admin/picking": {
+    title: "Lấy hàng",
+    subtitle: "Theo dõi pick task, thiếu hàng và tiến độ lấy hàng theo đơn.",
+  },
+  "/admin/packing": {
+    title: "Đóng gói",
+    subtitle: "Theo dõi kiểm đơn, vật liệu đóng gói và trạng thái sẵn sàng giao.",
+  },
+  "/admin/shipments": {
+    title: "Vận đơn",
+    subtitle: "Theo dõi vận chuyển, bàn giao carrier và ngoại lệ giao hàng.",
+  },
+  "/admin/variants": {
+    title: "Thuộc tính biến thể",
+    subtitle: "Quản lý thuộc tính tạo SKU như size, màu sắc và chất liệu.",
+  },
+};
+
 function pathToBreadcrumb(pathname: string): string {
-  // find matching nav item
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
       if (pathname === item.href || pathname.startsWith(item.href + "/")) {
@@ -237,6 +312,23 @@ function pathToBreadcrumb(pathname: string): string {
     }
   }
   return "Back-office";
+}
+
+function pathToPageMeta(pathname: string): PageMeta {
+  const exact = PAGE_META[pathname];
+  if (exact) return exact;
+
+  const route = Object.keys(PAGE_META)
+    .filter((key) => key !== "/admin" && pathname.startsWith(`${key}/`))
+    .sort((a, b) => b.length - a.length)[0];
+
+  if (route) return PAGE_META[route];
+
+  const title = pathToBreadcrumb(pathname);
+  return {
+    title,
+    subtitle: "Không gian thao tác back-office StockFlow.",
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -509,7 +601,7 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
     return wh ? wh.code : selectedWarehouse;
   }, [selectedWarehouse]);
 
-  const currentPageLabel = pathToBreadcrumb(pathname);
+  const currentPageMeta = pathToPageMeta(pathname);
   const currentUserName = currentUser?.fullName ?? "Người dùng";
 
   async function handleLogout() {
@@ -555,23 +647,14 @@ export function BackofficeShell({ children }: { children: React.ReactNode }) {
             {/* Thu nhỏ/mở rộng sidebar (desktop) */}
             <SidebarCollapseButton />
 
-            {/* Breadcrumb */}
-            <nav className="flex items-center gap-1 text-[0.8125rem]">
-              <Link
-                href="/admin"
-                className="text-ink-tertiary hover:text-ink-primary transition-colors"
-              >
-                Back-office
-              </Link>
-              {currentPageLabel !== "Tổng quan" && (
-                <>
-                  <span className="text-ink-tertiary">/</span>
-                  <span className="text-ink-primary font-medium">{currentPageLabel}</span>
-                </>
-              )}
-            </nav>
-
-            <div className="flex-1" />
+            <div className="min-w-0 flex-1">
+              <div className="text-ink-primary truncate text-[0.8125rem] leading-5 font-semibold">
+                {currentPageMeta.title}
+              </div>
+              <div className="text-ink-tertiary truncate text-xs leading-4">
+                {currentPageMeta.subtitle}
+              </div>
+            </div>
 
             {/* Global search */}
             <SearchBar

@@ -421,6 +421,7 @@ export default function OrdersPage() {
     <>
       <PageHeader
         title="Đơn hàng"
+        hideTitle
         breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Đơn hàng" }]}
         actions={
           <Button
@@ -433,7 +434,7 @@ export default function OrdersPage() {
             className={cn(
               "rounded-[var(--r-sm)]",
               config.showStats &&
-                "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+                "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
             )}
           >
             <BarChart3 className="size-3.5" />

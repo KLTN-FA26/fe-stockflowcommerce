@@ -479,6 +479,7 @@ export default function ReplenishmentPage() {
     <>
       <PageHeader
         title="Đề xuất nhập hàng"
+        hideTitle
         breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Đề xuất nhập hàng" }]}
         actions={
           <Button
@@ -491,7 +492,7 @@ export default function ReplenishmentPage() {
             className={cn(
               "rounded-[var(--r-sm)]",
               config.showStats &&
-                "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+                "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
             )}
           >
             <BarChart3 className="size-3.5" />

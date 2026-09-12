@@ -149,7 +149,7 @@ function TextInput({ className, ...props }: React.ComponentProps<typeof Input>) 
     <Input
       {...props}
       className={cn(
-        "border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none",
+        "border-border-default bg-bg-surface text-ink-primary placeholder:text-ink-tertiary focus-visible:border-brand focus-visible:ring-brand/20 h-9 rounded-[var(--r-sm)] text-[0.8125rem] shadow-none",
         className,
       )}
     />
@@ -172,7 +172,7 @@ function SelectInput({
       <SelectTrigger
         size="default"
         aria-label={label}
-        className="border-border-default bg-bg-surface text-ink-primary focus-visible:border-accent focus-visible:ring-accent/20 h-9 w-full rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
+        className="border-border-default bg-bg-surface text-ink-primary focus-visible:border-brand focus-visible:ring-brand/20 h-9 w-full rounded-[var(--r-sm)] text-[0.8125rem] shadow-none"
       >
         <SelectValue />
       </SelectTrigger>
@@ -260,6 +260,7 @@ export default function CreateSupplierPage() {
     <>
       <PageHeader
         title="Tạo nhà cung cấp"
+        hideTitle
         subtitle="Tạo hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice."
         breadcrumbs={[
           { label: "Back-office", href: "/admin" },

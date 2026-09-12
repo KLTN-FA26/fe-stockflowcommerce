@@ -133,7 +133,7 @@
   --destructive: var(--danger);
   --border: var(--border-default);
   --input: var(--border-default);
-  --ring: var(--accent);
+  --ring: var(--brand);
   --sidebar: var(--bg-subtle);
   --sidebar-foreground: var(--ink-secondary);
   --sidebar-primary: var(--brand);
@@ -179,7 +179,7 @@
 
 @layer base {
   * {
-    @apply border-border-default outline-accent/50;
+    @apply border-border-default outline-brand/50;
   }
   body {
     @apply bg-bg-base text-ink-primary antialiased;
@@ -191,7 +191,7 @@
     scroll-behavior: smooth;
   }
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
     border-radius: 2px;
   }

@@ -573,6 +573,7 @@ export default function SuppliersPage() {
     <>
       <PageHeader
         title="Nhà cung cấp"
+        hideTitle
         subtitle="Quản lý hồ sơ NCC dùng cho Replenishment, Purchase Order và Supplier Invoice."
         breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Nhà cung cấp" }]}
         actions={
@@ -587,18 +588,18 @@ export default function SuppliersPage() {
               className={cn(
                 "rounded-[var(--r-sm)]",
                 config.showStats &&
-                  "border-accent bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent border",
+                  "border-brand bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand border",
               )}
             >
               <BarChart3 className="size-3.5" />
               {config.showStats ? "Ẩn thống kê" : "Hiện thống kê"}
             </Button>
             <Button
-              variant="ghost"
               type="button"
               size="sm"
               onClick={() => router.push("/admin/suppliers/create")}
-              className="rounded-[var(--r-sm)]"
+              variant="default"
+              className="bg-brand text-ink-inverse hover:bg-brand-hover hover:text-ink-inverse rounded-[var(--r-sm)]"
             >
               <Plus className="size-3.5" />
               Tạo nhà cung cấp
@@ -639,7 +640,7 @@ export default function SuppliersPage() {
                   }))
                 }
                 placeholder="Tìm nhà cung cấp theo mã, tên, MST..."
-                className="border-border-default bg-bg-surface focus-visible:border-accent focus-visible:ring-accent/20 h-9 rounded-[var(--r-sm)] pl-9 text-[0.8125rem] shadow-none"
+                className="border-border-default bg-bg-surface focus-visible:border-brand focus-visible:ring-brand/20 h-9 rounded-[var(--r-sm)] pl-9 text-[0.8125rem] shadow-none"
               />
             </div>
             <div className="flex items-center gap-2">
