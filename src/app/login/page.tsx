@@ -156,7 +156,9 @@ function LoginForm() {
           className="focus-visible:ring-ink-inverse relative w-fit rounded-[var(--r-sm)] focus-visible:ring-2"
           aria-label="StockFlowCommerce — về trang chủ"
         >
-          <Logo height={42} className="brightness-0 invert" />
+          {/* Logo là ảnh minh hoạ full-color — không áp filter trắng như bản SVG cũ,
+              nếu không ảnh sẽ biến thành khối trắng đặc. */}
+          <Logo height={42} />
         </Link>
 
         <div className="relative max-w-xl py-12">

@@ -2,21 +2,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { APP_ROUTES } from "@/constants";
+import { APP_ROUTES, BRAND } from "@/constants";
+
+import { useAppStore } from "@/lib/store/use-app-store";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
-import { HOME_COPY, HOME_FEATURES } from "./constants";
+import { HOME_COPY } from "./constants";
 
-import { HomeFeatureStrip, HomeFooter, HomeHero } from "./index";
+import { HomeFooter, HomeHero } from "./index";
 
 import type { ReactElement } from "react";
 
-/**
- * Không test render 3D thật: jsdom không có WebGL context nên `<Canvas>` của R3F
- * không khởi tạo được. Đây là giới hạn môi trường test, không phải chỗ bỏ sót.
- * Scene được cách ly sau `next/dynamic({ ssr: false })` nên không lọt vào test này.
- */
+/** Bọc ThemeProvider vì HomeFooter đọc theme qua `useTheme()`. */
 function renderWithTheme(ui: ReactElement) {
   return render(<ThemeProvider>{ui}</ThemeProvider>);
 }
@@ -24,6 +22,7 @@ function renderWithTheme(ui: ReactElement) {
 afterEach(() => {
   delete document.documentElement.dataset.theme;
   document.documentElement.classList.remove("dark");
+  useAppStore.setState({ theme: "system" });
 });
 
 describe("HomeHero", () => {
@@ -40,22 +39,12 @@ describe("HomeHero", () => {
     );
   });
 
-  it("đặt logo trong hero và không lặp lại CTA đăng nhập", () => {
+  it("đặt logo kèm tên thương hiệu và không lặp lại CTA đăng nhập", () => {
     renderWithTheme(<HomeHero />);
-    expect(screen.getByRole("link", { name: /StockFlowCommerce/i })).toHaveAttribute(
-      "href",
-      APP_ROUTES.home,
-    );
+    const brandLink = screen.getByRole("link", { name: new RegExp(BRAND.name, "i") });
+    expect(brandLink).toHaveAttribute("href", APP_ROUTES.home);
+    expect(brandLink).toHaveTextContent(BRAND.name);
     expect(screen.queryByRole("link", { name: HOME_COPY.loginLabel })).not.toBeInTheDocument();
-  });
-});
-
-describe("HomeFeatureStrip", () => {
-  it("hiện đủ ba điểm chạm vận hành", () => {
-    renderWithTheme(<HomeFeatureStrip />);
-    for (const feature of HOME_FEATURES) {
-      expect(screen.getByRole("heading", { name: feature.title })).toBeInTheDocument();
-    }
   });
 });
 
@@ -66,10 +55,13 @@ describe("HomeFooter", () => {
   });
 
   it("đặt nút theme ở footer và chuyển từ Dark sang Light", async () => {
+    // Chốt preference = "dark" tường minh thay vì phụ thuộc default "system"
+    // (vốn phụ thuộc prefers-color-scheme, không ổn định giữa các môi trường test).
+    useAppStore.setState({ theme: "dark" });
     const user = userEvent.setup();
     renderWithTheme(<HomeFooter />);
 
-    expect(screen.getByRole("button", { name: /Chuyển sang Light/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Chuyển sang Light/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Chuyển sang Light/i }));
 

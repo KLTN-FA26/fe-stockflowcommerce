@@ -1,4 +1,4 @@
-export { BRAND, BRAND_ASPECT, BRAND_WORDMARK_GRADIENT } from "./brand";
+export { BRAND, BRAND_ASPECT } from "./brand";
 export { ADMIN_ROUTES, APP_ROUTES } from "./routes";
 export { STORAGE_KEYS } from "./storage-keys";
 export {

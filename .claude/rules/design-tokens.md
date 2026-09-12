@@ -13,6 +13,10 @@ Tailwind class sinh ra từ đó. Không khai báo màu ở nơi khác.
 
 ## Cấm tuyệt đối
 
+- **Không dùng gradient** (`bg-gradient-*`, `linear-gradient`, `radial-gradient`) ở bất kỳ
+  đâu — cả Mode A lẫn Mode B. Nền dùng màu phẳng từ token; muốn tạo chiều sâu thì dùng
+  glow/blur (blob mờ), pattern (grid/dot), hoặc border/shadow thay vì gradient.
+
 - **Không hex trần** trong `src/app`, `src/components`, `src/features`. CI grep chặn:
   `! grep -rnE "#[0-9a-fA-F]{6}" src/app src/components src/features`
   Hex chỉ được xuất hiện trong `globals.css` và `lib/tokens.ts`.

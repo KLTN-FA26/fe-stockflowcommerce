@@ -30,7 +30,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { ADMIN_ROUTES, APP_ROUTES, BRAND, BRAND_WORDMARK_GRADIENT } from "@/constants";
+import { ADMIN_ROUTES, APP_ROUTES, BRAND } from "@/constants";
 
 import { logoutApi } from "@/lib/auth/auth-api";
 import { useAuthStore } from "@/lib/auth/auth-store";
@@ -476,19 +476,8 @@ function BackofficeSidebar({
             collapsed ? "size-10 justify-center" : "h-10 gap-2 px-1.5",
           )}
         >
-          <Logo variant="mark" height={32} decorative />
-          {!collapsed && (
-            <span className="truncate font-[family-name:var(--font-display)] text-[1.2rem] font-bold tracking-tight">
-              <span className="text-ink-primary">Stock</span>
-              {/* "Flow" tô gradient khớp wordmark trong logo SVG */}
-              <span
-                className="bg-clip-text text-transparent"
-                style={{ backgroundImage: BRAND_WORDMARK_GRADIENT }}
-              >
-                Flow
-              </span>
-            </span>
-          )}
+          {/* Logo đã có sẵn chữ "StockFlow" trong ảnh — không cần chữ HTML kèm theo. */}
+          <Logo variant="mark" height={collapsed ? 32 : 36} decorative />
         </Link>
 
         {/* Đổi kho — chỉ đủ chỗ cạnh logo khi sidebar mở rộng.

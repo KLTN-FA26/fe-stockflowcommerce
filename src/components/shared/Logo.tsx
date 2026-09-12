@@ -32,8 +32,6 @@ export function Logo({ variant = "full", height = 32, decorative = false, classN
       width={Math.round(height * ratio)}
       height={height}
       priority
-      // SVG là vector — Next không resize/recompress được, optimizer chỉ pass-through.
-      unoptimized
       className={cn("block w-auto shrink-0 select-none", className)}
       style={{ height }}
       draggable={false}

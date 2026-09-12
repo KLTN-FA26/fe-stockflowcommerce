@@ -6,7 +6,6 @@
  * không có chứng từ nên không có vòng đời, và không phải một module trong docs nghiệp vụ.
  */
 
-export { HomeFeatureStrip } from "./components/HomeFeatureStrip";
 export { HomeFooter } from "./components/HomeFooter";
 export { HomeHero } from "./components/HomeHero";
-export { WarehouseSceneLazy } from "./components/WarehouseSceneLazy";
+export { HomeIllustration } from "./components/HomeIllustration";

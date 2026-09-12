@@ -57,5 +57,7 @@ export async function mockLoginApi(userId: string): Promise<LoginResponse> {
 
 export async function getMockLoginUsersApi(): Promise<MockLoginUser[]> {
   const { data } = await api.get<{ items: MockLoginUser[] }>("/staff-users");
-  return data.items;
+  // Guard against an unexpected response shape (contract mismatch) so callers
+  // never receive `undefined` — always a real array, even if empty.
+  return Array.isArray(data?.items) ? data.items : [];
 }

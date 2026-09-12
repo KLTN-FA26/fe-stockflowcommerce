@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   description: "Hệ thống quản lý kho vận StockFlowCommerce",
   applicationName: BRAND.name,
   icons: {
-    icon: [{ url: BRAND.iconSrc, type: "image/svg+xml" }],
-    shortcut: [{ url: BRAND.iconSrc, type: "image/svg+xml" }],
-    apple: [{ url: BRAND.iconSrc, type: "image/svg+xml" }],
+    icon: [{ url: BRAND.iconSrc, type: "image/png" }],
+    shortcut: [{ url: BRAND.iconSrc, type: "image/png" }],
+    apple: [{ url: BRAND.iconSrc, type: "image/png" }],
   },
 };
 

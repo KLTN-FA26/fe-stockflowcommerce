@@ -75,7 +75,18 @@ function matchRoute(
 
 /* ── Adapter ─────────────────────────────────────────────────────────── */
 
+/**
+ * Resolves once `registerAllMockRoutes()` has run. `activateMockAdapter()`
+ * sets this before any request can reach `mockAdapter` (see below) — the
+ * adapter itself awaits it, closing the race where a request fired before
+ * the dynamic import of `./mock-routes` finished would find no routes
+ * registered yet and get a bogus 404.
+ */
+let routesReady: Promise<void> | undefined;
+
 async function mockAdapter(config: AxiosRequestConfig): Promise<MockResponse> {
+  if (routesReady) await routesReady;
+
   const url = config.url ?? "/";
   const method = (config.method ?? "GET").toUpperCase();
 
@@ -111,8 +122,11 @@ async function mockAdapter(config: AxiosRequestConfig): Promise<MockResponse> {
 /* ── Activate ────────────────────────────────────────────────────────── */
 
 export function activateMockAdapter(): void {
-  // Register all mock routes before activating the adapter
-  import("./mock-routes").then(({ registerAllMockRoutes }) => {
+  // Register all mock routes before activating the adapter. The dynamic
+  // import is async even though the module is already bundled, so the
+  // adapter must await `routesReady` (set below) rather than assume routes
+  // exist by the time the first request arrives.
+  routesReady = import("./mock-routes").then(({ registerAllMockRoutes }) => {
     registerAllMockRoutes();
   });
 
