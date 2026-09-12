@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import {
   BarChart3,
   CheckCircle,
@@ -19,6 +18,7 @@ import {
 import { cn } from "cn";
 import { ADMIN_ROUTES, PAGE_SIZE, PO_COLUMNS, PO_STATUSES, STORAGE_KEYS } from "@/constants";
 import { usePageConfig } from "@/hooks/use-page-config";
+import { useUrlFilters } from "@/hooks/use-url-filters";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ListStatsPanel } from "@/components/shared/ListStatsPanel";
 import {
@@ -123,11 +123,7 @@ function mergeStoredConfig(
 
 export function PurchaseOrderList() {
   const router = useRouter();
-  const [poQ, setPoQ] = useQueryState("poQ", parseAsString.withDefault(""));
-  const [poStatuses, setPoStatuses] = useQueryState(
-    "poStatus",
-    parseAsArrayOf(parseAsStringLiteral(PO_STATUSES)).withDefault([]),
-  );
+  const filters = useUrlFilters(PO_STATUSES);
   const { config, updateConfig } = usePageConfig<PurchaseOrdersPageConfig>(
     STORAGE_KEYS.adminPurchaseOrdersConfig,
     DEFAULT_CONFIG,
@@ -170,10 +166,10 @@ export function PurchaseOrderList() {
   const pageConfig = useMemo<PurchaseOrdersPageConfig>(
     () => ({
       ...config,
-      statuses: poStatuses.length > 0 ? poStatuses : ["all"],
-      globalSearch: { ...config.globalSearch, query: poQ },
+      statuses: filters.status.length > 0 ? filters.status : ["all"],
+      globalSearch: { ...config.globalSearch, query: filters.q },
     }),
-    [config, poQ, poStatuses],
+    [config, filters.q, filters.status],
   );
 
   const navigateToDetail = (po: PurchaseOrder) =>
@@ -181,13 +177,13 @@ export function PurchaseOrderList() {
 
   const toggleStatus = (status: PoStatusFilter) => {
     if (status === "all") {
-      setPoStatuses([]);
+      filters.setStatus([]);
       return;
     }
-    const next = poStatuses.includes(status)
-      ? poStatuses.filter((item) => item !== status)
-      : [...poStatuses, status];
-    setPoStatuses(next);
+    const next = filters.status.includes(status)
+      ? filters.status.filter((item) => item !== status)
+      : [...filters.status, status];
+    filters.setStatus(next);
   };
 
   const toggleSearchField = (field: PoSearchField) => {
@@ -222,8 +218,7 @@ export function PurchaseOrderList() {
   const clearColumnSearch = () => updateConfig((current) => ({ ...current, columnSearch: {} }));
   const resetAll = () => {
     updateConfig(() => DEFAULT_CONFIG);
-    setPoQ("");
-    setPoStatuses([]);
+    filters.reset();
   };
 
   const filtered = useMemo(() => {
@@ -407,13 +402,13 @@ export function PurchaseOrderList() {
         .map((status) => STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status)
         .join(", "),
       active: hasStatusFilter,
-      onClear: () => setPoStatuses([]),
+      onClear: () => filters.setStatus([]),
     },
     {
       label: "Search chính",
       value: hasGlobalSearch ? `“${pageConfig.globalSearch.query}”` : "Chưa dùng",
       active: hasGlobalSearch,
-      onClear: () => setPoQ(""),
+      onClear: () => filters.setQ(""),
     },
     {
       label: "Trường search",
@@ -497,12 +492,12 @@ export function PurchaseOrderList() {
 
       <ListToolbar
         search={pageConfig.globalSearch.query}
-        onSearchChange={setPoQ}
+        onSearchChange={filters.setQ}
         searchPlaceholder="Tìm PO theo mã, NCC, kho..."
         statusOptions={STATUS_OPTIONS}
         selectedStatuses={pageConfig.statuses}
         onToggleStatus={toggleStatus}
-        onClearStatuses={() => setPoStatuses([])}
+        onClearStatuses={() => filters.setStatus([])}
         hasStatusFilter={hasStatusFilter}
         fieldOptions={searchFields}
         selectedFields={pageConfig.globalSearch.fields}
