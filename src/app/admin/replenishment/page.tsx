@@ -479,8 +479,7 @@ export default function ReplenishmentPage() {
     <>
       <PageHeader
         title="Đề xuất nhập hàng"
-        hideTitle
-        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: "Đề xuất nhập hàng" }]}
+        subtitle="Theo dõi SKU dưới reorder point, hàng đang về và số lượng cần bổ sung."
         actions={
           <Button
             type="button"

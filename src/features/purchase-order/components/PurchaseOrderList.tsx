@@ -450,8 +450,7 @@ export function PurchaseOrderList() {
     <>
       <PageHeader
         title="Đơn đặt NCC"
-        hideTitle
-        breadcrumbs={[{ label: "Back-office", href: ADMIN_ROUTES.home }, { label: "Đơn đặt NCC" }]}
+        subtitle="Theo dõi vòng đời PO, nhà cung cấp, giá trị và tiến độ nhận hàng."
         actions={
           <div className="flex items-center gap-2">
             <Button

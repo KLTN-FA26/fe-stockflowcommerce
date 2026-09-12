@@ -29,7 +29,7 @@ import { useReceipt, useReceiptLots } from "@/features/receipt/queries";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { StatusDot } from "@/components/shared/StatusDot";
 import { Button } from "@/components/ui/button";
 
 import type { DiscrepancyRecord, Lot, ReceiptLine } from "@/features/receipt/types";
@@ -177,7 +177,7 @@ export function ReceiptDetail({ params }: ReceiptDetailProps) {
         key: "qcStatus",
         header: "QC",
         cell: (line) => (
-          <StatusBadge domain="qc" status={qcStatusForLine(line, lots)} size="sm" withIcon />
+          <StatusDot domain="qc" status={qcStatusForLine(line, lots)} size="sm" withIcon />
         ),
       },
       {
@@ -243,11 +243,6 @@ export function ReceiptDetail({ params }: ReceiptDetailProps) {
         <PageHeader
           title="Không tìm thấy phiếu nhận"
           subtitle="Phiếu nhận không tồn tại hoặc đã bị xoá khỏi dữ liệu mock."
-          breadcrumbs={[
-            { label: "Back-office", href: ADMIN_ROUTES.home },
-            { label: "Phiếu nhận", href: ADMIN_ROUTES.receipts.list },
-            { label: id },
-          ]}
           actions={
             <Button
               type="button"
@@ -274,14 +269,9 @@ export function ReceiptDetail({ params }: ReceiptDetailProps) {
       <PageHeader
         title={receipt.receiptNumber}
         subtitle={`PO nguồn ${receipt.poId} · Dock/Inbound zone: ${receipt.warehouseId} · Delivery note: ${receipt.notes ?? "Chưa ghi nhận"}`}
-        breadcrumbs={[
-          { label: "Back-office", href: ADMIN_ROUTES.home },
-          { label: "Phiếu nhận", href: ADMIN_ROUTES.receipts.list },
-          { label: receipt.receiptNumber },
-        ]}
         actions={
           <div className="flex items-center gap-2">
-            <StatusBadge domain="receipt" status={receipt.status} size="md" withIcon />
+            <StatusDot domain="receipt" status={receipt.status} size="md" withIcon />
             <Button
               type="button"
               variant="outline"
@@ -427,12 +417,7 @@ export function ReceiptDetail({ params }: ReceiptDetailProps) {
                   <span className="text-ink-secondary font-[family-name:var(--font-mono)] text-xs">
                     {line.skuId}
                   </span>
-                  <StatusBadge
-                    domain="qc"
-                    status={qcStatusForLine(line, lots)}
-                    size="sm"
-                    withIcon
-                  />
+                  <StatusDot domain="qc" status={qcStatusForLine(line, lots)} size="sm" withIcon />
                 </div>
               ))}
             </div>

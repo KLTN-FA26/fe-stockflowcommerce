@@ -383,7 +383,7 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <PageHeader title="Tổng quan" hideTitle />
+      <PageHeader title="Tổng quan" subtitle="Theo dõi vận hành kho, đơn hàng và tồn kho." />
 
       {/* ================================================================ */}
       {/* Row 1: KPI StatTiles                                             */}

@@ -18,7 +18,6 @@ export function ComingSoonPage({ title, subtitle, icon: Icon }: ComingSoonPagePr
         subtitle={
           subtitle ?? "Module đang được phát triển, dữ liệu sẽ dùng mock khi hoàn thiện UI."
         }
-        breadcrumbs={[{ label: "Back-office", href: "/admin" }, { label: title }]}
         actions={
           <Link
             href="/admin"
